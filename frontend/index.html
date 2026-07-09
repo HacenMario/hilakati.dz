@@ -1,0 +1,2963 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="description" content="حلاقتي - منصة حجز صالونات الحلاقة والتجميل في الجزائر" />
+    <title>حلاقتي - منصة حجز صالونات الحلاقة والتجميل</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#f5b042" />
+    <link rel="apple-touch-icon" href="icons/icon-192.png" />
+
+    <style>
+        :root {
+            --primary: #1a1a2e;
+            --secondary: #16213e;
+            --accent: #e94560;
+            --accent-hover: #ff6b81;
+            --gold: #f5b042;
+            --gold-hover: #ffc107;
+            --light: #f8f9fa;
+            --dark: #0f0f1a;
+            --card-bg: #1e1e32;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            --shadow-hover: 0 20px 45px rgba(0, 0, 0, 0.55);
+            --radius: 16px;
+            --radius-sm: 12px;
+            --transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --warning: #f1c40f;
+            --info: #3498db;
+            --whatsapp: #25D366;
+            --bg-body: var(--dark);
+            --bg-header: rgba(26, 26, 46, 0.95);
+            --text-color: var(--light);
+            --input-bg: rgba(255, 255, 255, 0.06);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --header-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+            --stat-bg: rgba(255, 255, 255, 0.03);
+            --skeleton: rgba(255, 255, 255, 0.05);
+            --heart-color: #ff4757;
+        }
+
+        [data-theme="light"] {
+            --bg-body: #f0f2f8;
+            --bg-header: rgba(255, 255, 255, 0.95);
+            --text-color: #1a1a2e;
+            --card-bg: #ffffff;
+            --input-bg: rgba(0, 0, 0, 0.04);
+            --border-color: rgba(0, 0, 0, 0.08);
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+            --shadow-hover: 0 16px 40px rgba(0, 0, 0, 0.15);
+            --header-shadow: 0 4px 30px rgba(0, 0, 0, 0.06);
+            --stat-bg: rgba(0, 0, 0, 0.02);
+            --skeleton: rgba(0, 0, 0, 0.06);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            scroll-padding-top: 80px;
+        }
+
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background: var(--bg-body);
+            color: var(--text-color);
+            direction: rtl;
+            line-height: 1.6;
+            min-height: 100vh;
+            transition: var(--transition);
+            font-size: 16px;
+            -webkit-text-size-adjust: 100%;
+            overflow-x: hidden;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+        button {
+            font-family: 'Tajawal', sans-serif;
+            cursor: pointer;
+            border: none;
+        }
+        input,
+        select,
+        textarea {
+            font-family: 'Tajawal', sans-serif;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-body);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 10px;
+        }
+
+        #particles-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.25;
+        }
+
+        /* Skeleton Loading */
+        .skeleton {
+            background: var(--skeleton);
+            border-radius: var(--radius);
+            animation: shimmer 1.5s infinite;
+            overflow: hidden;
+            position: relative;
+        }
+        .skeleton::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 200%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+            animation: shimmer-wave 1.5s infinite;
+        }
+        @keyframes shimmer {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.7;
+            }
+        }
+        @keyframes shimmer-wave {
+            0% {
+                transform: translateX(0);
+            }
+            100% {
+                transform: translateX(50%);
+            }
+        }
+        .skeleton-card {
+            height: 280px;
+            border-radius: var(--radius);
+        }
+        .skeleton-cover {
+            height: 130px;
+            background: var(--skeleton);
+            border-radius: var(--radius) var(--radius) 0 0;
+        }
+        .skeleton-line {
+            height: 14px;
+            margin: 10px 16px;
+            border-radius: 6px;
+            background: var(--skeleton);
+        }
+        .skeleton-line.short {
+            width: 60%;
+        }
+        .skeleton-line.medium {
+            width: 80%;
+        }
+
+        /* Header */
+        .header {
+            background: var(--bg-header);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            padding: 0.5rem 2%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 2px solid transparent;
+            border-image: linear-gradient(90deg, var(--accent), var(--gold), var(--accent)) 1;
+            flex-wrap: wrap;
+            gap: 4px;
+            transition: var(--transition);
+            box-shadow: var(--header-shadow);
+            transform: translateY(0);
+        }
+        .header.hidden-header {
+            transform: translateY(-100%);
+        }
+        .logo {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--gold);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            animation: logoGlow 2s infinite alternate;
+        }
+        @keyframes logoGlow {
+            0% {
+                text-shadow: 0 0 5px rgba(245, 176, 66, 0.3);
+            }
+            100% {
+                text-shadow: 0 0 18px rgba(245, 176, 66, 0.8);
+            }
+        }
+        .logo i {
+            color: var(--accent);
+        }
+        .logo span {
+            color: var(--text-color);
+            font-weight: 300;
+        }
+        .nav-links {
+            display: flex;
+            gap: 0.6rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .nav-links a {
+            color: var(--text-color);
+            font-weight: 500;
+            transition: var(--transition);
+            font-size: 0.85rem;
+            padding: 6px 14px;
+            border-radius: 8px;
+            opacity: 0.7;
+            cursor: pointer;
+            position: relative;
+            white-space: nowrap;
+        }
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 50%;
+            width: 0;
+            height: 2px;
+            background: var(--gold);
+            transition: var(--transition);
+            transform: translateX(-50%);
+        }
+        .nav-links a:hover::after,
+        .nav-links a.active::after {
+            width: 70%;
+        }
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: var(--gold);
+            opacity: 1;
+        }
+        .header-actions {
+            display: flex;
+            gap: 0.3rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        /* Buttons */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), #c0392b);
+            color: #fff;
+            border-radius: 50px;
+            font-weight: 700;
+            transition: var(--transition);
+            padding: 0.4rem 1.2rem;
+            font-size: 0.8rem;
+            box-shadow: 0 4px 15px rgba(233, 69, 96, 0.3);
+        }
+        .btn-primary:hover {
+            transform: translateY(-3px) scale(1.04);
+            box-shadow: 0 10px 28px rgba(233, 69, 96, 0.5);
+            background: linear-gradient(135deg, var(--accent-hover), #e74c3c);
+        }
+        .btn-gold {
+            background: linear-gradient(135deg, var(--gold), #e67e22);
+            color: var(--dark);
+            border-radius: 50px;
+            font-weight: 700;
+            transition: var(--transition);
+            padding: 0.4rem 1.2rem;
+            font-size: 0.8rem;
+            box-shadow: 0 4px 15px rgba(245, 176, 66, 0.3);
+        }
+        .btn-gold:hover {
+            transform: translateY(-3px) scale(1.04);
+            box-shadow: 0 10px 28px rgba(245, 176, 66, 0.5);
+            background: linear-gradient(135deg, var(--gold-hover), #f39c12);
+        }
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--gold);
+            color: var(--gold);
+            border-radius: 50px;
+            font-weight: 700;
+            transition: var(--transition);
+            padding: 0.35rem 1rem;
+            font-size: 0.8rem;
+        }
+        .btn-outline:hover {
+            background: var(--gold);
+            color: var(--dark);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(245, 176, 66, 0.35);
+        }
+        .btn-success {
+            background: var(--success);
+            color: #fff;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: var(--transition);
+        }
+        .btn-success:hover {
+            opacity: 0.9;
+            transform: scale(1.04);
+        }
+        .btn-danger {
+            background: var(--danger);
+            color: #fff;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: var(--transition);
+        }
+        .btn-danger:hover {
+            opacity: 0.9;
+            transform: scale(1.04);
+        }
+        .btn-whatsapp {
+            background: var(--whatsapp);
+            color: #fff;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: var(--transition);
+            padding: 0.4rem 1.2rem;
+            font-size: 0.8rem;
+            box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);
+        }
+        .btn-whatsapp:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 28px rgba(37, 211, 102, 0.5);
+        }
+        .btn-sm {
+            padding: 0.3rem 0.9rem;
+            font-size: 0.75rem;
+        }
+
+        /* Notifications */
+        .notif-bell {
+            position: relative;
+            cursor: pointer;
+            font-size: 1.1rem;
+            color: var(--text-color);
+            transition: var(--transition);
+            padding: 6px 8px;
+        }
+        .notif-bell:hover {
+            color: var(--gold);
+            transform: scale(1.1);
+        }
+        .notif-bell .badge {
+            position: absolute;
+            top: -4px;
+            right: -2px;
+            background: var(--accent);
+            color: #fff;
+            border-radius: 50%;
+            padding: 0.1rem 0.35rem;
+            font-size: 0.55rem;
+            font-weight: 700;
+            min-width: 16px;
+            text-align: center;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%,
+            100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.15);
+            }
+        }
+        .notif-dropdown {
+            display: none;
+            position: absolute;
+            top: 40px;
+            left: 0;
+            right: auto;
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            min-width: 320px;
+            max-height: 380px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-hover);
+            z-index: 1001;
+            animation: dropdownIn 0.3s ease;
+        }
+        @keyframes dropdownIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .notif-dropdown.active {
+            display: block;
+        }
+        .notif-dropdown .notif-item {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color);
+            transition: var(--transition);
+        }
+        .notif-dropdown .notif-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .notif-dropdown .notif-item .notif-title {
+            font-weight: 600;
+            color: var(--gold);
+            font-size: 0.85rem;
+        }
+        .notif-dropdown .notif-item .notif-time {
+            font-size: 0.6rem;
+            color: #888;
+        }
+        .notif-dropdown .notif-item .notif-msg {
+            color: var(--text-color);
+            font-size: 0.8rem;
+            opacity: 0.8;
+            margin-top: 2px;
+        }
+        .notif-dropdown .notif-item.unread {
+            border-right: 3px solid var(--accent);
+        }
+        .notif-dropdown .notif-empty {
+            padding: 1.5rem;
+            text-align: center;
+            color: #888;
+            font-size: 0.85rem;
+        }
+
+        /* Sections */
+        .section {
+            padding: 1.5rem 2%;
+            min-height: 70vh;
+            transition: var(--transition);
+            animation: fadeInUp 0.5s ease;
+            position: relative;
+            z-index: 1;
+        }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .section-title {
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin-bottom: 0.3rem;
+            text-align: center;
+            color: var(--text-color);
+        }
+        .section-title .highlight {
+            color: var(--gold);
+            position: relative;
+        }
+        .section-title .highlight::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: var(--gold);
+            border-radius: 3px;
+        }
+        .section-subtitle {
+            text-align: center;
+            color: var(--text-color);
+            opacity: 0.6;
+            margin-bottom: 1.5rem;
+            font-size: 1rem;
+        }
+        .hidden {
+            display: none !important;
+        }
+
+        /* Grid & Cards */
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .salon-card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            transition: var(--transition);
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            animation: cardAppear 0.6s ease both;
+            position: relative;
+        }
+        @keyframes cardAppear {
+            from {
+                opacity: 0;
+                transform: scale(0.9) translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+        .salon-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            border-color: var(--gold);
+            box-shadow: var(--shadow-hover);
+        }
+        .salon-card .cover {
+            height: 140px;
+            background: linear-gradient(135deg, var(--secondary), var(--primary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            padding: 10px;
+            overflow: hidden;
+        }
+        .salon-card .cover::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, transparent, rgba(245, 176, 66, 0.1), transparent);
+            transition: var(--transition);
+        }
+        .salon-card:hover .cover::before {
+            background: linear-gradient(45deg, transparent, rgba(245, 176, 66, 0.2), transparent);
+        }
+        .salon-card .cover img {
+            max-width: 80px;
+            max-height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--gold);
+            background: #fff;
+            transition: var(--transition);
+            position: relative;
+            z-index: 1;
+        }
+        .salon-card:hover .cover img {
+            transform: scale(1.1);
+            border-color: var(--accent);
+        }
+        .salon-card .cover .default-icon {
+            font-size: 3.5rem;
+            color: var(--gold);
+            position: relative;
+            z-index: 1;
+            transition: var(--transition);
+        }
+        .salon-card:hover .cover .default-icon {
+            color: var(--accent);
+            transform: scale(1.1);
+        }
+        .salon-card .cover .rating-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 0.2rem 0.6rem;
+            border-radius: 50px;
+            font-size: 0.7rem;
+            color: var(--gold);
+            z-index: 2;
+            backdrop-filter: blur(4px);
+        }
+        .salon-card .cover .gps-badge {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: rgba(233, 69, 96, 0.9);
+            padding: 0.2rem 0.6rem;
+            border-radius: 50px;
+            font-size: 0.6rem;
+            color: #fff;
+            z-index: 2;
+        }
+        .salon-card .cover .price-badge {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 0.2rem 0.6rem;
+            border-radius: 50px;
+            font-size: 0.7rem;
+            color: var(--gold);
+            z-index: 2;
+            backdrop-filter: blur(4px);
+        }
+        .salon-card .cover .featured-badge {
+            position: absolute;
+            top: 8px;
+            left: 50px;
+            background: var(--accent);
+            padding: 0.2rem 0.6rem;
+            border-radius: 50px;
+            font-size: 0.6rem;
+            color: #fff;
+            z-index: 2;
+            animation: pulse 2s infinite;
+        }
+        .salon-card .body {
+            padding: 0.8rem 1rem;
+        }
+        .salon-card .body h3 {
+            font-size: 1.1rem;
+            margin-bottom: 0.2rem;
+            color: var(--gold);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .salon-card .body .desc {
+            color: var(--text-color);
+            opacity: 0.7;
+            font-size: 0.85rem;
+            margin-bottom: 0.3rem;
+            line-height: 1.4;
+        }
+        .salon-card .body .location {
+            color: var(--text-color);
+            opacity: 0.5;
+            font-size: 0.8rem;
+            margin-bottom: 0.3rem;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .salon-card .body .tags {
+            display: flex;
+            gap: 0.3rem;
+            flex-wrap: wrap;
+            margin: 0.3rem 0;
+        }
+        .salon-card .body .tags span {
+            background: rgba(233, 69, 96, 0.15);
+            color: var(--accent);
+            padding: 0.1rem 0.5rem;
+            border-radius: 50px;
+            font-size: 0.6rem;
+        }
+        .salon-card .body .price-info {
+            color: var(--gold);
+            font-weight: 700;
+            font-size: 0.85rem;
+            margin: 0.2rem 0;
+        }
+        .salon-card .body .btn-book {
+            width: 100%;
+            padding: 0.4rem;
+            border-radius: 50px;
+            background: linear-gradient(135deg, var(--gold), #e67e22);
+            color: var(--dark);
+            font-weight: 700;
+            font-size: 0.85rem;
+            transition: var(--transition);
+            margin-top: 0.2rem;
+            box-shadow: 0 4px 12px rgba(245, 176, 66, 0.2);
+        }
+        .salon-card .body .btn-book:hover {
+            transform: scale(1.04);
+            box-shadow: 0 6px 20px rgba(245, 176, 66, 0.4);
+        }
+
+        /* Favorite Button */
+        .favorite-btn {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: transparent;
+            border: none;
+            font-size: 1.3rem;
+            cursor: pointer;
+            color: var(--heart-color);
+            z-index: 5;
+            transition: transform 0.2s;
+        }
+        .favorite-btn:hover {
+            transform: scale(1.4);
+        }
+
+        /* Dashboard */
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            gap: 1.2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .sidebar {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 1rem;
+            border: 1px solid var(--border-color);
+            height: fit-content;
+            position: sticky;
+            top: 80px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+        .sidebar .profile {
+            text-align: center;
+            padding-bottom: 0.8rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .sidebar .profile .avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), var(--gold));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin: 0 auto 0.4rem;
+            box-shadow: 0 4px 15px rgba(233, 69, 96, 0.3);
+        }
+        .sidebar .profile h4 {
+            color: var(--gold);
+            font-size: 0.9rem;
+        }
+        .sidebar .profile p {
+            color: var(--text-color);
+            opacity: 0.5;
+            font-size: 0.75rem;
+        }
+        .sidebar .menu {
+            margin-top: 0.8rem;
+        }
+        .sidebar .menu a {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0.5rem 0.7rem;
+            border-radius: 8px;
+            color: var(--text-color);
+            transition: var(--transition);
+            margin-bottom: 0.2rem;
+            font-size: 0.8rem;
+            opacity: 0.7;
+            cursor: pointer;
+        }
+        .sidebar .menu a:hover,
+        .sidebar .menu a.active {
+            background: rgba(233, 69, 96, 0.12);
+            color: var(--gold);
+            opacity: 1;
+            transform: translateX(-4px);
+        }
+        .sidebar .menu a i {
+            width: 18px;
+            font-size: 0.85rem;
+        }
+        .dashboard-content {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 1rem;
+            border: 1px solid var(--border-color);
+            min-height: 350px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+
+        /* Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 0.8rem;
+            margin-bottom: 1.2rem;
+        }
+        .stat-card {
+            background: var(--stat-bg);
+            padding: 0.8rem;
+            border-radius: var(--radius-sm);
+            text-align: center;
+            border: 1px solid var(--border-color);
+            transition: var(--transition);
+        }
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow);
+            border-color: var(--gold);
+        }
+        .stat-card .number {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--gold);
+        }
+        .stat-card .label {
+            color: var(--text-color);
+            opacity: 0.6;
+            font-size: 0.7rem;
+            margin-top: 4px;
+        }
+
+        /* Tables */
+        .table-wrap {
+            overflow-x: auto;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-color);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th,
+        td {
+            padding: 0.5rem 0.7rem;
+            text-align: right;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.8rem;
+        }
+        th {
+            color: var(--gold);
+            font-weight: 700;
+            background: rgba(255, 255, 255, 0.03);
+            position: sticky;
+            top: 0;
+        }
+        td {
+            color: var(--text-color);
+        }
+        .status {
+            padding: 0.15rem 0.5rem;
+            border-radius: 50px;
+            font-size: 0.65rem;
+            font-weight: 600;
+        }
+        .status.confirmed {
+            background: rgba(46, 204, 113, 0.2);
+            color: #2ecc71;
+        }
+        .status.pending {
+            background: rgba(241, 196, 15, 0.2);
+            color: #f1c40f;
+        }
+        .status.cancelled {
+            background: rgba(231, 76, 60, 0.2);
+            color: #e74c3c;
+        }
+        .status.completed {
+            background: rgba(52, 152, 219, 0.2);
+            color: #3498db;
+        }
+
+        /* Modals */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal-box {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            max-width: 540px;
+            width: 100%;
+            padding: 1.2rem;
+            border: 1px solid var(--border-color);
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-hover);
+            transition: var(--transition);
+            animation: modalIn 0.35s ease;
+        }
+        @keyframes modalIn {
+            from {
+                opacity: 0;
+                transform: scale(0.85) translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+        .modal-box .modal-close {
+            float: left;
+            font-size: 1.4rem;
+            color: var(--text-color);
+            background: none;
+            border: none;
+            transition: var(--transition);
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+        .modal-box .modal-close:hover {
+            color: var(--accent);
+            background: rgba(255, 255, 255, 0.05);
+            transform: rotate(90deg);
+        }
+        .modal-box h2 {
+            color: var(--gold);
+            margin-bottom: 1rem;
+            text-align: center;
+            font-size: 1.2rem;
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 0.8rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.2rem;
+            color: var(--text-color);
+            font-weight: 500;
+            font-size: 0.8rem;
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.5rem 0.8rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--input-bg);
+            color: var(--text-color);
+            font-size: 0.85rem;
+            transition: var(--transition);
+        }
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--gold);
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 0 3px rgba(245, 176, 66, 0.1);
+        }
+        .form-group textarea {
+            resize: vertical;
+            min-height: 50px;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.6rem;
+        }
+        .hours-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.3rem;
+        }
+
+        /* Filter Section */
+        .filter-section {
+            display: flex;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 1.2rem;
+            background: rgba(255, 255, 255, 0.02);
+            padding: 0.8rem;
+            border-radius: var(--radius);
+            border: 1px solid var(--border-color);
+        }
+        .filter-section input,
+        .filter-section select {
+            padding: 0.4rem 0.8rem;
+            border-radius: 50px;
+            border: 1px solid var(--border-color);
+            background: var(--input-bg);
+            color: var(--text-color);
+            min-width: 120px;
+            font-size: 0.8rem;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--card-bg);
+            padding: 0.7rem 1.2rem;
+            border-radius: var(--radius-sm);
+            border-right: 4px solid var(--gold);
+            box-shadow: var(--shadow-hover);
+            transform: translateY(120px);
+            opacity: 0;
+            transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            z-index: 3000;
+            font-weight: 500;
+            max-width: 90%;
+            border: 1px solid var(--border-color);
+            font-size: 0.9rem;
+        }
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        .toast i {
+            color: var(--gold);
+            margin-left: 6px;
+        }
+
+        /* Reviews */
+        .review-item {
+            background: rgba(255, 255, 255, 0.02);
+            padding: 0.6rem;
+            border-radius: var(--radius-sm);
+            margin-bottom: 0.5rem;
+            border: 1px solid var(--border-color);
+            transition: var(--transition);
+        }
+        .review-item:hover {
+            background: rgba(255, 255, 255, 0.04);
+        }
+        .review-item .review-header {
+            display: flex;
+            justify-content: space-between;
+            font-weight: 600;
+            color: var(--gold);
+            font-size: 0.85rem;
+        }
+        .review-item .review-comment {
+            color: var(--text-color);
+            opacity: 0.8;
+            font-size: 0.8rem;
+            margin-top: 0.2rem;
+        }
+        .review-item .review-date {
+            color: var(--text-color);
+            opacity: 0.4;
+            font-size: 0.65rem;
+        }
+
+        /* Back to Top */
+        .back-to-top {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            width: 44px;
+            height: 44px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-color);
+            font-size: 1.2rem;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            z-index: 999;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        .back-to-top.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .back-to-top:hover {
+            background: var(--gold);
+            color: var(--dark);
+            transform: translateY(-4px);
+        }
+
+        /* Confirm Modal */
+        .confirm-modal .modal-box {
+            max-width: 400px;
+            text-align: center;
+        }
+        .confirm-modal .modal-box p {
+            margin: 1rem 0;
+            color: var(--text-color);
+            opacity: 0.8;
+        }
+        .confirm-modal .modal-box .btn-group {
+            display: flex;
+            gap: 0.8rem;
+            justify-content: center;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--text-color);
+            opacity: 0.4;
+        }
+        .empty-state i {
+            font-size: 4rem;
+            display: block;
+            margin-bottom: 1rem;
+        }
+        .empty-state p {
+            font-size: 1rem;
+        }
+
+        /* Gallery */
+        .gallery-img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 2px solid var(--border-color);
+            transition: var(--transition);
+            cursor: pointer;
+        }
+        .gallery-img:hover {
+            border-color: var(--gold);
+            transform: scale(1.05);
+        }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 0.4rem;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+        }
+        .pagination button {
+            padding: 0.4rem 0.8rem;
+            border-radius: 50px;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            color: var(--text-color);
+            font-size: 0.8rem;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+        .pagination button:hover {
+            background: var(--gold);
+            color: var(--dark);
+            border-color: var(--gold);
+        }
+        .pagination button.active {
+            background: var(--gold);
+            color: var(--dark);
+            border-color: var(--gold);
+            font-weight: 700;
+        }
+
+        /* Map Container */
+        .map-container {
+            height: 350px;
+            border-radius: var(--radius);
+            overflow: hidden;
+            border: 2px solid var(--border-color);
+            margin: 1rem 0;
+            z-index: 1;
+            position: relative;
+        }
+        .map-container .leaflet-control-attribution {
+            font-size: 10px;
+        }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+            .header {
+                padding: 0.5rem 3%;
+                gap: 6px;
+            }
+            .logo {
+                font-size: 1.1rem;
+            }
+            .nav-links {
+                gap: 0.2rem;
+                justify-content: center;
+            }
+            .nav-links a {
+                font-size: 0.8rem;
+                padding: 4px 8px;
+            }
+            .header-actions {
+                gap: 0.3rem;
+                justify-content: center;
+            }
+            .header-actions button {
+                font-size: 0.65rem;
+                padding: 0.2rem 0.5rem;
+                min-height: 32px;
+            }
+            body {
+                font-size: 15px;
+            }
+            .section {
+                padding: 1rem 3%;
+            }
+            .section-title {
+                font-size: 1.5rem;
+            }
+            .grid-3 {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            .salon-card .cover {
+                height: 110px;
+            }
+            .salon-card .cover img {
+                max-width: 60px;
+                max-height: 60px;
+            }
+            .dashboard-container {
+                grid-template-columns: 1fr;
+                gap: 0.8rem;
+            }
+            .sidebar {
+                position: static;
+                padding: 0.8rem;
+            }
+            .sidebar .menu {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.3rem;
+                justify-content: center;
+            }
+            .sidebar .menu a {
+                font-size: 0.7rem;
+                padding: 0.3rem 0.5rem;
+                flex: 1 0 auto;
+                text-align: center;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .filter-section {
+                flex-direction: column;
+            }
+            .filter-section input,
+            .filter-section select {
+                width: 100%;
+            }
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            .hours-grid {
+                grid-template-columns: 1fr;
+            }
+            .modal-box {
+                max-width: 95%;
+                padding: 1rem;
+            }
+            .notif-dropdown {
+                min-width: 260px;
+                left: -100px !important;
+            }
+            .back-to-top {
+                bottom: 20px;
+                left: 20px;
+                width: 38px;
+                height: 38px;
+            }
+            .map-container {
+                height: 250px;
+            }
+        }
+        @media (max-width: 480px) {
+            body {
+                font-size: 14px;
+            }
+            .section-title {
+                font-size: 1.3rem;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 0.3rem;
+            }
+            .salon-card .body h3 {
+                font-size: 0.95rem;
+            }
+            .back-to-top {
+                bottom: 16px;
+                left: 16px;
+                width: 34px;
+                height: 34px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="particles-bg"></canvas>
+
+    <!-- Header -->
+    <header class="header" id="mainHeader">
+        <div class="logo"><i class="fas fa-cut"></i> حلاقتي <span>🇩🇿</span></div>
+        <nav class="nav-links">
+            <a href="#" class="active" onclick="navigateTo('home')" data-page="home">الرئيسية</a>
+            <a href="#" onclick="navigateTo('salons')" data-page="salons">الصالونات</a>
+            <a href="#" onclick="navigateTo('map')" data-page="map">🗺️ الخريطة</a>
+            <a href="#" onclick="navigateTo('dashboard')" data-page="dashboard" id="dashNavLink" style="display:none;">لوحة التحكم</a>
+            <a href="#" onclick="navigateTo('admin')" data-page="admin" id="adminNavLink" style="display:none;">لوحة المدير</a>
+            <a href="#" onclick="navigateTo('customer-dashboard')" data-page="customer-dashboard" id="customerDashLink" style="display:none;">حسابي</a>
+        </nav>
+        <div class="header-actions">
+            <span id="userDisplay" style="display:none;color:var(--gold);font-weight:500;font-size:0.7rem;"></span>
+            <span id="customerNameDisplay" style="display:none;color:var(--gold);font-weight:500;font-size:0.7rem;"></span>
+            <button class="btn-outline btn-sm" id="changePasswordQuickBtn" style="display:none;" onclick="openChangePasswordModal()" title="تغيير كلمة المرور"><i class="fas fa-key"></i></button>
+            <div class="notif-bell" onclick="toggleNotifications()" id="notifBell">
+                <i class="fas fa-bell"></i>
+                <span class="badge" id="notifBadge">0</span>
+                <div class="notif-dropdown" id="notifDropdown"><div id="notifList"></div></div>
+            </div>
+            <button class="btn-outline btn-sm" onclick="toggleTheme()" id="themeToggle"><i class="fas fa-moon"></i></button>
+            <button class="btn-outline btn-sm" onclick="toggleLang()" id="langToggle">🇫🇷 FR</button>
+            <button class="btn-outline btn-sm" id="favoritesBtn" onclick="showFavorites()"><i class="fas fa-heart"></i> المفضلة</button>
+            <button class="btn-gold btn-sm" onclick="showAllBookings()" id="myBookingsBtn"><i class="fas fa-calendar-alt"></i> حجوزاتي</button>
+            <button class="btn-outline btn-sm" id="customerLoginBtn" onclick="openModal('customerLoginModal')">دخول عميل</button>
+            <button class="btn-primary btn-sm" id="customerRegisterBtn" onclick="openModal('customerRegisterModal')">حساب عميل</button>
+            <button class="btn-danger btn-sm" id="customerLogoutBtn" style="display:none;" onclick="customerLogout()">خروج</button>
+            <button class="btn-outline btn-sm" id="loginBtn" onclick="openModal('loginModal')">دخول صالون</button>
+            <button class="btn-primary btn-sm" id="registerBtn" onclick="openModal('registerModal')">تسجيل صالون</button>
+            <button class="btn-danger btn-sm" id="logoutBtn" style="display:none;" onclick="logout()">خروج</button>
+            <button class="btn-outline btn-sm" onclick="openModal('adminLoginModal')">مدير</button>
+            <button class="btn-danger btn-sm" id="adminLogoutBtn" style="display:none;" onclick="adminLogout()">خروج مدير</button>
+        </div>
+    </header>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"><i class="fas fa-check-circle"></i> <span id="toastMsg"></span></div>
+
+    <!-- Back to Top -->
+    <div class="back-to-top" id="backToTop" onclick="window.scrollTo({top:0,behavior:'smooth'})"><i class="fas fa-arrow-up"></i></div>
+
+    <!-- Confirm Modal -->
+    <div class="modal-overlay confirm-modal" id="confirmModal">
+        <div class="modal-box">
+            <h2>⚠️ تأكيد الحذف</h2>
+            <p id="confirmMsg">هل أنت متأكد؟ لا يمكن التراجع.</p>
+            <div class="btn-group">
+                <button class="btn-danger" id="confirmYes">نعم، احذف</button>
+                <button class="btn-outline" onclick="closeModal('confirmModal')">إلغاء</button>
+            </div>
+        </div>
+    </div>
+    <!-- Register Salon Modal -->
+    <div class="modal-overlay" id="registerModal"><div class="modal-box">
+        <button class="modal-close" onclick="closeModal('registerModal')">&times;</button>
+        <h2><i class="fas fa-store"></i> تسجيل صالون جديد</h2>
+        <form id="registerForm">
+            <div class="form-group"><label>اسم الصالون</label><input type="text" id="regSalonName" required></div>
+            <div class="form-group"><label>الولاية</label>
+                <select id="regCity" required>
+                    <option value="">اختر الولاية</option>
+                    <option value="أدرار">أدرار</option><option value="الشلف">الشلف</option><option value="الأغواط">الأغواط</option>
+                    <option value="أم البواقي">أم البواقي</option><option value="باتنة">باتنة</option><option value="بجاية">بجاية</option>
+                    <option value="بسكرة">بسكرة</option><option value="بشار">بشار</option><option value="البليدة">البليدة</option>
+                    <option value="البويرة">البويرة</option><option value="تمنراست">تمنراست</option><option value="تبسة">تبسة</option>
+                    <option value="تلمسان">تلمسان</option><option value="تيارت">تيارت</option><option value="تيزي وزو">تيزي وزو</option>
+                    <option value="الجزائر العاصمة">الجزائر العاصمة</option><option value="الجلفة">الجلفة</option><option value="جيجل">جيجل</option>
+                    <option value="سطيف">سطيف</option><option value="سعيدة">سعيدة</option><option value="سكيكدة">سكيكدة</option>
+                    <option value="سيدي بلعباس">سيدي بلعباس</option><option value="عنابة">عنابة</option><option value="قالمة">قالمة</option>
+                    <option value="قسنطينة">قسنطينة</option><option value="المدية">المدية</option><option value="مستغانم">مستغانم</option>
+                    <option value="المسيلة">المسيلة</option><option value="معسكر">معسكر</option><option value="ورقلة">ورقلة</option>
+                    <option value="وهران">وهران</option><option value="البيض">البيض</option><option value="إليزي">إليزي</option>
+                    <option value="برج بوعريريج">برج بوعريريج</option><option value="بومرداس">بومرداس</option><option value="الطارف">الطارف</option>
+                    <option value="تندوف">تندوف</option><option value="تيسمسيلت">تيسمسيلت</option><option value="الوادي">الوادي</option>
+                    <option value="خنشلة">خنشلة</option><option value="سوق أهراس">سوق أهراس</option><option value="تيبازة">تيبازة</option>
+                    <option value="ميلة">ميلة</option><option value="عين الدفلى">عين الدفلى</option><option value="النعامة">النعامة</option>
+                    <option value="عين تموشنت">عين تموشنت</option><option value="غرداية">غرداية</option><option value="غليزان">غليزان</option>
+                </select>
+            </div>
+            <div class="form-group"><label>العنوان</label><input type="text" id="regAddress" required></div>
+            <div class="form-group"><label>البريد الإلكتروني</label><input type="email" id="regEmail" required></div>
+            <div class="form-group"><label>رقم الهاتف</label><input type="tel" id="regPhone" required></div>
+            <div class="form-group"><label>كلمة المرور</label><input type="password" id="regPassword" required minlength="6"></div>
+            <div class="form-group"><label>الوصف</label><textarea id="regDesc"></textarea></div>
+            <div class="form-group"><label>نوع الصالون</label><select id="regSalonType"><option value="mixed">مختلط</option><option value="male">رجالي</option><option value="female">نسائي</option><option value="children">أطفال</option></select></div>
+            <div class="form-group"><label>خدمة متنقلة</label><select id="regIsMobile"><option value="false">لا</option><option value="true">نعم (منزلية)</option></select></div>
+            <div class="form-group"><label>شعار الصالون</label><input type="file" id="regLogo" accept="image/*"></div>
+            <div class="form-group"><label>موقع GPS</label>
+                <div style="display:flex;gap:0.3rem;flex-wrap:wrap;align-items:center;">
+                    <button type="button" class="btn-primary btn-sm" onclick="getCurrentLocation('regLat','regLng')"><i class="fas fa-map-marker-alt"></i> تحديد</button>
+                    <input type="number" step="any" id="regLatManual" placeholder="خط العرض" style="width:120px;">
+                    <input type="number" step="any" id="regLngManual" placeholder="خط الطول" style="width:120px;">
+                    <input type="hidden" id="regLat"><input type="hidden" id="regLng"><span id="regGpsStatus" style="color:#888;font-size:0.65rem;">لم يتم تحديد</span>
+                </div>
+            </div>
+            <button type="submit" class="btn-gold" style="width:100%;padding:0.5rem;"><i class="fas fa-plus-circle"></i> إنشاء الصالون</button>
+        </form>
+    </div></div>
+
+    <!-- Login Salon Modal -->
+    <div class="modal-overlay" id="loginModal"><div class="modal-box">
+        <button class="modal-close" onclick="closeModal('loginModal')">&times;</button>
+        <h2><i class="fas fa-sign-in-alt"></i> دخول الصالون</h2>
+        <form id="loginForm">
+            <div class="form-group"><label>البريد الإلكتروني</label><input type="email" id="loginEmail" required></div>
+            <div class="form-group"><label>كلمة المرور</label><input type="password" id="loginPassword" required></div>
+            <button type="submit" class="btn-gold" style="width:100%;padding:0.5rem;">دخول</button>
+            <button type="button" class="btn-outline btn-sm" style="width:100%;margin-top:0.5rem;" onclick="openForgotPasswordModal('salon')">نسيت كلمة المرور</button>
+        </form>
+    </div></div>
+
+    <!-- Customer Register Modal -->
+    <div class="modal-overlay" id="customerRegisterModal"><div class="modal-box">
+        <button class="modal-close" onclick="closeModal('customerRegisterModal')">&times;</button>
+        <h2><i class="fas fa-user-plus"></i> حساب عميل جديد</h2>
+        <form id="customerRegisterForm">
+            <div class="form-group"><label>الاسم</label><input type="text" id="custName" required></div>
+            <div class="form-group"><label>البريد الإلكتروني</label><input type="email" id="custEmail" required></div>
+            <div class="form-group"><label>رقم الهاتف</label><input type="tel" id="custPhone" required></div>
+            <div class="form-group"><label>كلمة المرور</label><input type="password" id="custPassword" required minlength="6"></div>
+            <button type="submit" class="btn-gold" style="width:100%;padding:0.5rem;"><i class="fas fa-user-plus"></i> إنشاء الحساب</button>
+        </form>
+    </div></div>
+
+    <!-- Customer Login Modal -->
+    <div class="modal-overlay" id="customerLoginModal"><div class="modal-box">
+        <button class="modal-close" onclick="closeModal('customerLoginModal')">&times;</button>
+        <h2><i class="fas fa-sign-in-alt"></i> دخول العميل</h2>
+        <form id="customerLoginForm">
+            <div class="form-group"><label>البريد الإلكتروني</label><input type="email" id="custLoginEmail" required></div>
+            <div class="form-group"><label>كلمة المرور</label><input type="password" id="custLoginPassword" required></div>
+            <button type="submit" class="btn-gold" style="width:100%;padding:0.5rem;">دخول</button>
+            <button type="button" class="btn-outline btn-sm" style="width:100%;margin-top:0.5rem;" onclick="openForgotPasswordModal('customer')">نسيت كلمة المرور</button>
+        </form>
+    </div></div>
+
+    <!-- Admin Login Modal -->
+    <div class="modal-overlay" id="adminLoginModal"><div class="modal-box">
+        <button class="modal-close" onclick="closeModal('adminLoginModal')">&times;</button>
+        <h2><i class="fas fa-user-cog"></i> دخول المدير</h2>
+        <form id="adminLoginForm">
+            <div class="form-group"><label>البريد الإلكتروني</label><input type="email" id="adminLoginEmail" required></div>
+            <div class="form-group"><label>كلمة المرور</label><input type="password" id="adminLoginPassword" required></div>
+            <button type="submit" class="btn-gold" style="width:100%;padding:0.5rem;">دخول</button>
+            <button type="button" class="btn-outline btn-sm" style="width:100%;margin-top:0.5rem;" onclick="openForgotPasswordModal('admin')">نسيت كلمة المرور</button>
+        </form>
+    </div></div>
+
+    <!-- Booking Modal -->
+    <div class="modal-overlay" id="bookingModal"><div class="modal-box">
+        <button class="modal-close" onclick="closeModal('bookingModal')">&times;</button>
+        <h2><i class="fas fa-calendar-check"></i> حجز موعد</h2>
+        <form id="bookingForm">
+            <div class="form-group"><label>الصالون</label><input type="text" id="bookSalonName" readonly style="background:var(--input-bg);color:var(--gold);"></div>
+            <div class="form-group"><label>الخدمات (Ctrl لاختيار متعدد)</label><select id="bookService" multiple style="height:80px;" onchange="updateTotalPrice()"></select></div>
+            <div class="form-group"><label>السعر الإجمالي</label><input type="text" id="bookTotalPrice" readonly style="background:var(--input-bg);color:var(--gold);font-weight:700;"></div>
+            <div class="form-group"><label>الموظف</label><select id="bookStaff" required></select></div>
+            <div class="form-row">
+                <div class="form-group"><label>التاريخ</label><input type="date" id="bookDate" required></div>
+                <div class="form-group"><label>الوقت</label><select id="bookTime" required><option value="">اختر الوقت</option><option value="09:00">09:00</option><option value="09:30">09:30</option><option value="10:00">10:00</option><option value="10:30">10:30</option><option value="11:00">11:00</option><option value="11:30">11:30</option><option value="12:00">12:00</option><option value="12:30">12:30</option><option value="13:00">13:00</option><option value="13:30">13:30</option><option value="14:00">14:00</option><option value="14:30">14:30</option><option value="15:00">15:00</option><option value="15:30">15:30</option><option value="16:00">16:00</option><option value="16:30">16:30</option><option value="17:00">17:00</option><option value="17:30">17:30</option><option value="18:00">18:00</option><option value="18:30">18:30</option><option value="19:00">19:00</option></select></div>
+            </div>
+            <div class="form-group"><label>الاسم الكامل</label><input type="text" id="bookClientName" required></div>
+            <div class="form-group"><label>رقم الهاتف</label><input type="tel" id="bookClientPhone" required></div>
+            <div class="form-group"><label>البريد (اختياري)</label><input type="email" id="bookClientEmail"></div>
+            <div class="form-group"><label>طريقة الدفع</label><select id="bookPayment"><option value="cash">دفع نقدي</option></select></div>
+            <div class="form-group"><label>حجز متكرر</label><select id="bookRecurring"><option value="none">مرة واحدة</option><option value="weekly">أسبوعياً</option><option value="monthly">شهرياً</option></select></div>
+            <div class="form-group"><label>ملاحظات</label><textarea id="bookNotes"></textarea></div>
+            <button type="submit" class="btn-gold" style="width:100%;padding:0.5rem;"><i class="fas fa-check-circle"></i> تأكيد الحجز</button>
+        </form>
+    </div></div>
+
+    <!-- My Bookings Modal -->
+    <div class="modal-overlay" id="myBookingsModal"><div class="modal-box" style="max-width:700px;">
+        <button class="modal-close" onclick="closeModal('myBookingsModal')">&times;</button>
+        <h2><i class="fas fa-calendar-alt"></i> حجوزاتي</h2>
+        <div id="myBookingsList"></div>
+    </div></div>
+
+    <!-- Salon Details Modal -->
+    <div class="modal-overlay" id="salonDetailsModal"><div class="modal-box" style="max-width:650px;">
+        <button class="modal-close" onclick="closeModal('salonDetailsModal')">&times;</button>
+        <div id="salonDetailsContent"></div>
+    </div></div>
+
+    <!-- Review Modal -->
+    <div class="modal-overlay" id="reviewModal"><div class="modal-box">
+        <button class="modal-close" onclick="closeModal('reviewModal')">&times;</button>
+        <h2><i class="fas fa-star"></i> تقييم الصالون</h2>
+        <form id="reviewForm">
+            <div class="form-group"><label>تقييمك (1-5)</label><select id="reviewRating" required><option value="5">⭐ 5 - ممتاز</option><option value="4">⭐ 4 - جيد جداً</option><option value="3">⭐ 3 - جيد</option><option value="2">⭐ 2 - مقبول</option><option value="1">⭐ 1 - سيء</option></select></div>
+            <div class="form-group"><label>تعليقك</label><textarea id="reviewComment" required></textarea></div>
+            <input type="hidden" id="reviewSalonId">
+            <button type="submit" class="btn-gold" style="width:100%;padding:0.5rem;"><i class="fas fa-paper-plane"></i> إرسال التقييم</button>
+        </form>
+    </div></div>
+
+    <!-- Forgot Password Modal -->
+    <div class="modal-overlay" id="forgotPasswordModal"><div class="modal-box">
+        <button class="modal-close" onclick="closeModal('forgotPasswordModal')">&times;</button>
+        <h2><i class="fas fa-key"></i> استعادة كلمة المرور</h2>
+        <form id="forgotPasswordForm">
+            <div class="form-group"><label>البريد الإلكتروني المسجل</label><input type="email" id="forgotEmail" required></div>
+            <input type="hidden" id="forgotUserType">
+            <button type="submit" class="btn-gold" style="width:100%;">إرسال رابط الاستعادة</button>
+        </form>
+        <p id="forgotMessage" style="text-align:center;margin-top:0.8rem;"></p>
+    </div></div>
+
+    <!-- Change Password (Customer) Modal -->
+    <div class="modal-overlay" id="customerChangePasswordModal"><div class="modal-box">
+        <button class="modal-close" onclick="closeModal('customerChangePasswordModal')">&times;</button>
+        <h2><i class="fas fa-key"></i> تغيير كلمة المرور</h2>
+        <form id="customerChangePasswordForm">
+            <div class="form-group"><label>كلمة المرور الحالية</label><input type="password" id="custOldPassword" required></div>
+            <div class="form-group"><label>كلمة المرور الجديدة</label><input type="password" id="custNewPassword" required minlength="6"></div>
+            <div class="form-group"><label>تأكيد كلمة المرور</label><input type="password" id="custConfirmPassword" required></div>
+            <button type="submit" class="btn-gold" style="width:100%;"><i class="fas fa-save"></i> تغيير</button>
+        </form>
+    </div></div>
+
+    <!-- Change Password (Salon) Modal -->
+    <div class="modal-overlay" id="salonChangePasswordModal"><div class="modal-box">
+        <button class="modal-close" onclick="closeModal('salonChangePasswordModal')">&times;</button>
+        <h2><i class="fas fa-key"></i> تغيير كلمة المرور</h2>
+        <form id="salonChangePasswordForm">
+            <div class="form-group"><label>كلمة المرور الحالية</label><input type="password" id="salonOldPassword" required></div>
+            <div class="form-group"><label>كلمة المرور الجديدة</label><input type="password" id="salonNewPassword" required minlength="6"></div>
+            <div class="form-group"><label>تأكيد كلمة المرور</label><input type="password" id="salonConfirmPassword" required></div>
+            <button type="submit" class="btn-gold" style="width:100%;"><i class="fas fa-save"></i> تغيير</button>
+        </form>
+    </div></div>
+
+    <!-- Change Password (Admin) Modal -->
+    <div class="modal-overlay" id="adminChangePasswordModal"><div class="modal-box">
+        <button class="modal-close" onclick="closeModal('adminChangePasswordModal')">&times;</button>
+        <h2><i class="fas fa-key"></i> تغيير كلمة المرور</h2>
+        <form id="adminChangePasswordForm">
+            <div class="form-group"><label>كلمة المرور الحالية</label><input type="password" id="adminOldPassword" required></div>
+            <div class="form-group"><label>كلمة المرور الجديدة</label><input type="password" id="adminNewPassword" required minlength="6"></div>
+            <div class="form-group"><label>تأكيد كلمة المرور</label><input type="password" id="adminConfirmPassword" required></div>
+            <button type="submit" class="btn-gold" style="width:100%;"><i class="fas fa-save"></i> تغيير</button>
+        </form>
+    </div></div>
+
+    <!-- الصفحات -->
+    <!-- الصفحة الرئيسية -->
+    <section class="section" id="page-home">
+        <div style="text-align:center;padding:0.8rem 0;">
+            <h1 class="section-title">أفضل <span class="highlight">صالونات الحلاقة والتجميل</span> في الجزائر <span style="font-size:2rem;">🇩🇿</span></h1>
+            <p class="section-subtitle">احجز موعدك بسهولة مع أفضل الحلاقين وخبراء التجميل في مدينتك</p>
+            <button class="btn-gold" style="padding:0.5rem 1.8rem;font-size:0.85rem;" onclick="navigateTo('salons')"><i class="fas fa-search"></i> ابحث عن صالون</button>
+        </div>
+        <div style="max-width:1100px;margin:0.8rem auto;">
+            <div class="stats-grid">
+                <div class="stat-card"><div class="number" id="totalSalons">0</div><div class="label">صالون مسجل</div></div>
+                <div class="stat-card"><div class="number" id="totalBookings">0</div><div class="label">حجوزات اليوم</div></div>
+                <div class="stat-card"><div class="number" id="avgRating">⭐ 0</div><div class="label">متوسط التقييم</div></div>
+                <div class="stat-card"><div class="number">🇩🇿</div><div class="label">خدمة جزائرية 100%</div></div>
+            </div>
+        </div>
+        <h2 style="text-align:center;font-size:1.3rem;margin-bottom:0.8rem;color:var(--text-color);">🔥 أشهر الصالونات</h2>
+        <div class="grid-3" id="homeSalonsGrid"></div>
+    </section>
+
+    <!-- صفحة الصالونات -->
+    <section class="section hidden" id="page-salons">
+        <h2 class="section-title">جميع <span class="highlight">الصالونات</span></h2>
+        <div class="filter-section">
+            <input type="text" id="searchSalon" placeholder="🔍 ابحث باسم الصالون..." />
+            <select id="filterCity"><option value="">جميع الولايات</option></select>
+            <select id="filterService"><option value="">جميع الخدمات</option><option value="حلاقة رجالي">حلاقة رجالي</option><option value="حلاقة + لحية">حلاقة + لحية</option><option value="قص شعر">قص شعر</option><option value="صبغة">صبغة</option><option value="علاج شعر">علاج شعر</option><option value="تجميل">تجميل</option><option value="مكياج">مكياج</option><option value="عناية بالبشرة">عناية بالبشرة</option></select>
+            <select id="filterSalonType"><option value="">جميع الأنواع</option><option value="male">رجالي</option><option value="female">نسائي</option><option value="children">أطفال</option><option value="mixed">مختلط</option></select>
+            <button class="btn-primary btn-sm" onclick="applyFilters()"><i class="fas fa-filter"></i> فلتر</button>
+            <button class="btn-gold btn-sm" onclick="getNearbySalons()"><i class="fas fa-map-marker-alt"></i> القريبة</button>
+        </div>
+        <div id="salonsResultCount" style="text-align:center;color:var(--text-color);opacity:0.4;margin-bottom:0.4rem;font-size:0.8rem;"></div>
+        <div id="salonsLoading" class="grid-3">
+            <div class="skeleton-card skeleton"><div class="skeleton-cover"></div><div class="skeleton-line medium"></div><div class="skeleton-line short"></div><div class="skeleton-line" style="width:40%"></div></div>
+            <div class="skeleton-card skeleton"><div class="skeleton-cover"></div><div class="skeleton-line medium"></div><div class="skeleton-line short"></div><div class="skeleton-line" style="width:40%"></div></div>
+            <div class="skeleton-card skeleton"><div class="skeleton-cover"></div><div class="skeleton-line medium"></div><div class="skeleton-line short"></div><div class="skeleton-line" style="width:40%"></div></div>
+        </div>
+        <div class="grid-3 hidden" id="allSalonsGrid"></div>
+        <div class="pagination" id="salonsPagination"></div>
+    </section>
+
+    <!-- صفحة الخريطة -->
+    <section class="section hidden" id="page-map">
+        <h2 class="section-title">🗺️ <span class="highlight">خريطة الصالونات</span></h2>
+        <p class="section-subtitle">استعرض مواقع الصالونات القريبة منك</p>
+        <button class="btn-gold btn-sm" onclick="locateUserOnMap()" style="margin-bottom:0.5rem;"><i class="fas fa-location-crosshairs"></i> تحديد موقعي</button>
+        <div class="map-container" id="salonMap"></div>
+        <div id="mapSalonList" style="margin-top:1rem;"></div>
+    </section>
+
+    <!-- لوحة تحكم الصالون -->
+    <section class="section hidden" id="page-dashboard">
+        <div class="dashboard-container">
+            <aside class="sidebar">
+                <div class="profile">
+                    <div class="avatar"><i class="fas fa-store"></i></div>
+                    <h4 id="dashSalonName">صالوني</h4>
+                    <p id="dashSalonCity">المدينة</p>
+                    <div style="margin-top:0.15rem;font-size:0.65rem;color:var(--gold);" id="dashRating"></div>
+                </div>
+                <div class="menu">
+                    <a href="#" class="active" data-dash="overview"><i class="fas fa-chart-pie"></i> نظرة عامة</a>
+                    <a href="#" data-dash="appointments"><i class="fas fa-calendar-alt"></i> المواعيد</a>
+                    <a href="#" data-dash="services"><i class="fas fa-scissors"></i> الخدمات</a>
+                    <a href="#" data-dash="staff"><i class="fas fa-users"></i> الموظفون</a>
+                    <a href="#" data-dash="hours"><i class="fas fa-clock"></i> ساعات العمل</a>
+                    <a href="#" data-dash="reviews"><i class="fas fa-star"></i> التقييمات</a>
+                    <a href="#" data-dash="settings"><i class="fas fa-cog"></i> الإعدادات</a>
+                </div>
+            </aside>
+            <div class="dashboard-content" id="dashContent">
+                <div id="dashOverview">
+                    <h3 style="color:var(--gold);margin-bottom:0.6rem;font-size:1rem;"><i class="fas fa-chart-line"></i> نظرة عامة</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card"><div class="number" id="statTotal">0</div><div class="label">إجمالي المواعيد</div></div>
+                        <div class="stat-card"><div class="number" id="statToday">0</div><div class="label">مواعيد اليوم</div></div>
+                        <div class="stat-card"><div class="number" id="statPending">0</div><div class="label">قيد الانتظار</div></div>
+                        <div class="stat-card"><div class="number" id="statCompleted">0</div><div class="label">مكتملة</div></div>
+                        <div class="stat-card"><div class="number" id="statRevenue">0</div><div class="label">الإيرادات (دج)</div></div>
+                    </div>
+                    <canvas id="revenueChart" height="100" style="margin-bottom:1rem;"></canvas>
+                    <button class="btn-gold btn-sm" onclick="exportToExcel()" style="margin-bottom:0.5rem;"><i class="fas fa-file-excel"></i> تحميل التفاصيل إلى Excel</button>
+                    <div class="table-wrap">
+                        <h4 style="color:var(--gold);margin:0.5rem 0 0.15rem;font-size:0.85rem;">📋 أحدث المواعيد</h4>
+                        <table>
+                            <thead><tr><th>العميل</th><th>الخدمات</th><th>السعر</th><th>التاريخ</th><th>الوقت</th><th>الحالة</th></tr></thead>
+                            <tbody id="dashAppointmentsTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div id="dashAppointments" class="hidden">
+                    <h3 style="color:var(--gold);margin-bottom:0.6rem;font-size:1rem;"><i class="fas fa-calendar-alt"></i> إدارة المواعيد</h3>
+                    <div class="table-wrap"><table><thead><tr><th>العميل</th><th>الخدمات</th><th>السعر</th><th>الموظف</th><th>التاريخ</th><th>الوقت</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody id="dashAllAppointments"></tbody></table></div>
+                </div>
+                <div id="dashServices" class="hidden">
+                    <h3 style="color:var(--gold);margin-bottom:0.6rem;font-size:1rem;"><i class="fas fa-scissors"></i> الخدمات</h3>
+                    <button class="btn-gold btn-sm" onclick="addService()"><i class="fas fa-plus"></i> إضافة خدمة</button>
+                    <div id="servicesList"></div>
+                </div>
+                <div id="dashStaff" class="hidden">
+                    <h3 style="color:var(--gold);margin-bottom:0.6rem;font-size:1rem;"><i class="fas fa-users"></i> الموظفون</h3>
+                    <button class="btn-gold btn-sm" onclick="addStaff()"><i class="fas fa-plus"></i> إضافة موظف</button>
+                    <div id="staffList"></div>
+                </div>
+                <div id="dashHours" class="hidden">
+                    <h3 style="color:var(--gold);margin-bottom:0.6rem;font-size:1rem;"><i class="fas fa-clock"></i> ساعات العمل</h3>
+                    <form id="hoursForm"><div class="hours-grid" id="hoursGrid"></div><button type="submit" class="btn-gold btn-sm" style="margin-top:0.4rem;"><i class="fas fa-save"></i> حفظ</button></form>
+                </div>
+                <div id="dashReviews" class="hidden">
+                    <h3 style="color:var(--gold);margin-bottom:0.6rem;font-size:1rem;"><i class="fas fa-star"></i> التقييمات</h3>
+                    <div id="reviewsList"></div>
+                </div>
+                <div id="dashSettings" class="hidden">
+                    <h3 style="color:var(--gold);margin-bottom:0.6rem;font-size:1rem;"><i class="fas fa-cog"></i> الإعدادات</h3>
+                    <form id="settingsForm">
+                        <div class="form-group"><label>اسم الصالون</label><input type="text" id="setSalonName"></div>
+                        <div class="form-group"><label>المدينة</label><input type="text" id="setSalonCity"></div>
+                        <div class="form-group"><label>العنوان</label><input type="text" id="setSalonAddress"></div>
+                        <div class="form-group"><label>رقم الهاتف</label><input type="tel" id="setSalonPhone"></div>
+                        <div class="form-group"><label>الوصف</label><textarea id="setSalonDesc"></textarea></div>
+                        <div class="form-group"><label>نوع الصالون</label><select id="setSalonType"><option value="mixed">مختلط</option><option value="male">رجالي</option><option value="female">نسائي</option><option value="children">أطفال</option></select></div>
+                        <div class="form-group"><label>خدمة متنقلة</label><select id="setIsMobile"><option value="false">لا</option><option value="true">نعم</option></select></div>
+                        <div class="form-group"><label>شعار جديد</label><input type="file" id="setLogo" accept="image/*"></div>
+                        <div class="form-group"><label>معرض صور (URLs)</label><input type="text" id="setGallery" placeholder="https://... , https://..."></div>
+                        <div class="form-group"><label>موقع GPS</label>
+                            <div style="display:flex;gap:0.3rem;flex-wrap:wrap;align-items:center;">
+                                <button type="button" class="btn-primary btn-sm" onclick="getCurrentLocation('setLat','setLng')"><i class="fas fa-map-marker-alt"></i> تحديث</button>
+                                <input type="number" step="any" id="setLatManual" placeholder="خط العرض" style="width:120px;">
+                                <input type="number" step="any" id="setLngManual" placeholder="خط الطول" style="width:120px;">
+                                <input type="hidden" id="setLat"><input type="hidden" id="setLng">
+                                <span id="setGpsStatus" style="color:#888;font-size:0.65rem;">لم يتم تحديد</span>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-gold btn-sm"><i class="fas fa-save"></i> حفظ التغييرات</button>
+                        <hr style="border-color:var(--border-color);margin:0.6rem 0;">
+                        <button type="button" class="btn-gold btn-sm" onclick="openModal('salonChangePasswordModal')"><i class="fas fa-key"></i> تغيير كلمة المرور</button>
+                        <button type="button" class="btn-danger btn-sm" onclick="deleteSalonAccount()"><i class="fas fa-store-slash"></i> حذف الصالون</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- لوحة تحكم المدير -->
+    <section class="section hidden" id="page-admin">
+        <h2 class="section-title">لوحة <span class="highlight">تحكم المدير</span></h2>
+        <div id="adminContent"></div>
+        <div style="text-align:center;margin-top:1rem;">
+            <button class="btn-gold btn-sm" onclick="openModal('adminChangePasswordModal')"><i class="fas fa-key"></i> تغيير كلمة المرور</button>
+        </div>
+    </section>
+
+    <!-- حساب العميل -->
+    <section class="section hidden" id="page-customer-dashboard">
+        <h2 class="section-title">حسابي</h2>
+        <div id="customerDashboardContent"></div>
+    </section>
+    <!-- ==================== الجزء الثالث: JavaScript ==================== -->
+    <script>
+        // ============================================================
+        // الإعدادات الأساسية
+        // ============================================================
+        const API_BASE = 'https://halakati-project.onrender.com/api';
+        const SOCKET_URL = 'https://halakati-project.onrender.com/';
+        let allSalons = [];
+        let currentLang = localStorage.getItem('lang') || 'ar';
+        let currentTheme = localStorage.getItem('theme') || 'dark';
+        let socket = null;
+        let currentPage = 1;
+        const ITEMS_PER_PAGE = 12;
+        let salonMap = null;
+        let mapMarkers = [];
+        let revenueChart = null;
+
+        // ============================================================
+        // جسيمات الخلفية
+        // ============================================================
+        function initParticles() {
+            const canvas = document.getElementById('particles-bg');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            let particles = [];
+            const maxParticles = 50;
+
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            resizeCanvas();
+            window.addEventListener('resize', () => {
+                resizeCanvas();
+                initParticlesArray();
+            });
+
+            function initParticlesArray() {
+                particles = [];
+                for (let i = 0; i < maxParticles; i++) {
+                    particles.push({
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * canvas.height,
+                        r: Math.random() * 2.5 + 0.8,
+                        dx: (Math.random() - 0.5) * 0.5,
+                        dy: (Math.random() - 0.5) * 0.5,
+                        opacity: Math.random() * 0.4 + 0.2
+                    });
+                }
+            }
+            initParticlesArray();
+
+            function drawParticles() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                const isDark = currentTheme === 'dark';
+                const color = isDark ? '255,255,255' : '26,26,46';
+
+                particles.forEach((p, i) => {
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(${color},${p.opacity})`;
+                    ctx.fill();
+
+                    p.x += p.dx;
+                    p.y += p.dy;
+                    if (p.x < 0 || p.x > canvas.width) p.dx *= -1;
+                    if (p.y < 0 || p.y > canvas.height) p.dy *= -1;
+
+                    for (let j = i + 1; j < particles.length; j++) {
+                        const p2 = particles[j];
+                        const dist = Math.sqrt((p.x - p2.x) ** 2 + (p.y - p2.y) ** 2);
+                        if (dist < 100) {
+                            ctx.beginPath();
+                            ctx.moveTo(p.x, p.y);
+                            ctx.lineTo(p2.x, p2.y);
+                            ctx.strokeStyle = `rgba(${color},${0.05 * (1 - dist / 100)})`;
+                            ctx.lineWidth = 0.5;
+                            ctx.stroke();
+                        }
+                    }
+                });
+                requestAnimationFrame(drawParticles);
+            }
+            drawParticles();
+        }
+
+        // ============================================================
+        // الترجمة
+        // ============================================================
+        const translations = {
+            ar: { home: 'الرئيسية', salons: 'الصالونات', dashboard: 'لوحة التحكم', admin: 'لوحة المدير',
+                myAccount: 'حسابي', myBookings: 'حجوزاتي', customerLogin: 'دخول عميل', customerRegister: 'حساب عميل',
+                logout: 'خروج', login: 'دخول', registerSalon: 'تسجيل صالون', loginSalon: 'دخول الصالون',
+                adminLogin: 'دخول المدير', booking: 'حجز موعد', review: 'تقييم الصالون',
+                homeSub: 'احجز موعدك بسهولة مع أفضل الحلاقين وخبراء التجميل في مدينتك',
+                findSalon: 'ابحث عن صالون', totalSalons: 'صالون مسجل', todayBookings: 'حجوزات اليوم',
+                avgRating: 'متوسط التقييم', algerianService: 'خدمة جزائرية 100%', featuredSalons: '🔥 أشهر الصالونات',
+                salonName: 'اسم الصالون', city: 'المدينة', address: 'العنوان', email: 'البريد الإلكتروني',
+                phone: 'رقم الهاتف', password: 'كلمة المرور', desc: 'الوصف', logo: 'شعار الصالون', gps: 'موقع GPS',
+                services: 'الخدمات', totalPrice: 'السعر الإجمالي', staff: 'الموظف', date: 'التاريخ', time: 'الوقت',
+                clientName: 'الاسم الكامل', clientPhone: 'رقم الهاتف', clientEmail: 'البريد الإلكتروني',
+                payment: 'طريقة الدفع', notes: 'ملاحظات', rating: 'تقييمك (1-5)', comment: 'تعليقك',
+                overview: 'نظرة عامة', appointments: 'المواعيد', hours: 'ساعات العمل', reviews: 'التقييمات',
+                notifications: 'الإشعارات', settings: 'الإعدادات', changePassword: 'تغيير كلمة المرور',
+                deleteAccount: 'حذف الحساب', exportExcel: 'تحميل التفاصيل إلى Excel',
+                recentAppointments: 'أحدث المواعيد', price: 'السعر', status: 'الحالة', action: 'إجراء',
+                totalAppointments: 'إجمالي المواعيد', pending: 'قيد الانتظار', completed: 'مكتملة',
+                revenue: 'الإيرادات (دج)', addService: 'إضافة خدمة', addStaff: 'إضافة موظف', save: 'حفظ' },
+            fr: { home: 'Accueil', salons: 'Salons', dashboard: 'Tableau de bord', admin: 'Tableau admin',
+                myAccount: 'Mon compte', myBookings: 'Mes réservations', customerLogin: 'Client',
+                customerRegister: 'Créer un compte', logout: 'Déconnexion', login: 'Connexion',
+                registerSalon: 'Ajouter un salon', loginSalon: 'Connexion salon', adminLogin: 'Connexion admin',
+                booking: 'Réserver', review: 'Évaluer le salon',
+                homeSub: 'Réservez facilement avec les meilleurs coiffeurs',
+                findSalon: 'Trouver un salon', totalSalons: 'Salons enregistrés',
+                todayBookings: 'Rendez-vous aujourd\'hui', avgRating: 'Note moyenne',
+                algerianService: 'Service algérien 100%', featuredSalons: '🔥 Salons populaires',
+                salonName: 'Nom du salon', city: 'Ville', address: 'Adresse', email: 'Email', phone: 'Téléphone',
+                password: 'Mot de passe', desc: 'Description', logo: 'Logo', gps: 'Position GPS',
+                services: 'Services', totalPrice: 'Prix total', staff: 'Employé', date: 'Date', time: 'Heure',
+                clientName: 'Nom complet', clientPhone: 'Téléphone', clientEmail: 'Email',
+                payment: 'Paiement', notes: 'Remarques', rating: 'Note (1-5)', comment: 'Commentaire',
+                overview: 'Aperçu', appointments: 'Rendez-vous', hours: 'Horaires', reviews: 'Avis',
+                notifications: 'Notifications', settings: 'Paramètres', changePassword: 'Changer le mot de passe',
+                deleteAccount: 'Supprimer le compte', exportExcel: 'Télécharger en Excel',
+                recentAppointments: 'Derniers rendez-vous', price: 'Prix', status: 'Statut', action: 'Action',
+                totalAppointments: 'Total rendez-vous', pending: 'En attente', completed: 'Terminé',
+                revenue: 'Revenus (DZD)', addService: 'Ajouter un service', addStaff: 'Ajouter un employé',
+                save: 'Enregistrer' }
+        };
+
+        function t(key) { return translations[currentLang]?.[key] || key; }
+        function updateLang() {
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.dataset.i18n;
+                if (translations[currentLang]?.[key]) el.textContent = translations[currentLang][key];
+            });
+            document.getElementById('langToggle').textContent = currentLang === 'ar' ? '🇫🇷 FR' : '🇸🇦 AR';
+        }
+        function toggleLang() {
+            currentLang = currentLang === 'ar' ? 'fr' : 'ar';
+            localStorage.setItem('lang', currentLang);
+            updateLang();
+        }
+
+        // ============================================================
+        // Theme
+        // ============================================================
+        function toggleTheme() {
+            currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', currentTheme);
+            localStorage.setItem('theme', currentTheme);
+            document.getElementById('themeToggle').innerHTML = currentTheme === 'dark' ?
+                '<i class="fas fa-moon"></i>' : '<i class="fas fa-sun"></i>';
+        }
+        if (localStorage.getItem('theme')) {
+            currentTheme = localStorage.getItem('theme');
+            document.documentElement.setAttribute('data-theme', currentTheme);
+            document.getElementById('themeToggle').innerHTML = currentTheme === 'dark' ?
+                '<i class="fas fa-moon"></i>' : '<i class="fas fa-sun"></i>';
+        }
+
+        // ============================================================
+        // Socket.io
+        // ============================================================
+        function initSocket() {
+            try {
+                socket = io(SOCKET_URL, { transports: ['websocket', 'polling'] });
+                socket.on('connect', () => console.log('🔌 متصل بالخادم'));
+                socket.on('new-notification', (data) => {
+                    showToast(`🔔 ${data.title}: ${data.message}`);
+                    refreshNotifications();
+                });
+                const salonId = localStorage.getItem('salonId');
+                const customerId = localStorage.getItem('customerId');
+                if (salonId && socket.connected) socket.emit('join-salon', salonId);
+                if (customerId && socket.connected) socket.emit('join-customer', customerId);
+            } catch (e) {}
+        }
+
+        // ============================================================
+        // Utilities
+        // ============================================================
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMsg').textContent = msg;
+            toast.classList.add('show');
+            clearTimeout(toast._timer);
+            toast._timer = setTimeout(() => toast.classList.remove('show'), 4000);
+        }
+        function openModal(id) { document.getElementById(id).classList.add('active'); document.body.style.overflow = 'hidden'; }
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); document.body.style.overflow = 'auto'; }
+        document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', function(e) { if (e.target === this) closeModal(this.id); }));
+        function showConfirm(msg, onConfirm) {
+            document.getElementById('confirmMsg').textContent = msg;
+            document.getElementById('confirmYes').onclick = () => { closeModal('confirmModal'); onConfirm(); };
+            openModal('confirmModal');
+        }
+
+        let lastScrollY = 0;
+        window.addEventListener('scroll', () => {
+            const backBtn = document.getElementById('backToTop');
+            if (window.scrollY > 400) backBtn.classList.add('visible');
+            else backBtn.classList.remove('visible');
+            const header = document.getElementById('mainHeader');
+            if (window.scrollY > 80 && window.scrollY > lastScrollY) header.classList.add('hidden-header');
+            else header.classList.remove('hidden-header');
+            lastScrollY = window.scrollY;
+        });
+
+        // ============================================================
+        // Navigation
+        // ============================================================
+        function navigateTo(page) {
+            document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
+            const target = document.getElementById(`page-${page}`);
+            if (!target) { showToast('❌ الصفحة غير موجودة'); return; }
+            target.classList.remove('hidden');
+            document.querySelectorAll('.nav-links a').forEach(l => l.classList.remove('active'));
+            const navLink = document.querySelector(`.nav-links a[data-page="${page}"]`);
+            if (navLink) navLink.classList.add('active');
+            if (page === 'dashboard') {
+                if (!localStorage.getItem('token')) { showToast('❌ يرجى تسجيل الدخول كصالون'); navigateTo('home'); return; }
+                loadDashboard();
+            }
+            if (page === 'admin') {
+                if (!localStorage.getItem('adminToken')) { showToast('❌ يرجى تسجيل الدخول كمدير'); navigateTo('home'); return; }
+                loadAdminDashboard();
+            }
+            if (page === 'customer-dashboard') {
+                if (!localStorage.getItem('customerToken')) { showToast('❌ يرجى تسجيل الدخول كعميل'); navigateTo('home'); return; }
+                loadCustomerDashboard();
+            }
+            if (page === 'map') setTimeout(initMap, 300);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // ============================================================
+        // Password Change Handlers
+        // ============================================================
+        document.getElementById('customerChangePasswordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const oldPassword = document.getElementById('custOldPassword').value;
+            const newPassword = document.getElementById('custNewPassword').value;
+            const confirmPassword = document.getElementById('custConfirmPassword').value;
+            if (newPassword !== confirmPassword) { showToast('❌ كلمة المرور غير متطابقة'); return; }
+            const token = localStorage.getItem('customerToken');
+            if (!token) { showToast('❌ يرجى تسجيل الدخول'); return; }
+            try {
+                const res = await fetch(`${API_BASE}/customer/auth/change-password`, {
+                    method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ oldPassword, newPassword })
+                });
+                const data = await res.json();
+                if (res.ok) { showToast('✅ تم تغيير كلمة المرور'); closeModal('customerChangePasswordModal'); }
+                else showToast(`❌ ${data.message}`);
+            } catch { showToast('❌ فشل الاتصال'); }
+        });
+        document.getElementById('salonChangePasswordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const oldPassword = document.getElementById('salonOldPassword').value;
+            const newPassword = document.getElementById('salonNewPassword').value;
+            const confirmPassword = document.getElementById('salonConfirmPassword').value;
+            if (newPassword !== confirmPassword) { showToast('❌ كلمة المرور غير متطابقة'); return; }
+            const token = localStorage.getItem('token');
+            if (!token) { showToast('❌ يرجى تسجيل الدخول'); return; }
+            try {
+                const res = await fetch(`${API_BASE}/auth/change-password`, {
+                    method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ oldPassword, newPassword })
+                });
+                const data = await res.json();
+                if (res.ok) { showToast('✅ تم تغيير كلمة المرور'); closeModal('salonChangePasswordModal'); }
+                else showToast(`❌ ${data.message}`);
+            } catch { showToast('❌ فشل الاتصال'); }
+        });
+        document.getElementById('adminChangePasswordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const oldPassword = document.getElementById('adminOldPassword').value;
+            const newPassword = document.getElementById('adminNewPassword').value;
+            const confirmPassword = document.getElementById('adminConfirmPassword').value;
+            if (newPassword !== confirmPassword) { showToast('❌ كلمة المرور غير متطابقة'); return; }
+            const token = localStorage.getItem('adminToken');
+            if (!token) { showToast('❌ يرجى تسجيل الدخول'); return; }
+            try {
+                const res = await fetch(`${API_BASE}/admin/auth/change-password`, {
+                    method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ oldPassword, newPassword })
+                });
+                const data = await res.json();
+                if (res.ok) { showToast('✅ تم تغيير كلمة المرور'); closeModal('adminChangePasswordModal'); }
+                else showToast(`❌ ${data.message}`);
+            } catch { showToast('❌ فشل الاتصال'); }
+        });
+
+        // ============================================================
+        // Auth
+        // ============================================================
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+            try {
+                const res = await fetch(`${API_BASE}/auth/login`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email, password}) });
+                const data = await res.json();
+                if (res.ok) {
+                    localStorage.setItem('token', data.token); localStorage.setItem('salonId', data.salonId);
+                    showToast(`✅ مرحباً ${data.name}`); closeModal('loginModal');
+                    updateUI(); navigateTo('dashboard'); loadDashboard(); refreshNotifications();
+                    if (socket && socket.connected) socket.emit('join-salon', data.salonId);
+                } else showToast(`❌ ${data.message}`);
+            } catch { showToast('❌ فشل الاتصال'); }
+        });
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('regSalonName').value.trim();
+            const city = document.getElementById('regCity').value;
+            const address = document.getElementById('regAddress').value.trim();
+            const email = document.getElementById('regEmail').value.trim();
+            const phone = document.getElementById('regPhone').value.trim();
+            const password = document.getElementById('regPassword').value;
+            const desc = document.getElementById('regDesc').value.trim();
+            const salonType = document.getElementById('regSalonType').value;
+            const isMobile = document.getElementById('regIsMobile').value === 'true';
+            const lat = parseFloat(document.getElementById('regLatManual').value) || parseFloat(document.getElementById('regLat').value) || null;
+            const lng = parseFloat(document.getElementById('regLngManual').value) || parseFloat(document.getElementById('regLng').value) || null;
+            const logoFile = document.getElementById('regLogo').files[0];
+            let logo = '';
+            if (logoFile) { const reader = new FileReader(); logo = await new Promise(resolve => { reader.onload = e => resolve(e.target.result); reader.readAsDataURL(logoFile); }); }
+            if (!name || !city || !address || !email || !phone || password.length < 6) { showToast('❌ الرجاء ملء جميع الحقول وكلمة مرور لا تقل عن 6 أحرف'); return; }
+            try {
+                const res = await fetch(`${API_BASE}/auth/register`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ name, city, address, email, phone, password, desc, logo, salonType, isMobile, lat, lng }) });
+                const data = await res.json();
+                if (res.ok) {
+                    localStorage.setItem('token', data.token); localStorage.setItem('salonId', data.salonId);
+                    showToast(`✅ تم تسجيل ${data.name} بنجاح!`); closeModal('registerModal');
+                    updateUI(); navigateTo('dashboard'); loadDashboard();
+                } else showToast(`❌ ${data.message}`);
+            } catch { showToast('❌ فشل الاتصال'); }
+        });
+        function logout() { localStorage.removeItem('token'); localStorage.removeItem('salonId'); showToast('👋 تم تسجيل الخروج'); updateUI(); navigateTo('home'); loadSalons(); refreshNotifications(); }
+
+        document.getElementById('customerRegisterForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('custName').value.trim();
+            const email = document.getElementById('custEmail').value.trim();
+            const phone = document.getElementById('custPhone').value.trim();
+            const password = document.getElementById('custPassword').value;
+            try {
+                const res = await fetch(`${API_BASE}/customer/auth/register`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ name, email, phone, password }) });
+                const data = await res.json();
+                if (res.ok) {
+                    localStorage.setItem('customerToken', data.token); localStorage.setItem('customerId', data.customerId); localStorage.setItem('customerName', data.name);
+                    showToast('✅ تم تسجيل حسابك'); closeModal('customerRegisterModal');
+                    updateCustomerUI(); refreshNotifications();
+                    if (socket && socket.connected) socket.emit('join-customer', data.customerId);
+                } else showToast(`❌ ${data.message}`);
+            } catch { showToast('❌ فشل الاتصال'); }
+        });
+        document.getElementById('customerLoginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('custLoginEmail').value.trim();
+            const password = document.getElementById('custLoginPassword').value.trim();
+            try {
+                const res = await fetch(`${API_BASE}/customer/auth/login`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ email, password }) });
+                const data = await res.json();
+                if (res.ok) {
+                    localStorage.setItem('customerToken', data.token); localStorage.setItem('customerId', data.customerId); localStorage.setItem('customerName', data.name);
+                    showToast(`✅ مرحباً ${data.name}`); closeModal('customerLoginModal');
+                    updateCustomerUI(); refreshNotifications();
+                    if (socket && socket.connected) socket.emit('join-customer', data.customerId);
+                } else showToast(`❌ ${data.message}`);
+            } catch { showToast('❌ فشل الاتصال'); }
+        });
+        function customerLogout() { localStorage.removeItem('customerToken'); localStorage.removeItem('customerId'); localStorage.removeItem('customerName'); showToast('👋 تم تسجيل الخروج'); updateCustomerUI(); refreshNotifications(); }
+
+        document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('adminLoginEmail').value.trim();
+            const password = document.getElementById('adminLoginPassword').value.trim();
+            try {
+                const res = await fetch(`${API_BASE}/admin/auth/login`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ email, password }) });
+                const data = await res.json();
+                if (res.ok) {
+                    localStorage.setItem('adminToken', data.token); localStorage.setItem('adminId', data.adminId);
+                    showToast('✅ مرحباً مدير النظام'); closeModal('adminLoginModal');
+                    updateUI(); navigateTo('admin'); loadAdminDashboard(); refreshNotifications();
+                } else showToast(`❌ ${data.message}`);
+            } catch { showToast('❌ فشل الاتصال'); }
+        });
+        function adminLogout() { localStorage.removeItem('adminToken'); localStorage.removeItem('adminId'); showToast('👋 تم تسجيل الخروج'); updateUI(); navigateTo('home'); }
+
+        // ============================================================
+        // Forgot Password
+        // ============================================================
+        function openForgotPasswordModal(userType) {
+            document.getElementById('forgotUserType').value = userType;
+            document.getElementById('forgotMessage').textContent = '';
+            openModal('forgotPasswordModal');
+        }
+        document.getElementById('forgotPasswordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('forgotEmail').value.trim();
+            const userType = document.getElementById('forgotUserType').value;
+            const msgEl = document.getElementById('forgotMessage');
+            let endpoint = '';
+            if (userType === 'salon') endpoint = `${API_BASE}/auth/forgot-password`;
+            else if (userType === 'customer') endpoint = `${API_BASE}/customer/auth/forgot-password`;
+            else if (userType === 'admin') endpoint = `${API_BASE}/admin/auth/forgot-password`;
+            try {
+                const res = await fetch(endpoint, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ email }) });
+                const data = await res.json();
+                if (res.ok) msgEl.innerHTML = '<span style="color:var(--success);">✅ تم إرسال رابط الاستعادة</span>';
+                else msgEl.textContent = `❌ ${data.message}`;
+            } catch { msgEl.textContent = '❌ فشل الاتصال'; }
+        });
+
+        // ============================================================
+        // Quick Password Change
+        // ============================================================
+        function openChangePasswordModal() {
+            if (localStorage.getItem('token')) openModal('salonChangePasswordModal');
+            else if (localStorage.getItem('customerToken')) openModal('customerChangePasswordModal');
+            else if (localStorage.getItem('adminToken')) openModal('adminChangePasswordModal');
+        }
+
+        // ============================================================
+        // Salons Loading with Skeleton & Pagination
+        // ============================================================
+        async function loadSalons() {
+            const loadingEl = document.getElementById('salonsLoading');
+            const gridEl = document.getElementById('allSalonsGrid');
+            if (loadingEl) loadingEl.classList.remove('hidden');
+            if (gridEl) gridEl.classList.add('hidden');
+            try {
+                const res = await fetch(`${API_BASE}/salons`);
+                allSalons = await res.json();
+                if (loadingEl) loadingEl.classList.add('hidden');
+                renderHomeSalons(allSalons);
+                renderAllSalons(allSalons);
+                document.getElementById('totalSalons').textContent = allSalons.length;
+                document.getElementById('salonsResultCount').textContent = `🔄 عدد النتائج: ${allSalons.length}`;
+                populateFilterCities();
+            } catch {
+                showToast('❌ فشل في تحميل الصالونات');
+                if (loadingEl) loadingEl.classList.add('hidden');
+                if (gridEl) gridEl.classList.remove('hidden');
+            }
+        }
+
+        function populateFilterCities() {
+            const cities = [...new Set(allSalons.map(s => s.city).filter(Boolean))].sort();
+            const select = document.getElementById('filterCity');
+            select.innerHTML = '<option value="">جميع الولايات</option>' + cities.map(c => `<option value="${c}">${c}</option>`).join('');
+        }
+
+        function renderHomeSalons(salons) {
+            document.getElementById('homeSalonsGrid').innerHTML = salons.slice(0,6).map(s => createSalonCard(s)).join('');
+        }
+
+        function renderAllSalons(salons) {
+            const grid = document.getElementById('allSalonsGrid');
+            const pagination = document.getElementById('salonsPagination');
+            if (grid) grid.classList.remove('hidden');
+            if (!salons || salons.length === 0) {
+                if (grid) grid.innerHTML = '<div class="empty-state"><i class="fas fa-search"></i><p>😕 لا توجد صالونات مطابقة</p></div>';
+                if (pagination) pagination.innerHTML = '';
+                document.getElementById('salonsResultCount').textContent = '🔄 عدد النتائج: 0';
+                return;
+            }
+            const totalPages = Math.ceil(salons.length / ITEMS_PER_PAGE);
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+            const start = (currentPage - 1) * ITEMS_PER_PAGE;
+            const pageItems = salons.slice(start, start + ITEMS_PER_PAGE);
+            if (grid) grid.innerHTML = pageItems.map(s => createSalonCard(s)).join('');
+            document.getElementById('salonsResultCount').textContent = `🔄 عدد النتائج: ${salons.length} | صفحة ${currentPage} من ${totalPages}`;
+            let pagHTML = '';
+            if (totalPages > 1) {
+                pagHTML += `<button onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}><i class="fas fa-chevron-right"></i></button>`;
+                for (let i = 1; i <= totalPages; i++) {
+                    pagHTML += `<button class="${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+                }
+                pagHTML += `<button onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}><i class="fas fa-chevron-left"></i></button>`;
+            }
+            if (pagination) pagination.innerHTML = pagHTML;
+        }
+
+        function goToPage(page) { currentPage = page; renderAllSalons(allSalons); }
+
+        // ============================================================
+        // Favorites
+        // ============================================================
+        function getFavorites() { return JSON.parse(localStorage.getItem('favorites') || '[]'); }
+        function toggleFavorite(salonId, event) {
+            event.stopPropagation();
+            let favs = getFavorites();
+            if (favs.includes(salonId)) favs = favs.filter(id => id !== salonId);
+            else favs.push(salonId);
+            localStorage.setItem('favorites', JSON.stringify(favs));
+            loadSalons();
+        }
+        function showFavorites() {
+            const favIds = getFavorites();
+            const favSalons = allSalons.filter(s => favIds.includes(s._id));
+            if (favSalons.length === 0) showToast('❤️ لا توجد صالونات في المفضلة');
+            else renderAllSalons(favSalons);
+        }
+
+        function createSalonCard(salon) {
+            const favs = getFavorites();
+            const isFav = favs.includes(salon._id);
+            const minPrice = salon.services?.length ? Math.min(...salon.services.map(s => s.price)) : 0;
+            const logoHtml = salon.logo ? `<img src="${salon.logo}" alt="${salon.name}" loading="lazy">` : '<i class="fas fa-cut default-icon"></i>';
+            const distance = salon.distance !== undefined ? `<span style="color:var(--gold);font-size:0.6rem;"> (${salon.distance.toFixed(1)} كم)</span>` : '';
+            const typeLabel = salon.salonType ? { male:'👨 رجالي', female:'👩 نسائي', children:'🧒 أطفال', mixed:'👫 مختلط' }[salon.salonType] : '';
+            const mobileLabel = salon.isMobile ? ' 🚗 متنقل' : '';
+            return `<div class="salon-card" onclick="showSalonDetails('${salon._id}')">
+                <button class="favorite-btn" onclick="toggleFavorite('${salon._id}', event)" title="${isFav?'إزالة من المفضلة':'أضف إلى المفضلة'}">
+                    <i class="fa${isFav?'s':'r'} fa-heart"></i>
+                </button>
+                <div class="cover">${logoHtml}
+                    <span class="rating-badge">⭐ ${salon.rating || 'جديد'}</span>
+                    ${salon.lat && salon.lng ? '<span class="gps-badge"><i class="fas fa-map-marker-alt"></i> GPS</span>' : ''}
+                    ${minPrice > 0 ? `<span class="price-badge">من ${minPrice} دج</span>` : ''}
+                    ${salon.featured ? '<span class="featured-badge">⭐ مميز</span>' : ''}
+                </div>
+                <div class="body">
+                    <h3>${salon.name} ${distance}</h3>
+                    <div class="desc">${salon.desc || ''} ${typeLabel} ${mobileLabel}</div>
+                    <div class="location"><i class="fas fa-map-marker-alt"></i> ${salon.city}</div>
+                    <div class="price-info">${minPrice > 0 ? `💰 يبدأ من ${minPrice} دج` : 'اتصل للاستفسار'}</div>
+                    <button class="btn-book" onclick="event.stopPropagation();openBooking('${salon._id}')"><i class="fas fa-calendar-plus"></i> احجز الآن</button>
+                </div>
+            </div>`;
+        }
+
+        // ============================================================
+        // Filters & Nearby
+        // ============================================================
+        function applyFilters() {
+            const query = document.getElementById('searchSalon').value.toLowerCase().trim();
+            const city = document.getElementById('filterCity').value;
+            const service = document.getElementById('filterService').value;
+            const type = document.getElementById('filterSalonType').value;
+            let result = allSalons.filter(salon => {
+                const matchName = salon.name.toLowerCase().includes(query);
+                const matchCity = city ? salon.city === city : true;
+                let matchService = true;
+                if (service) matchService = (salon.services || []).some(s => s.name === service);
+                const matchType = type ? salon.salonType === type : true;
+                return matchName && matchCity && matchService && matchType;
+            });
+            currentPage = 1;
+            renderAllSalons(result);
+        }
+        document.getElementById('searchSalon').addEventListener('input', applyFilters);
+        document.getElementById('filterCity').addEventListener('change', applyFilters);
+        document.getElementById('filterService').addEventListener('change', applyFilters);
+        document.getElementById('filterSalonType').addEventListener('change', applyFilters);
+
+        function getNearbySalons() {
+            const salonsWithGps = allSalons.filter(s => s.lat && s.lng);
+            if (salonsWithGps.length === 0) { showToast('⚠️ لا توجد صالونات مسجلة بموقع GPS'); return; }
+            if (!navigator.geolocation) { showToast('❌ متصفحك لا يدعم تحديد الموقع'); return; }
+            showToast('⏳ جاري تحديد موقعك...');
+            navigator.geolocation.getCurrentPosition(
+                pos => {
+                    const userLat = pos.coords.latitude, userLng = pos.coords.longitude;
+                    const R = 6371;
+                    const withDist = salonsWithGps.map(s => {
+                        const dLat = (s.lat - userLat) * Math.PI/180;
+                        const dLng = (s.lng - userLng) * Math.PI/180;
+                        const a = Math.sin(dLat/2)**2 + Math.cos(userLat * Math.PI/180) * Math.cos(s.lat * Math.PI/180) * Math.sin(dLng/2)**2;
+                        const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                        return { ...s, distance: dist };
+                    }).filter(s => s.distance <= 10).sort((a,b) => a.distance - b.distance);
+                    if (withDist.length === 0) { showToast('❌ لا توجد صالونات ضمن 10 كم'); renderAllSalons(allSalons); }
+                    else { renderAllSalons(withDist); showToast(`✅ ${withDist.length} صالون قريب`); }
+                },
+                () => { showToast('❌ فشل تحديد الموقع'); }
+            );
+        }
+
+        // ============================================================
+        // Map
+        // ============================================================
+        function initMap() {
+            const mapContainer = document.getElementById('salonMap');
+            if (!mapContainer) return;
+            if (salonMap) { salonMap.invalidateSize(); return; }
+            salonMap = L.map('salonMap').setView([28.0339, 1.6596], 5);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap', maxZoom: 19
+            }).addTo(salonMap);
+            addSalonMarkers();
+        }
+
+        function addSalonMarkers() {
+            if (!salonMap) return;
+            mapMarkers.forEach(m => salonMap.removeLayer(m));
+            mapMarkers = [];
+            const salonsWithGps = allSalons.filter(s => s.lat && s.lng);
+            if (salonsWithGps.length === 0) return;
+            const bounds = [];
+            salonsWithGps.forEach(salon => {
+                const marker = L.marker([salon.lat, salon.lng]).addTo(salonMap)
+                    .bindPopup(`<strong>${salon.name}</strong><br>${salon.city}<br>⭐ ${salon.rating || 'جديد'}<br><button onclick="showSalonDetails('${salon._id}')" style="cursor:pointer;color:var(--accent);">تفاصيل</button>`);
+                mapMarkers.push(marker);
+                bounds.push([salon.lat, salon.lng]);
+            });
+            if (bounds.length > 0) salonMap.fitBounds(bounds, { padding: [30, 30] });
+            renderMapSalonList(salonsWithGps);
+        }
+
+        function renderMapSalonList(salons) {
+            const listDiv = document.getElementById('mapSalonList');
+            if (!listDiv) return;
+            listDiv.innerHTML = '<h3>📍 الصالونات على الخريطة</h3>' + salons.map(s => `
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:0.3rem 0;border-bottom:1px solid var(--border-color);">
+                    <span><i class="fas fa-map-marker-alt" style="color:var(--accent);"></i> ${s.name} - ${s.city}</span>
+                    <button class="btn-primary btn-sm" onclick="salonMap.setView([${s.lat},${s.lng}],15)">🔍 عرض</button>
+                </div>`).join('');
+        }
+
+        function locateUserOnMap() {
+            if (!salonMap) { showToast('🗺️ انتقل إلى صفحة الخريطة أولاً'); return; }
+            navigator.geolocation.getCurrentPosition(pos => {
+                salonMap.setView([pos.coords.latitude, pos.coords.longitude], 13);
+                L.marker([pos.coords.latitude, pos.coords.longitude]).addTo(salonMap).bindPopup('موقعك الحالي').openPopup();
+            }, () => showToast('❌ فشل تحديد موقعك'));
+        }
+
+        // ============================================================
+        // Salon Details & Reviews
+        // ============================================================
+        async function showSalonDetails(id) {
+            try {
+                const [salonRes, reviewsRes] = await Promise.all([
+                    fetch(`${API_BASE}/salons/${id}`), fetch(`${API_BASE}/reviews/salon/${id}`)
+                ]);
+                const salon = await salonRes.json();
+                const reviews = await reviewsRes.json();
+                const content = document.getElementById('salonDetailsContent');
+                const hoursHtml = Object.entries(salon.hours || {}).map(([day, hours]) =>
+                    `<div style="display:flex;justify-content:space-between;padding:0.15rem 0;border-bottom:1px solid var(--border-color);"><span>${day}</span><span>${hours}</span></div>`).join('');
+                const reviewsHtml = reviews.map(r =>
+                    `<div class="review-item"><div class="review-header"><span>${r.customerName}</span><span>${'★'.repeat(r.rating)}</span></div><div class="review-comment">${r.comment}</div><div class="review-date">${r.date}</div></div>`
+                ).join('') || '<p style="color:var(--text-color);opacity:0.4;">لا توجد تقييمات بعد</p>';
+                const mapLink = salon.lat && salon.lng ? `https://www.google.com/maps/search/?api=1&query=${salon.lat},${salon.lng}` : '#';
+                content.innerHTML = `
+                    <div style="text-align:center;margin-bottom:0.8rem;">
+                        ${salon.logo ? `<img src="${salon.logo}" style="width:90px;height:90px;border-radius:50%;object-fit:cover;border:2px solid var(--gold);margin-bottom:0.3rem;">` : ''}
+                        <h2 style="color:var(--gold);font-size:1.2rem;">${salon.name} ${salon.featured ? '⭐' : ''}</h2>
+                        <div style="color:var(--text-color);opacity:0.8;font-size:0.85rem;">${salon.desc || ''}</div>
+                        <div style="color:var(--text-color);opacity:0.5;font-size:0.8rem;">${salon.address || salon.city}</div>
+                        <div style="font-size:0.85rem;color:var(--gold);"><i class="fas fa-phone"></i> ${salon.phone}</div>
+                        <div>${'★'.repeat(Math.floor(salon.rating || 0))} (${salon.totalReviews || 0} تقييم)</div>
+                        ${salon.lat && salon.lng ? `<button class="btn-primary btn-sm" onclick="window.open('${mapLink}','_blank')"><i class="fas fa-map-marked-alt"></i> عرض على الخريطة</button>` : ''}
+                    </div>
+                    <div><h4 style="color:var(--gold);">🕐 ساعات العمل</h4>${hoursHtml || '<p>لا توجد ساعات عمل</p>'}</div>
+                    <div><h4 style="color:var(--gold);">✂️ الخدمات</h4>${(salon.services || []).map(s => `<div style="display:flex;justify-content:space-between;"><span>${s.name}</span><span style="color:var(--gold);">${s.price} دج</span></div>`).join('') || '<p>لا توجد خدمات</p>'}</div>
+                    <div><h4 style="color:var(--gold);">👨‍💼 الموظفون</h4><div>${(salon.staff || []).map(s => `<span style="background:rgba(233,69,96,0.12);color:var(--accent);padding:0.1rem 0.4rem;border-radius:50px;">${s}</span>`).join(' ') || 'لا يوجد'}</div></div>
+                    <div><h4 style="color:var(--gold);">⭐ التقييمات</h4>${reviewsHtml}</div>
+                    <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-top:0.6rem;">
+                        <button class="btn-gold btn-sm" onclick="closeModal('salonDetailsModal');openBooking('${salon._id}')"><i class="fas fa-calendar-plus"></i> احجز الآن</button>
+                        <button class="btn-primary btn-sm" onclick="closeModal('salonDetailsModal');openReview('${salon._id}')"><i class="fas fa-star"></i> قيم الصالون</button>
+                        <button class="btn-whatsapp btn-sm" onclick="window.open('https://wa.me/213${salon.phone.replace(/[^0-9]/g,'')}','_blank')"><i class="fab fa-whatsapp"></i> واتساب</button>
+                    </div>`;
+                openModal('salonDetailsModal');
+            } catch { showToast('❌ فشل في تحميل التفاصيل'); }
+        }
+
+        function openReview(salonId) { document.getElementById('reviewSalonId').value = salonId; openModal('reviewModal'); }
+        document.getElementById('reviewForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const salonId = document.getElementById('reviewSalonId').value;
+            const rating = parseInt(document.getElementById('reviewRating').value);
+            const comment = document.getElementById('reviewComment').value.trim();
+            const token = localStorage.getItem('customerToken');
+            if (!token) { showToast('❌ يرجى تسجيل الدخول كعميل'); return; }
+            try {
+                const res = await fetch(`${API_BASE}/reviews`, { method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`}, body:JSON.stringify({ salonId, rating, comment }) });
+                const data = await res.json();
+                if (res.ok) { showToast('✅ شكراً لتقييمك!'); closeModal('reviewModal'); loadSalons(); refreshNotifications(); }
+                else showToast(`❌ ${data.message}`);
+            } catch { showToast('❌ فشل الاتصال'); }
+        });
+
+        // ============================================================
+        // Notifications
+        // ============================================================
+        async function fetchNotifications() {
+            const token = localStorage.getItem('token');
+            const customerToken = localStorage.getItem('customerToken');
+            const adminToken = localStorage.getItem('adminToken');
+            let url = '', headers = {};
+            if (token) { url = `${API_BASE}/notifications/salon`; headers = { 'Authorization': `Bearer ${token}` }; }
+            else if (customerToken) { url = `${API_BASE}/notifications/customer`; headers = { 'Authorization': `Bearer ${customerToken}` }; }
+            else if (adminToken) { url = `${API_BASE}/notifications/admin`; headers = { 'Authorization': `Bearer ${adminToken}` }; }
+            else return [];
+            try { const res = await fetch(url, { headers }); if (res.ok) return await res.json(); return []; } catch { return []; }
+        }
+        async function updateNotificationUI() {
+            const notifications = await fetchNotifications();
+            const unread = notifications.filter(n => !n.read).length;
+            document.getElementById('notifBadge').textContent = unread;
+            document.getElementById('notifBadge').style.display = unread > 0 ? 'inline' : 'none';
+            const list = document.getElementById('notifList');
+            if (notifications.length === 0) list.innerHTML = '<div class="notif-empty">📭 لا توجد إشعارات</div>';
+            else list.innerHTML = notifications.slice(0,10).map(n => `<div class="notif-item ${n.read ? '' : 'unread'}"><div class="notif-title">${n.title}</div><div class="notif-msg">${n.message}</div><div class="notif-time">${new Date(n.createdAt).toLocaleString('ar-DZ')}</div></div>`).join('');
+        }
+        async function toggleNotifications() {
+            document.getElementById('notifDropdown').classList.toggle('active');
+            const token = localStorage.getItem('token');
+            const customerToken = localStorage.getItem('customerToken');
+            const adminToken = localStorage.getItem('adminToken');
+            const userId = localStorage.getItem('salonId') || localStorage.getItem('customerId') || localStorage.getItem('adminId');
+            const userType = token ? 'salon' : customerToken ? 'customer' : adminToken ? 'admin' : null;
+            if (userId && userType) {
+                try { await fetch(`${API_BASE}/notifications/read-all`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ userId, userType }) }); setTimeout(updateNotificationUI, 500); } catch {}
+            }
+        }
+        document.addEventListener('click', function(e) {
+            const bell = document.getElementById('notifBell');
+            const dropdown = document.getElementById('notifDropdown');
+            if (bell && dropdown && !bell.contains(e.target) && !dropdown.contains(e.target)) dropdown.classList.remove('active');
+        });
+        function refreshNotifications() { updateNotificationUI(); }
+
+        // ============================================================
+        // Booking
+        // ============================================================
+        let bookingSalonId = null;
+        async function openBooking(salonId) {
+            bookingSalonId = salonId;
+            try {
+                const res = await fetch(`${API_BASE}/salons/${salonId}`);
+                const salon = await res.json();
+                document.getElementById('bookSalonName').value = salon.name;
+                const customerToken = localStorage.getItem('customerToken');
+                if (customerToken) {
+                    const profileRes = await fetch(`${API_BASE}/customer/auth/profile`, { headers: { 'Authorization': `Bearer ${customerToken}` } });
+                    if (profileRes.ok) { const profile = await profileRes.json(); document.getElementById('bookClientName').value = profile.name || ''; document.getElementById('bookClientPhone').value = profile.phone || ''; document.getElementById('bookClientEmail').value = profile.email || ''; }
+                }
+                const staffSelect = document.getElementById('bookStaff');
+                staffSelect.innerHTML = '<option value="">اختر الموظف</option>';
+                (salon.staff || []).forEach(s => staffSelect.innerHTML += `<option value="${s}">${s}</option>`);
+                if (!salon.staff?.length) staffSelect.innerHTML += '<option value="موظف رئيسي">موظف رئيسي</option>';
+                const serviceSelect = document.getElementById('bookService');
+                serviceSelect.innerHTML = '';
+                (salon.services || []).forEach(s => serviceSelect.innerHTML += `<option value="${s.name}" data-price="${s.price}">${s.name} - ${s.price} دج</option>`);
+                if (!salon.services?.length) serviceSelect.innerHTML += '<option value="حلاقة رجالي" data-price="500">حلاقة رجالي - 500 دج</option>';
+                document.getElementById('bookTotalPrice').value = '';
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('bookDate').setAttribute('min', today);
+                document.getElementById('bookDate').value = today;
+                openModal('bookingModal');
+            } catch { showToast('❌ فشل في تحميل بيانات الصالون'); }
+        }
+        function updateTotalPrice() {
+            const select = document.getElementById('bookService');
+            let total = 0;
+            for (let option of select.options) { if (option.selected) total += parseInt(option.dataset.price) || 0; }
+            document.getElementById('bookTotalPrice').value = total ? `${total} دج` : '';
+        }
+        document.getElementById('bookingForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const salonId = bookingSalonId;
+            const select = document.getElementById('bookService');
+            const selectedOptions = Array.from(select.selectedOptions);
+            const services = selectedOptions.map(opt => ({ name: opt.value, price: parseInt(opt.dataset.price) || 0 }));
+            const totalPrice = services.reduce((s, item) => s + item.price, 0);
+            const staff = document.getElementById('bookStaff').value;
+            const date = document.getElementById('bookDate').value;
+            const time = document.getElementById('bookTime').value;
+            const clientName = document.getElementById('bookClientName').value.trim();
+            const clientPhone = document.getElementById('bookClientPhone').value.trim();
+            const clientEmail = document.getElementById('bookClientEmail').value.trim();
+            const payment = document.getElementById('bookPayment').value;
+            const notes = document.getElementById('bookNotes').value.trim();
+            const recurring = document.getElementById('bookRecurring').value;
+            if (!services.length || !staff || !date || !time || !clientName || !clientPhone) { showToast('❌ الرجاء اختيار خدمة وملء جميع الحقول المطلوبة'); return; }
+            const customerId = localStorage.getItem('customerId') || null;
+            try {
+                const res = await fetch(`${API_BASE}/appointments/request`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ salonId, customerId, clientName, clientPhone, clientEmail, services, totalPrice, staff, date, time, payment, notes, recurring }) });
+                const data = await res.json();
+                if (res.status === 409) showToast(`❌ ${data.message}`);
+                else if (res.ok) { showToast('✅ تم إرسال طلب الحجز بنجاح!'); closeModal('bookingModal'); document.getElementById('bookingForm').reset(); document.getElementById('bookTotalPrice').value = ''; refreshNotifications(); if (localStorage.getItem('token')) loadDashboard(); }
+                else showToast(`❌ ${data.message}`);
+            } catch { showToast('❌ فشل الاتصال'); }
+        });
+
+        async function showAllBookings() {
+            const phone = prompt('أدخل رقم هاتفك للاطلاع على حجوزاتك:');
+            if (!phone) return;
+            try {
+                const res = await fetch(`${API_BASE}/appointments/client/${phone}`);
+                const bookings = await res.json();
+                const listDiv = document.getElementById('myBookingsList');
+                if (bookings.length === 0) listDiv.innerHTML = '<p style="text-align:center;padding:1rem;">لا توجد حجوزات لهذا الرقم</p>';
+                else listDiv.innerHTML = bookings.map(b => `<div style="background:rgba(255,255,255,0.02);padding:0.5rem;border-radius:10px;margin-bottom:0.3rem;border-right:3px solid ${b.status==='confirmed'?'var(--success)':b.status==='pending'?'var(--warning)':'var(--danger)'};"><div><strong style="color:var(--gold);">${b.salonId?.name||'صالون'}</strong> <span class="status ${b.status}">${b.status}</span></div><div>${b.services?.map(s=>s.name).join(', ')||b.service} | ${b.staff} | ${b.date} ${b.time}</div><div style="color:var(--gold);">💰 ${b.totalPrice||b.price||0} دج</div></div>`).join('');
+                openModal('myBookingsModal');
+            } catch { showToast('❌ فشل في جلب الحجوزات'); }
+        }
+
+        // ============================================================
+        // Dashboard (صالون)
+        // ============================================================
+        async function loadDashboard() {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            try {
+                const salonRes = await fetch(`${API_BASE}/salons/${localStorage.getItem('salonId')}`);
+                const salon = await salonRes.json();
+                const appRes = await fetch(`${API_BASE}/appointments`, { headers: { 'Authorization': `Bearer ${token}` } });
+                const appointments = await appRes.json();
+                const reviewsRes = await fetch(`${API_BASE}/reviews/salon/${salon._id}`);
+                const reviews = await reviewsRes.json();
+                document.getElementById('dashSalonName').textContent = salon.name + (salon.featured ? ' ⭐' : '');
+                document.getElementById('dashSalonCity').textContent = salon.city;
+                document.getElementById('dashRating').textContent = `⭐ ${salon.rating || 'جديد'} (${salon.totalReviews || 0} تقييم)`;
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('statTotal').textContent = appointments.length;
+                document.getElementById('statToday').textContent = appointments.filter(a => a.date === today).length;
+                document.getElementById('statPending').textContent = appointments.filter(a => a.status === 'pending').length;
+                document.getElementById('statCompleted').textContent = appointments.filter(a => a.status === 'confirmed' || a.status === 'completed').length;
+                const revenue = appointments.filter(a => a.status === 'confirmed' || a.status === 'completed').reduce((s, a) => s + (a.totalPrice || a.price || 0), 0);
+                document.getElementById('statRevenue').textContent = revenue.toLocaleString();
+
+                // Chart.js
+                const ctx = document.getElementById('revenueChart')?.getContext('2d');
+                if (ctx) {
+                    const months = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+                    const monthly = new Array(12).fill(0);
+                    appointments.filter(a => a.status==='confirmed'||a.status==='completed').forEach(a => {
+                        const m = new Date(a.date).getMonth();
+                        monthly[m] += (a.totalPrice||a.price||0);
+                    });
+                    if (revenueChart) revenueChart.destroy();
+                    revenueChart = new Chart(ctx, {
+                        type: 'bar',
+                        data: { labels: months, datasets: [{ label: 'الإيرادات (دج)', data: monthly, backgroundColor: '#f5b042' }] },
+                        options: { responsive: true, scales: { y: { beginAtZero: true } } }
+                    });
+                }
+
+                const recent = appointments.slice(-5).reverse();
+                document.getElementById('dashAppointmentsTable').innerHTML = recent.map(a => `<tr><td>${a.clientName}</td><td>${a.services?.map(s=>s.name).join(', ')||a.service}</td><td>${a.totalPrice||a.price||'-'} دج</td><td>${a.date}</td><td>${a.time}</td><td><span class="status ${a.status}">${a.status}</span></td></tr>`).join('') || '<tr><td colspan="6">لا توجد مواعيد</td></tr>';
+                document.getElementById('dashAllAppointments').innerHTML = appointments.map(a => `<tr><td>${a.clientName}</td><td>${a.services?.map(s=>s.name).join(', ')||a.service}</td><td>${a.totalPrice||a.price||'-'} دج</td><td>${a.staff}</td><td>${a.date}</td><td>${a.time}</td><td><span class="status ${a.status}">${a.status}</span></td><td>${a.status==='pending'?`<button class="btn-success btn-sm" onclick="updateAppointment('${a._id}','confirm')"><i class="fas fa-check"></i></button>`:''}${a.status==='confirmed'?`<button class="btn-info btn-sm" style="background:var(--info);color:#fff;border-radius:50px;" onclick="updateAppointment('${a._id}','complete')"><i class="fas fa-check-double"></i></button>`:''}${a.status!=='cancelled'&&a.status!=='completed'?`<button class="btn-danger btn-sm" onclick="updateAppointment('${a._id}','cancel')"><i class="fas fa-times"></i></button>`:''}</td></tr>`).join('') || '<tr><td colspan="8">لا توجد مواعيد</td></tr>';
+                document.getElementById('servicesList').innerHTML = (salon.services || []).map((s,i) => `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.25rem 0.5rem;border-bottom:1px solid var(--border-color);"><span><i class="fas fa-scissors" style="color:var(--gold);"></i> ${s.name}</span><span style="color:var(--gold);">${s.price} دج</span><div><button class="btn-primary btn-sm" onclick="editService(${i})"><i class="fas fa-edit"></i></button><button class="btn-danger btn-sm" onclick="removeService(${i})"><i class="fas fa-trash"></i></button></div></div>`).join('') || '<p>لا توجد خدمات</p>';
+                document.getElementById('staffList').innerHTML = (salon.staff || []).map((s,i) => `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.25rem 0.5rem;border-bottom:1px solid var(--border-color);"><span><i class="fas fa-user" style="color:var(--gold);"></i> ${s}</span><div><button class="btn-primary btn-sm" onclick="editStaff(${i})"><i class="fas fa-edit"></i></button><button class="btn-danger btn-sm" onclick="removeStaff(${i})"><i class="fas fa-trash"></i></button></div></div>`).join('') || '<p>لا يوجد موظفون</p>';
+                const days = ['الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+                document.getElementById('hoursGrid').innerHTML = days.map(day => `<div class="form-group"><label>${day}</label><input type="text" id="hour_${day}" value="${salon.hours?.[day]||'09:00-18:00'}" placeholder="09:00-18:00"></div>`).join('');
+                document.getElementById('reviewsList').innerHTML = reviews.map(r => `<div class="review-item"><div class="review-header"><span>${r.customerName}</span><span>${'★'.repeat(r.rating)}</span></div><div class="review-comment">${r.comment}</div><div class="review-date">${r.date}</div></div>`).join('') || '<p>لا توجد تقييمات</p>';
+                document.getElementById('setSalonName').value = salon.name || '';
+                document.getElementById('setSalonCity').value = salon.city || '';
+                document.getElementById('setSalonAddress').value = salon.address || '';
+                document.getElementById('setSalonPhone').value = salon.phone || '';
+                document.getElementById('setSalonDesc').value = salon.desc || '';
+                document.getElementById('setSalonType').value = salon.salonType || 'mixed';
+                document.getElementById('setIsMobile').value = salon.isMobile ? 'true' : 'false';
+                document.getElementById('setGallery').value = (salon.gallery || []).join(',');
+                if (salon.lat && salon.lng) {
+                    document.getElementById('setLat').value = salon.lat;
+                    document.getElementById('setLng').value = salon.lng;
+                    document.getElementById('setGpsStatus').textContent = `✅ ${salon.lat.toFixed(4)}, ${salon.lng.toFixed(4)}`;
+                }
+                refreshNotifications();
+            } catch { showToast('❌ فشل في تحميل لوحة التحكم'); }
+        }
+
+        function exportToExcel() {
+            const table = document.querySelector('#dashOverview table');
+            if (!table) { showToast('❌ لا توجد بيانات'); return; }
+            const ws = XLSX.utils.table_to_sheet(table);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'المواعيد');
+            XLSX.writeFile(wb, 'حجوزات_الصالون.xlsx');
+            showToast('✅ تم تحميل الملف');
+        }
+
+        async function addService() {
+            const name = prompt('اسم الخدمة:'); if (!name) return;
+            const price = prompt('السعر:'); if (!price || isNaN(price)) { showToast('❌ سعر غير صحيح'); return; }
+            const token = localStorage.getItem('token'); const salonId = localStorage.getItem('salonId');
+            try {
+                const resGet = await fetch(`${API_BASE}/salons/${salonId}`);
+                const salon = await resGet.json();
+                const services = salon.services || [];
+                services.push({ name, price: parseInt(price) });
+                const res = await fetch(`${API_BASE}/salons/${salonId}/services`, { method:'PUT', headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`}, body:JSON.stringify({ services }) });
+                if (res.ok) { showToast('✅ تم الإضافة'); loadDashboard(); }
+                else { const data = await res.json(); showToast(`❌ ${data.message}`); }
+            } catch { showToast('❌ فشل الاتصال'); }
+        }
+        async function removeService(index) {
+            showConfirm('هل أنت متأكد من حذف هذه الخدمة؟', async () => {
+                const token = localStorage.getItem('token'); const salonId = localStorage.getItem('salonId');
+                try {
+                    const resGet = await fetch(`${API_BASE}/salons/${salonId}`);
+                    const salon = await resGet.json();
+                    const services = salon.services || [];
+                    services.splice(index, 1);
+                    const res = await fetch(`${API_BASE}/salons/${salonId}/services`, { method:'PUT', headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`}, body:JSON.stringify({ services }) });
+                    if (res.ok) { showToast('✅ تم الحذف'); loadDashboard(); }
+                    else { const data = await res.json(); showToast(`❌ ${data.message}`); }
+                } catch { showToast('❌ فشل الاتصال'); }
+            });
+        }
+        async function editService(index) {
+            const token = localStorage.getItem('token'); const salonId = localStorage.getItem('salonId');
+            try {
+                const resGet = await fetch(`${API_BASE}/salons/${salonId}`);
+                const salon = await resGet.json();
+                const services = salon.services || [];
+                const current = services[index];
+                const newName = prompt('الاسم الجديد:', current.name); if (!newName) return;
+                const newPrice = prompt('السعر الجديد:', current.price); if (!newPrice || isNaN(newPrice)) { showToast('❌ سعر غير صحيح'); return; }
+                services[index] = { name: newName, price: parseInt(newPrice) };
+                const res = await fetch(`${API_BASE}/salons/${salonId}/services`, { method:'PUT', headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`}, body:JSON.stringify({ services }) });
+                if (res.ok) { showToast('✅ تم التعديل'); loadDashboard(); }
+                else { const data = await res.json(); showToast(`❌ ${data.message}`); }
+            } catch { showToast('❌ فشل الاتصال'); }
+        }
+        async function addStaff() {
+            const name = prompt('اسم الموظف:'); if (!name) return;
+            const token = localStorage.getItem('token'); const salonId = localStorage.getItem('salonId');
+            try {
+                const resGet = await fetch(`${API_BASE}/salons/${salonId}`);
+                const salon = await resGet.json();
+                const staff = salon.staff || [];
+                staff.push(name);
+                const res = await fetch(`${API_BASE}/salons/${salonId}/staff`, { method:'PUT', headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`}, body:JSON.stringify({ staff }) });
+                if (res.ok) { showToast('✅ تم الإضافة'); loadDashboard(); }
+                else { const data = await res.json(); showToast(`❌ ${data.message}`); }
+            } catch { showToast('❌ فشل الاتصال'); }
+        }
+        async function removeStaff(index) {
+            showConfirm('هل أنت متأكد من حذف هذا الموظف؟', async () => {
+                const token = localStorage.getItem('token'); const salonId = localStorage.getItem('salonId');
+                try {
+                    const resGet = await fetch(`${API_BASE}/salons/${salonId}`);
+                    const salon = await resGet.json();
+                    const staff = salon.staff || [];
+                    staff.splice(index, 1);
+                    const res = await fetch(`${API_BASE}/salons/${salonId}/staff`, { method:'PUT', headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`}, body:JSON.stringify({ staff }) });
+                    if (res.ok) { showToast('✅ تم الحذف'); loadDashboard(); }
+                    else { const data = await res.json(); showToast(`❌ ${data.message}`); }
+                } catch { showToast('❌ فشل الاتصال'); }
+            });
+        }
+        async function editStaff(index) {
+            const token = localStorage.getItem('token'); const salonId = localStorage.getItem('salonId');
+            try {
+                const resGet = await fetch(`${API_BASE}/salons/${salonId}`);
+                const salon = await resGet.json();
+                const staff = salon.staff || [];
+                const newName = prompt('الاسم الجديد:', staff[index]); if (!newName) return;
+                staff[index] = newName;
+                const res = await fetch(`${API_BASE}/salons/${salonId}/staff`, { method:'PUT', headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`}, body:JSON.stringify({ staff }) });
+                if (res.ok) { showToast('✅ تم التعديل'); loadDashboard(); }
+                else { const data = await res.json(); showToast(`❌ ${data.message}`); }
+            } catch { showToast('❌ فشل الاتصال'); }
+        }
+        async function updateAppointment(id, action) {
+            const token = localStorage.getItem('token');
+            try {
+                const res = await fetch(`${API_BASE}/appointments/${id}/${action}`, { method:'PUT', headers:{'Authorization':`Bearer ${token}`} });
+                if (res.ok) { showToast('✅ تم التحديث'); loadDashboard(); refreshNotifications(); }
+                else { const data = await res.json(); showToast(`❌ ${data.message}`); }
+            } catch { showToast('❌ فشل الاتصال'); }
+        }
+        document.getElementById('hoursForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const token = localStorage.getItem('token'); const salonId = localStorage.getItem('salonId');
+            const days = ['الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+            const hours = {}; days.forEach(day => hours[day] = document.getElementById(`hour_${day}`).value.trim());
+            try {
+                const res = await fetch(`${API_BASE}/salons/${salonId}/hours`, { method:'PUT', headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`}, body:JSON.stringify({ hours }) });
+                if (res.ok) { showToast('✅ تم الحفظ'); loadDashboard(); }
+                else { const data = await res.json(); showToast(`❌ ${data.message}`); }
+            } catch { showToast('❌ فشل الاتصال'); }
+        });
+        document.getElementById('settingsForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const token = localStorage.getItem('token'); const salonId = localStorage.getItem('salonId');
+            const name = document.getElementById('setSalonName').value.trim();
+            const city = document.getElementById('setSalonCity').value.trim();
+            const address = document.getElementById('setSalonAddress').value.trim();
+            const phone = document.getElementById('setSalonPhone').value.trim();
+            const desc = document.getElementById('setSalonDesc').value.trim();
+            const salonType = document.getElementById('setSalonType').value;
+            const isMobile = document.getElementById('setIsMobile').value === 'true';
+            const gallery = document.getElementById('setGallery').value.split(',').map(s => s.trim()).filter(s => s);
+            const lat = parseFloat(document.getElementById('setLatManual').value) || parseFloat(document.getElementById('setLat').value) || null;
+            const lng = parseFloat(document.getElementById('setLngManual').value) || parseFloat(document.getElementById('setLng').value) || null;
+            let logo = null;
+            const logoFile = document.getElementById('setLogo').files[0];
+            if (logoFile) { const reader = new FileReader(); logo = await new Promise(resolve => { reader.onload = e => resolve(e.target.result); reader.readAsDataURL(logoFile); }); }
+            const body = { name, city, address, phone, desc, salonType, isMobile, gallery };
+            if (lat !== null && lng !== null) { body.lat = lat; body.lng = lng; }
+            if (logo) body.logo = logo;
+            try {
+                const res = await fetch(`${API_BASE}/salons/${salonId}/settings`, { method:'PUT', headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`}, body:JSON.stringify(body) });
+                if (res.ok) { showToast('✅ تم الحفظ'); loadDashboard(); }
+                else { const data = await res.json(); showToast(`❌ ${data.message}`); }
+            } catch { showToast('❌ فشل الاتصال'); }
+        });
+        async function deleteSalonAccount() {
+            showConfirm('هل أنت متأكد من حذف صالونك بالكامل؟', async () => {
+                const token = localStorage.getItem('token');
+                try {
+                    const res = await fetch(`${API_BASE}/salons/me`, { method:'DELETE', headers:{'Authorization':`Bearer ${token}`} });
+                    if (res.ok) { showToast('✅ تم حذف صالونك'); logout(); navigateTo('home'); }
+                    else { const data = await res.json(); showToast(`❌ ${data.message}`); }
+                } catch { showToast('❌ فشل'); }
+            });
+        }
+
+        function getCurrentLocation(latId, lngId) {
+            if (!navigator.geolocation) { showToast('❌ متصفحك لا يدعم GPS'); return; }
+            const statusId = latId === 'regLat' ? 'regGpsStatus' : 'setGpsStatus';
+            document.getElementById(statusId).textContent = '⏳ جاري...';
+            navigator.geolocation.getCurrentPosition(
+                pos => {
+                    document.getElementById(latId).value = pos.coords.latitude;
+                    document.getElementById(lngId).value = pos.coords.longitude;
+                    const manualLatId = latId === 'regLat' ? 'regLatManual' : 'setLatManual';
+                    const manualLngId = latId === 'regLat' ? 'regLngManual' : 'setLngManual';
+                    if (document.getElementById(manualLatId)) document.getElementById(manualLatId).value = pos.coords.latitude;
+                    if (document.getElementById(manualLngId)) document.getElementById(manualLngId).value = pos.coords.longitude;
+                    document.getElementById(statusId).textContent = '✅ تم تحديد الموقع';
+                    showToast('✅ تم تحديد موقعك');
+                },
+                () => { document.getElementById(statusId).textContent = '❌ فشل'; showToast('❌ فشل تحديد الموقع'); }
+            );
+        }
+
+        // ============================================================
+        // Admin Dashboard
+        // ============================================================
+        async function loadAdminDashboard() {
+            const token = localStorage.getItem('adminToken');
+            if (!token) return;
+            try {
+                const statsRes = await fetch(`${API_BASE}/admin/stats`, { headers: { 'Authorization': `Bearer ${token}` } });
+                const stats = await statsRes.json();
+                const [salonsRes, customersRes, reviewsRes] = await Promise.all([
+                    fetch(`${API_BASE}/admin/salons`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                    fetch(`${API_BASE}/admin/customers`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                    fetch(`${API_BASE}/admin/reviews`, { headers: { 'Authorization': `Bearer ${token}` } })
+                ]);
+                const salons = await salonsRes.json();
+                const customers = await customersRes.json();
+                const reviews = await reviewsRes.json();
+                document.getElementById('adminContent').innerHTML = `
+                    <div class="stats-grid">
+                        <div class="stat-card"><div class="number">${stats.totalSalons}</div><div class="label">إجمالي الصالونات</div></div>
+                        <div class="stat-card"><div class="number">${stats.totalCustomers}</div><div class="label">إجمالي العملاء</div></div>
+                        <div class="stat-card"><div class="number">${stats.totalAppointments}</div><div class="label">إجمالي الحجوزات</div></div>
+                        <div class="stat-card"><div class="number">${stats.totalRevenue.toLocaleString()}</div><div class="label">إجمالي الإيرادات (دج)</div></div>
+                    </div>
+                    <hr>
+                    <h3>📋 الصالونات</h3>
+                    <div>${salons.map(s=>`<div style="display:flex;justify-content:space-between;padding:0.2rem 0;border-bottom:1px solid var(--border-color);"><span>${s.name} (${s.city})</span><div><button class="btn-primary btn-sm" onclick="adminEditSalon('${s._id}')"><i class="fas fa-edit"></i></button><button class="btn-danger btn-sm" onclick="adminDeleteSalon('${s._id}')"><i class="fas fa-trash"></i></button></div></div>`).join('')}</div>
+                    <h3>👤 العملاء</h3>
+                    <div>${customers.map(c=>`<div style="display:flex;justify-content:space-between;padding:0.2rem 0;border-bottom:1px solid var(--border-color);"><span>${c.name} (${c.email})</span><div><button class="btn-primary btn-sm" onclick="adminEditCustomer('${c._id}')"><i class="fas fa-edit"></i></button><button class="btn-danger btn-sm" onclick="adminDeleteCustomer('${c._id}')"><i class="fas fa-trash"></i></button></div></div>`).join('')}</div>
+                    <h3>⭐ التقييمات</h3>
+                    <div>${reviews.map(r=>`<div style="display:flex;justify-content:space-between;padding:0.2rem 0;border-bottom:1px solid var(--border-color);"><span>${r.customerName||'عميل'} → ${r.salonId?.name||'صالون'} (${'★'.repeat(r.rating)})</span><button class="btn-danger btn-sm" onclick="adminDeleteReview('${r._id}')"><i class="fas fa-trash"></i></button></div>`).join('')}</div>`;
+            } catch { showToast('❌ فشل في تحميل لوحة المدير'); }
+        }
+        async function adminEditSalon(id) {
+            try {
+                const res = await fetch(`${API_BASE}/admin/salons/${id}`);
+                const salon = await res.json();
+                const newName = prompt('اسم الصالون الجديد:', salon.name); if (!newName) return;
+                const newCity = prompt('المدينة:', salon.city); if (!newCity) return;
+                const token = localStorage.getItem('adminToken');
+                const res2 = await fetch(`${API_BASE}/admin/salons/${id}`, { method:'PUT', headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`}, body:JSON.stringify({ name: newName, city: newCity }) });
+                if (res2.ok) { showToast('✅ تم التعديل'); loadAdminDashboard(); }
+                else { const data = await res2.json(); showToast(`❌ ${data.message}`); }
+            } catch { showToast('❌ فشل'); }
+        }
+        async function adminDeleteSalon(id) {
+            showConfirm('حذف هذا الصالون؟', async () => {
+                const token = localStorage.getItem('adminToken');
+                try { const res = await fetch(`${API_BASE}/admin/salons/${id}`, { method:'DELETE', headers:{'Authorization':`Bearer ${token}`} }); if (res.ok) { showToast('✅ تم الحذف'); loadAdminDashboard(); } else { const data = await res.json(); showToast(`❌ ${data.message}`); } } catch { showToast('❌ فشل'); }
+            });
+        }
+        async function adminDeleteCustomer(id) {
+            showConfirm('حذف هذا العميل؟', async () => {
+                const token = localStorage.getItem('adminToken');
+                try { const res = await fetch(`${API_BASE}/admin/customers/${id}`, { method:'DELETE', headers:{'Authorization':`Bearer ${token}`} }); if (res.ok) { showToast('✅ تم الحذف'); loadAdminDashboard(); } else { const data = await res.json(); showToast(`❌ ${data.message}`); } } catch { showToast('❌ فشل'); }
+            });
+        }
+        async function adminDeleteReview(id) {
+            showConfirm('حذف هذا التقييم؟', async () => {
+                const token = localStorage.getItem('adminToken');
+                try { const res = await fetch(`${API_BASE}/admin/reviews/${id}`, { method:'DELETE', headers:{'Authorization':`Bearer ${token}`} }); if (res.ok) { showToast('✅ تم الحذف'); loadAdminDashboard(); } else { const data = await res.json(); showToast(`❌ ${data.message}`); } } catch { showToast('❌ فشل'); }
+            });
+        }
+
+        // ============================================================
+        // Customer Dashboard
+        // ============================================================
+        async function loadCustomerDashboard() {
+            const token = localStorage.getItem('customerToken');
+            if (!token) { showToast('❌ يرجى تسجيل الدخول كعميل'); return; }
+            try {
+                const profileRes = await fetch(`${API_BASE}/customer/auth/profile`, { headers: { 'Authorization': `Bearer ${token}` } });
+                const profile = await profileRes.json();
+                const bookingsRes = await fetch(`${API_BASE}/appointments/my`, { headers: { 'Authorization': `Bearer ${token}` } });
+                const bookings = await bookingsRes.json();
+                document.getElementById('customerDashboardContent').innerHTML = `
+                    <div style="max-width:600px;margin:0 auto;">
+                        <h3>👤 معلوماتي</h3>
+                        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+                            <div style="width:70px;height:70px;border-radius:50%;background:var(--input-bg);display:flex;align-items:center;justify-content:center;font-size:2.5rem;border:2px solid var(--gold);">👤</div>
+                            <div><strong>${profile.name}</strong><br><span style="opacity:0.5;">${profile.email}</span></div>
+                        </div>
+                        <form id="customerProfileForm">
+                            <div class="form-group"><label>الاسم</label><input type="text" id="custProfileName" value="${profile.name}"></div>
+                            <div class="form-group"><label>البريد</label><input type="email" id="custProfileEmail" value="${profile.email}"></div>
+                            <div class="form-group"><label>الهاتف</label><input type="tel" id="custProfilePhone" value="${profile.phone}"></div>
+                            <button type="submit" class="btn-gold btn-sm"><i class="fas fa-save"></i> تحديث</button>
+                            <button type="button" class="btn-gold btn-sm" onclick="openModal('customerChangePasswordModal')"><i class="fas fa-key"></i> تغيير كلمة المرور</button>
+                        </form>
+                        <hr>
+                        <h3>📅 حجوزاتي</h3>
+                        <div>${bookings.length?bookings.map(b=>`<div style="background:rgba(255,255,255,0.02);padding:0.4rem;border-radius:10px;margin-bottom:0.3rem;border-right:3px solid ${b.status==='confirmed'?'var(--success)':b.status==='pending'?'var(--warning)':'var(--danger)'};"><div><strong style="color:var(--gold);">${b.salonId?.name||'صالون'}</strong> <span class="status ${b.status}">${b.status}</span></div><div>${b.services?.map(s=>s.name).join(', ')||b.service} | ${b.staff} | ${b.date} ${b.time}</div></div>`).join(''):'<p>لا توجد حجوزات</p>'}</div>
+                        <hr>
+                        <button class="btn-danger btn-sm" onclick="deleteCustomerAccount()"><i class="fas fa-user-slash"></i> حذف حسابي</button>
+                    </div>`;
+                document.getElementById('customerProfileForm').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const name = document.getElementById('custProfileName').value.trim();
+                    const email = document.getElementById('custProfileEmail').value.trim();
+                    const phone = document.getElementById('custProfilePhone').value.trim();
+                    try {
+                        const res = await fetch(`${API_BASE}/customer/auth/profile`, { method:'PUT', headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`}, body:JSON.stringify({ name, email, phone }) });
+                        if (res.ok) { showToast('✅ تم التحديث'); loadCustomerDashboard(); }
+                        else { const data = await res.json(); showToast(`❌ ${data.message}`); }
+                    } catch { showToast('❌ فشل'); }
+                });
+            } catch { showToast('❌ فشل في تحميل حسابي'); }
+        }
+        async function deleteCustomerAccount() {
+            showConfirm('هل أنت متأكد من حذف حسابك؟', async () => {
+                const token = localStorage.getItem('customerToken');
+                try {
+                    const res = await fetch(`${API_BASE}/customer/auth/me`, { method:'DELETE', headers:{'Authorization':`Bearer ${token}`} });
+                    if (res.ok) { showToast('✅ تم حذف حسابك'); customerLogout(); navigateTo('home'); }
+                    else { const data = await res.json(); showToast(`❌ ${data.message}`); }
+                } catch { showToast('❌ فشل'); }
+            });
+        }
+
+        // ============================================================
+        // UI Update
+        // ============================================================
+        function updateUI() {
+            const token = localStorage.getItem('token');
+            const customerToken = localStorage.getItem('customerToken');
+            const adminToken = localStorage.getItem('adminToken');
+            document.getElementById('loginBtn').style.display = token ? 'none' : 'inline-block';
+            document.getElementById('registerBtn').style.display = token ? 'none' : 'inline-block';
+            document.getElementById('logoutBtn').style.display = token ? 'inline-block' : 'none';
+            document.getElementById('dashNavLink').style.display = token ? 'inline-block' : 'none';
+            document.getElementById('userDisplay').style.display = token ? 'inline-block' : 'none';
+            if (token) document.getElementById('userDisplay').textContent = '👋 صالون';
+            document.getElementById('customerLoginBtn').style.display = customerToken ? 'none' : 'inline-block';
+            document.getElementById('customerRegisterBtn').style.display = customerToken ? 'none' : 'inline-block';
+            document.getElementById('customerLogoutBtn').style.display = customerToken ? 'inline-block' : 'none';
+            document.getElementById('customerNameDisplay').style.display = customerToken ? 'inline' : 'none';
+            document.getElementById('customerDashboardBtn').style.display = customerToken ? 'inline-block' : 'none';
+            document.getElementById('customerDashLink').style.display = customerToken ? 'inline-block' : 'none';
+            if (customerToken) document.getElementById('customerNameDisplay').textContent = `👋 ${localStorage.getItem('customerName') || 'عميل'}`;
+            document.getElementById('adminNavLink').style.display = adminToken ? 'inline-block' : 'none';
+            document.getElementById('adminLogoutBtn').style.display = adminToken ? 'inline-block' : 'none';
+            document.getElementById('myBookingsBtn').style.display = 'inline-block';
+            // Quick password change button
+            const quickBtn = document.getElementById('changePasswordQuickBtn');
+            if (quickBtn) quickBtn.style.display = (token || customerToken || adminToken) ? 'inline-block' : 'none';
+            refreshNotifications();
+        }
+        function updateCustomerUI() { updateUI(); }
+
+        // ============================================================
+        // Sidebar listeners
+        // ============================================================
+        document.querySelectorAll('.sidebar .menu a').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                document.querySelectorAll('.sidebar .menu a').forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+                const page = this.dataset.dash;
+                document.querySelectorAll('#dashContent > div').forEach(div => div.classList.add('hidden'));
+                const map = { 'overview':'dashOverview', 'appointments':'dashAppointments', 'services':'dashServices', 'staff':'dashStaff', 'hours':'dashHours', 'reviews':'dashReviews', 'settings':'dashSettings' };
+                const target = document.getElementById(map[page]);
+                if (target) { target.classList.remove('hidden'); if (page === 'overview' || page === 'appointments' || page === 'reviews') loadDashboard(); }
+            });
+        });
+
+        // ============================================================
+        // Init
+        // ============================================================
+        async function init() {
+            updateLang();
+            initParticles();
+            await loadSalons();
+            updateUI();
+            initSocket();
+            if (localStorage.getItem('token')) navigateTo('dashboard');
+            if (localStorage.getItem('adminToken')) { document.getElementById('adminNavLink').style.display = 'inline-block'; navigateTo('admin'); }
+            if (localStorage.getItem('customerToken')) { document.getElementById('customerDashLink').style.display = 'inline-block'; }
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('bookDate').setAttribute('min', today);
+            refreshNotifications();
+            setInterval(refreshNotifications, 30000);
+            console.log('🇩🇿 حلاقتي - النسخة النهائية المطورة');
+        }
+
+        init();
+    </script>
+</body>
+</html>
