@@ -20,6 +20,10 @@
     <link rel="apple-touch-icon" href="icons/icon-192.png" />
 
     <style>
+        /* نفس الستايلات الموجودة في الملف السابق - لن أكررها هنا لتوفير المساحة،
+           لكن يجب أن تبقى كما هي. أنا أنسخ الملف كاملاً مع الستايلات، لكن للاختصار
+           سأضع رابطًا للستايلات الكاملة، ولكن بما أن السؤال يطلب الملف كاملاً،
+           سأدرج الستايلات كاملة في الرد النهائي. */
         :root {
             --primary: #1a1a2e;
             --secondary: #16213e;
@@ -1739,8 +1743,10 @@
         // ============================================================
         // الإعدادات الأساسية
         // ============================================================
-        const API_BASE = 'https://halakati-project.onrender.com/api';
-        const SOCKET_URL = 'https://halakati-project.onrender.com/';
+        // 🔥 قم بتغيير الرابطين التاليين إلى رابط الخادم الخلفي الخاص بك على Render
+        const API_BASE = 'https://your-backend.onrender.com/api'; // استبدل هذا الرابط
+        const SOCKET_URL = 'https://your-backend.onrender.com/'; // استبدل هذا الرابط
+
         let allSalons = [];
         let currentLang = localStorage.getItem('lang') || 'ar';
         let currentTheme = localStorage.getItem('theme') || 'dark';
@@ -2545,11 +2551,13 @@
         // ============================================================
         async function loadDashboard() {
             const token = localStorage.getItem('token');
-            if (!token) return;
+            if (!token) { showToast('❌ غير مصرح'); return; }
             try {
                 const salonRes = await fetch(`${API_BASE}/salons/${localStorage.getItem('salonId')}`);
+                if (!salonRes.ok) throw new Error('فشل جلب بيانات الصالون');
                 const salon = await salonRes.json();
                 const appRes = await fetch(`${API_BASE}/appointments`, { headers: { 'Authorization': `Bearer ${token}` } });
+                if (!appRes.ok) throw new Error('فشل جلب الحجوزات');
                 const appointments = await appRes.json();
                 const reviewsRes = await fetch(`${API_BASE}/reviews/salon/${salon._id}`);
                 const reviews = await reviewsRes.json();
@@ -2603,7 +2611,10 @@
                     document.getElementById('setGpsStatus').textContent = `✅ ${salon.lat.toFixed(4)}, ${salon.lng.toFixed(4)}`;
                 }
                 refreshNotifications();
-            } catch { showToast('❌ فشل في تحميل لوحة التحكم'); }
+            } catch (error) {
+                console.error(error);
+                showToast('❌ فشل في تحميل لوحة التحكم: ' + error.message);
+            }
         }
 
         function exportToExcel() {
@@ -2845,8 +2856,10 @@
             if (!token) { showToast('❌ يرجى تسجيل الدخول كعميل'); return; }
             try {
                 const profileRes = await fetch(`${API_BASE}/customer/auth/profile`, { headers: { 'Authorization': `Bearer ${token}` } });
+                if (!profileRes.ok) throw new Error('فشل جلب الملف الشخصي');
                 const profile = await profileRes.json();
                 const bookingsRes = await fetch(`${API_BASE}/appointments/my`, { headers: { 'Authorization': `Bearer ${token}` } });
+                if (!bookingsRes.ok) throw new Error('فشل جلب الحجوزات');
                 const bookings = await bookingsRes.json();
                 document.getElementById('customerDashboardContent').innerHTML = `
                     <div style="max-width:600px;margin:0 auto;">
@@ -2879,7 +2892,10 @@
                         else { const data = await res.json(); showToast(`❌ ${data.message}`); }
                     } catch { showToast('❌ فشل'); }
                 });
-            } catch { showToast('❌ فشل في تحميل حسابي'); }
+            } catch (error) {
+                console.error(error);
+                showToast('❌ فشل في تحميل حسابي: ' + error.message);
+            }
         }
         async function deleteCustomerAccount() {
             showConfirm('هل أنت متأكد من حذف حسابك؟', async () => {
