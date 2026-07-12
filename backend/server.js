@@ -762,20 +762,16 @@ app.post('/api/appointments/request', async (req, res) => {
         const dayIndex = selectedDate.getDay();
         const dayName = dayNames[dayIndex];
         
-        // جلب ساعات العمل لهذا اليوم
         const dayHours = salon.hours ? salon.hours.get(dayName) : null;
         
-        // إذا لم توجد ساعات عمل لهذا اليوم أو كانت "مغلق"
         if (!dayHours || dayHours === 'مغلق' || dayHours === 'closed') {
             return res.status(400).json({
                 message: `❌ الصالون مغلق يوم ${dayName}`
             });
         }
 
-        // تحليل وقت الفتح والإغلاق (مثال: "09:00-18:00")
         const [openTime, closeTime] = dayHours.split('-').map(t => t.trim());
         
-        // التحقق من أن الوقت المطلوب ضمن ساعات العمل
         if (time < openTime || time > closeTime) {
             return res.status(400).json({
                 message: `❌ وقت الحجز (${time}) خارج ساعات العمل (${openTime} - ${closeTime})`
@@ -783,7 +779,28 @@ app.post('/api/appointments/request', async (req, res) => {
         }
 
         // ============================================================
-        // 3. التحقق من عدم وجود حجز مكرر في نفس الوقت
+        // 3. التحقق من أن الوقت ليس في الماضي
+        // ============================================================
+        const now = new Date();
+        const today = now.toISOString().split('T')[0];
+
+        if (date === today) {
+            const [hours, minutes] = time.split(':').map(Number);
+            const selectedDateTime = new Date();
+            selectedDateTime.setHours(hours, minutes, 0, 0);
+            
+            // السماح بفارق 30 دقيقة على الأقل للحجز
+            const minBookingTime = new Date(now.getTime() + 30 * 60 * 1000);
+            
+            if (selectedDateTime < minBookingTime) {
+                return res.status(400).json({
+                    message: `❌ لا يمكن الحجز في وقت مضى. يجب أن يكون الموعد بعد ${minBookingTime.toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'})} على الأقل`
+                });
+            }
+        }
+
+        // ============================================================
+        // 4. التحقق من عدم وجود حجز مكرر في نفس الوقت
         // ============================================================
         const existingAppointment = await Appointment.findOne({
             salonId,
@@ -799,7 +816,7 @@ app.post('/api/appointments/request', async (req, res) => {
         }
 
         // ============================================================
-        // 4. إنشاء الحجز
+        // 5. إنشاء الحجز
         // ============================================================
         const appointment = new Appointment({
             salonId, customerId, clientName, clientPhone, clientEmail,
