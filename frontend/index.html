@@ -2507,7 +2507,7 @@ async function fetchNotifications() {
     const customerToken = localStorage.getItem('customerToken');
     const adminToken = localStorage.getItem('adminToken');
     let url = '', headers = {};
-    
+
     if (token) {
         url = `${API_BASE}/notifications/salon`;
         headers = { 'Authorization': `Bearer ${token}` };
@@ -2520,11 +2520,15 @@ async function fetchNotifications() {
     } else {
         return [];
     }
-    
+
     try {
         const res = await fetch(url, { headers });
-        if (res.ok) return await res.json();
-        return [];
+        if (!res.ok) {
+            console.warn('⚠️ فشل جلب الإشعارات، الحالة:', res.status);
+            return [];
+        }
+        const data = await res.json();
+        return data || [];
     } catch (error) {
         console.error('❌ فشل في جلب الإشعارات:', error);
         return [];
@@ -2532,59 +2536,75 @@ async function fetchNotifications() {
 }
 
 async function updateNotificationUI() {
-    const notifications = await fetchNotifications();
-    console.log('📦 الإشعارات المستلمة:', notifications); // <-- أضف هذا
-    const unread = notifications.filter(n => !n.read).length;
-    console.log('🔔 عدد غير المقروء:', unread);
+    try {
+        const notifications = await fetchNotifications();
+        console.log('📦 الإشعارات المستلمة:', notifications.length);
 
-    const badge = document.getElementById('notifBadge');
-    if (badge) {
-        if (unread > 0) {
-            badge.style.display = 'inline-block';
-            badge.textContent = unread > 99 ? '99+' : unread;
-        } else {
-            badge.style.display = 'none';
+        // تحديث البادج (الرقم)
+        const unread = notifications.filter(n => !n.read).length;
+        const badge = document.getElementById('notifBadge');
+        if (badge) {
+            if (unread > 0) {
+                badge.style.display = 'inline-block';
+                badge.textContent = unread > 99 ? '99+' : unread;
+            } else {
+                badge.style.display = 'none';
+            }
         }
-    }
 
-    const list = document.getElementById('notifList');
-    if (!list) {
-        console.error('❌ عنصر #notifList غير موجود');
-        return;
-    }
+        // تحديث القائمة المنسدلة
+        const list = document.getElementById('notifList');
+        if (!list) {
+            console.error('❌ #notifList غير موجود');
+            return;
+        }
 
-    if (notifications.length === 0) {
-        list.innerHTML = '<div class="notif-empty">📭 لا توجد إشعارات</div>';
-        return;
-    }
+        if (!notifications || notifications.length === 0) {
+            list.innerHTML = '<div style="padding:1rem;text-align:center;color:#888;">📭 لا توجد إشعارات</div>';
+            return;
+        }
 
-    // بناء القائمة
-    list.innerHTML = notifications.slice(0, 10).map(n => `
-        <div class="notif-item ${n.read ? '' : 'unread'}">
-            <div class="notif-title">${n.title}</div>
-            <div class="notif-msg">${n.message}</div>
-            <div class="notif-time">${n.createdAt ? new Date(n.createdAt).toLocaleString('ar-DZ') : 'تاريخ غير معروف'}</div>
-        </div>
-    `).join('');
+        let html = '';
+        notifications.slice(0, 20).forEach(n => {
+            const time = n.createdAt ? new Date(n.createdAt).toLocaleString('ar-DZ') : 'تاريخ غير معروف';
+            const isUnread = !n.read;
+            html += `
+                <div style="padding:0.5rem 0.8rem;border-bottom:1px solid var(--border-color);${isUnread ? 'background:rgba(245,176,66,0.05);border-right:3px solid var(--gold);' : ''}">
+                    <div style="font-weight:600;color:var(--gold);font-size:0.85rem;">${n.title}</div>
+                    <div style="color:var(--text-color);opacity:0.8;font-size:0.8rem;">${n.message}</div>
+                    <div style="font-size:0.65rem;color:#888;">${time}</div>
+                </div>
+            `;
+        });
+        list.innerHTML = html;
+        console.log('✅ تم تحديث القائمة بـ', notifications.length, 'إشعارات');
+
+    } catch (error) {
+        console.error('❌ خطأ في updateNotificationUI:', error);
+    }
 }
 async function toggleNotifications() {
     const dropdown = document.getElementById('notifDropdown');
     if (!dropdown) {
-        console.error('❌ عنصر #notifDropdown غير موجود');
+        console.error('❌ #notifDropdown غير موجود');
         return;
     }
 
-    // تبديل الفئة 'active'
-    dropdown.classList.toggle('active');
-
-    // إذا أصبحت ظاهرة، حدّث القائمة
-    if (dropdown.classList.contains('active')) {
+    // استخدام display بدلاً من classList
+    if (dropdown.style.display === 'block') {
+        dropdown.style.display = 'none';
+    } else {
+        dropdown.style.display = 'block';
+        // تحديث القائمة عند الفتح
         await updateNotificationUI();
     }
 }
 document.addEventListener('click', function(e) {
-    const bell = document.getElementById('notifBell'); const dropdown = document.getElementById('notifDropdown');
-    if (bell && dropdown && !bell.contains(e.target) && !dropdown.contains(e.target)) dropdown.classList.remove('active');
+    const bell = document.getElementById('notifBell');
+    const dropdown = document.getElementById('notifDropdown');
+    if (bell && dropdown && !bell.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.style.display = 'none';
+    }
 });
 function refreshNotifications() {
     updateNotificationUI();
