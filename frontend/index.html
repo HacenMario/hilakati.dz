@@ -2011,20 +2011,14 @@ function adminLogout() { localStorage.removeItem('adminToken'); localStorage.rem
 
 // ===== Forgot & Reset Password =====
 async function forgotPassword(userType) {
-    console.log('🟢 تم استدعاء forgotPassword مع userType:', userType); // <-- أضف هذا
-    
     const emailInputId = userType === 'salon' ? 'forgotSalonEmail' : 'forgotCustomerEmail';
     const modalId = userType === 'salon' ? 'forgotPasswordModal' : 'forgotPasswordModalCustomer';
-    const email = document.getElementById(emailInputId)?.value.trim();
-    
-    console.log('📧 البريد الإلكتروني:', email); // <-- أضف هذا
-    
+    const email = document.getElementById(emailInputId).value.trim();
+
     if (!email) {
         showToast('❌ الرجاء إدخال البريد الإلكتروني', 'error');
         return;
     }
-
-    console.log('📡 إرسال طلب إلى:', `${API_BASE}/auth/forgot-password`); // <-- أضف هذا
 
     try {
         const res = await fetch(`${API_BASE}/auth/forgot-password`, {
@@ -2032,21 +2026,25 @@ async function forgotPassword(userType) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, userType })
         });
-        
-        console.log('📨 حالة الرد:', res.status); // <-- أضف هذا
-        
         const data = await res.json();
-        console.log('🔑 رابط إعادة التعيين:', data.resetLink); // <-- أضف هذا
-        
+
         if (res.ok) {
-            showToast('✅ ' + data.message, 'success');
+            // ✅ إغلاق نافذة "نسيت كلمة المرور"
             closeModal(modalId);
+            
+            // ✅ فتح نافذة تغيير كلمة المرور مع التوكن
+            document.getElementById('resetToken').value = data.resetToken;
+            document.getElementById('resetUserType').value = userType;
+            document.getElementById('resetEmail').value = email;
+            openModal('resetPasswordModal');
+            
+            showToast('✅ تم التحقق من البريد، أدخل كلمة المرور الجديدة', 'success');
         } else {
             showToast('❌ ' + (data.message || 'فشل العملية'), 'error');
         }
     } catch (error) {
         console.error('❌ خطأ في forgot-password:', error);
-        showToast('❌ فشل الاتصال بالخادم: ' + error.message, 'error');
+        showToast('❌ فشل الاتصال بالخادم', 'error');
     }
 }
 
