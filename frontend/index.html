@@ -1201,6 +1201,7 @@
 <!-- ===== الهيدر ===== -->
 <header class="header" id="mainHeader">
     <div class="logo"><i class="fas fa-cut"></i> حلاقتي <span>🇩🇿</span></div>
+    
     <nav class="nav-links">
         <a href="#" class="active" onclick="navigateTo('home')" data-page="home" data-i18n="home">الرئيسية</a>
         <a href="#" onclick="navigateTo('salons')" data-page="salons" data-i18n="salons">الصالونات</a>
@@ -1208,16 +1209,39 @@
         <a href="#" onclick="navigateTo('admin')" data-page="admin" id="adminNavLink" style="display:none;" data-i18n="admin">لوحة المدير</a>
         <a href="#" onclick="navigateTo('customer-dashboard')" data-page="customer-dashboard" id="customerDashLink" style="display:none;" data-i18n="myAccount">حسابي</a>
     </nav>
+
     <div class="header-actions">
         <span id="userDisplay" style="display:none;color:var(--gold);font-weight:500;font-size:0.7rem;"></span>
         <span id="customerNameDisplay" style="display:none;color:var(--gold);font-weight:500;font-size:0.7rem;"></span>
-        <div class="notif-bell" id="notifBell">
-    <i class="fas fa-bell"></i>
-    <span class="badge" id="notifBadge">0</span>
-    <div class="notif-dropdown" id="notifDropdown"><div id="notifList"></div></div>
-</div>
+
+        <!-- ===== زر الإشعارات ===== -->
+        <div class="notif-bell" id="notifBell" style="position:relative;display:inline-block;cursor:pointer;margin-left:0.5rem;">
+            <i class="fas fa-bell" style="font-size:1.2rem;color:var(--text-color);"></i>
+            <span id="notifBadge" style="display:none;position:absolute;top:-8px;right:-8px;background:#e74c3c;color:#fff;border-radius:50%;padding:0.1rem 0.4rem;font-size:0.6rem;font-weight:bold;min-width:18px;text-align:center;z-index:999;">0</span>
+            
+            <!-- ===== القائمة المنسدلة ===== -->
+            <div class="notif-dropdown" id="notifDropdown" style="display:none;position:absolute;top:35px;right:-10px;background:var(--card-bg);border-radius:12px;min-width:320px;max-height:450px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.3);border:1px solid var(--border-color);z-index:1000;">
+                
+                <!-- أزرار التحكم -->
+                <div style="display:flex;justify-content:space-between;padding:0.5rem 0.8rem;border-bottom:1px solid var(--border-color);flex-wrap:wrap;gap:0.3rem;background:var(--bg-header);">
+                    <button class="btn-sm btn-outline" onclick="markAllRead()" style="font-size:0.7rem;padding:0.2rem 0.6rem;border-radius:50px;border:1px solid var(--gold);color:var(--gold);background:transparent;cursor:pointer;">
+                        ✅ تحديد الكل كمقروء
+                    </button>
+                    <button class="btn-sm btn-danger" onclick="clearAllNotifications()" style="font-size:0.7rem;padding:0.2rem 0.6rem;border-radius:50px;background:#e74c3c;color:#fff;border:none;cursor:pointer;">
+                        🗑️ مسح الكل
+                    </button>
+                </div>
+                
+                <!-- قائمة الإشعارات -->
+                <div id="notifList" style="max-height:350px;overflow-y:auto;padding:0.2rem 0;"></div>
+            </div>
+        </div>
+
+        <!-- ===== أزرار التحكم ===== -->
         <button class="btn-outline btn-sm" onclick="toggleTheme()" id="themeToggle"><i class="fas fa-moon"></i></button>
         <button class="btn-outline btn-sm" onclick="toggleLang()" id="langToggle">🇫🇷 FR</button>
+
+        <!-- ===== أزرار الأدوار ===== -->
         <div class="role-buttons">
             <button class="btn-gold btn-sm" id="customerDashboardBtn" style="display:none;" onclick="navigateTo('customer-dashboard')"><i class="fas fa-user"></i> حسابي</button>
             <button class="btn-gold btn-sm" onclick="showAllBookings()" id="myBookingsBtn"><i class="fas fa-calendar-alt"></i> حجوزاتي</button>
