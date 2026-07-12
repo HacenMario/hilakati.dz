@@ -2065,12 +2065,13 @@ document.getElementById('adminLoginForm').addEventListener('submit', async (e) =
 });
 
 // ============================================================
-// حجز سريع (أقرب موعد متاح) - نسخة محسنة
+// حجز سريع مع اختيار الخدمة
 // ============================================================
 async function quickBooking(salonId) {
-    // ===== التحقق من وجود salonId =====
+    console.log('🟢 quickBooking مع salonId:', salonId);
+
+    // إذا لم يتم تمرير salonId، اختر أول صالون
     if (!salonId) {
-        console.warn('⚠️ لم يتم تمرير معرف الصالون، سيتم اختيار أول صالون متاح.');
         try {
             const res = await fetch(`${API_BASE}/salons`);
             const salons = await res.json();
@@ -2079,27 +2080,28 @@ async function quickBooking(salonId) {
                 return;
             }
             salonId = salons[0]._id;
-            console.log('✅ تم اختيار الصالون:', salonId);
         } catch (err) {
             showToast('❌ فشل في تحميل الصالونات', 'error');
             return;
         }
     }
 
+    // التحقق من تسجيل الدخول
     const customerToken = localStorage.getItem('customerToken');
     if (!customerToken) {
         showToast('❌ يرجى تسجيل الدخول أولاً', 'error');
         openModal('customerLoginModal');
         return;
     }
+
     try {
-        // جلب بيانات العميل
+        // 1. جلب بيانات العميل
         const profileRes = await fetch(`${API_BASE}/customer/auth/profile`, {
             headers: { 'Authorization': `Bearer ${customerToken}` }
         });
         const profile = await profileRes.json();
 
-        // جلب الصالون
+        // 2. جلب بيانات الصالون
         const salonRes = await fetch(`${API_BASE}/salons/${salonId}`);
         if (!salonRes.ok) {
             showToast('❌ الصالون غير موجود', 'error');
@@ -2107,13 +2109,55 @@ async function quickBooking(salonId) {
         }
         const salon = await salonRes.json();
 
-        // اختيار أول خدمة وأول موظف
-        const service = salon.services?.[0] || { name: 'خدمة أساسية', price: 500 };
+        // 3. اختيار الموظف (أول موظف أو افتراضي)
         const staff = salon.staff?.[0] || 'موظف رئيسي';
+
+        // 4. ============================================================
+        // اختيار الخدمة (مع قائمة منبثقة)
+        // ============================================================
+        let selectedService = null;
+
+        if (salon.services && salon.services.length > 0) {
+            if (salon.services.length === 1) {
+                // خدمة واحدة فقط → اختيارها تلقائياً
+                selectedService = salon.services[0];
+                console.log('🟢 خدمة واحدة فقط، تم اختيارها تلقائياً:', selectedService.name);
+            } else {
+                // خدمات متعددة → عرض قائمة للاختيار
+                const serviceOptions = salon.services.map((s, index) => 
+                    `${index + 1}. ${s.name} - ${s.price} دج`
+                ).join('\n');
+
+                const choice = prompt(
+                    `🛠️ اختر الخدمة المطلوبة:\n\n${serviceOptions}\n\nأدخل رقم الخدمة (1-${salon.services.length}):`
+                );
+
+                if (choice === null) {
+                    showToast('❌ تم إلغاء الحجز', 'info');
+                    return;
+                }
+
+                const selectedIndex = parseInt(choice) - 1;
+                if (isNaN(selectedIndex) || selectedIndex < 0 || selectedIndex >= salon.services.length) {
+                    showToast('❌ اختيار غير صحيح، يرجى المحاولة مرة أخرى', 'error');
+                    return;
+                }
+
+                selectedService = salon.services[selectedIndex];
+                console.log('🟢 تم اختيار الخدمة:', selectedService.name);
+            }
+        } else {
+            // لا توجد خدمات → خدمة افتراضية
+            selectedService = { name: 'خدمة أساسية', price: 500 };
+            console.log('🟢 لا توجد خدمات، استخدام خدمة افتراضية');
+        }
+
+        // 5. تحديد التاريخ والوقت
         const today = new Date().toISOString().split('T')[0];
         const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+        const defaultTime = '10:00';
 
-        // إرسال الحجز
+        // 6. إرسال الحجز
         const res = await fetch(`${API_BASE}/appointments/request`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -2123,11 +2167,11 @@ async function quickBooking(salonId) {
                 clientName: profile.name,
                 clientPhone: profile.phone,
                 clientEmail: profile.email,
-                services: [service],
-                totalPrice: service.price,
+                services: [selectedService],
+                totalPrice: selectedService.price,
                 staff,
                 date: tomorrow,
-                time: '10:00',
+                time: defaultTime,
                 payment: 'cash',
                 notes: 'حجز سريع',
                 recurring: 'none'
@@ -2136,11 +2180,13 @@ async function quickBooking(salonId) {
 
         const data = await res.json();
         if (res.ok) {
-            showToast('✅ تم الحجز السريع!', 'success');
+            showToast(`✅ تم الحجز السريع لخدمة "${selectedService.name}"!`, 'success');
             loadSalons();
+            refreshNotifications();
         } else {
             showToast(`❌ ${data.message || 'فشل الحجز'}`, 'error');
         }
+
     } catch (error) {
         console.error('❌ فشل الحجز السريع:', error);
         showToast('❌ فشل الحجز السريع', 'error');
