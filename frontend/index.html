@@ -2498,12 +2498,30 @@ async function fetchNotifications() {
     const customerToken = localStorage.getItem('customerToken');
     const adminToken = localStorage.getItem('adminToken');
     let url = '', headers = {};
-    if (token) { url = `${API_BASE}/notifications/salon`; headers = { 'Authorization': `Bearer ${token}` }; }
-    else if (customerToken) { url = `${API_BASE}/notifications/customer`; headers = { 'Authorization': `Bearer ${customerToken}` }; }
-    else if (adminToken) { url = `${API_BASE}/notifications/admin`; headers = { 'Authorization': `Bearer ${adminToken}` }; }
-    else return [];
-    try { const res = await fetch(url, { headers }); if (res.ok) return await res.json(); return []; } catch { return []; }
+    
+    if (token) {
+        url = `${API_BASE}/notifications/salon`;
+        headers = { 'Authorization': `Bearer ${token}` };
+    } else if (customerToken) {
+        url = `${API_BASE}/notifications/customer`;
+        headers = { 'Authorization': `Bearer ${customerToken}` };
+    } else if (adminToken) {
+        url = `${API_BASE}/notifications/admin`;
+        headers = { 'Authorization': `Bearer ${adminToken}` };
+    } else {
+        return [];
+    }
+    
+    try {
+        const res = await fetch(url, { headers });
+        if (res.ok) return await res.json();
+        return [];
+    } catch (error) {
+        console.error('❌ فشل في جلب الإشعارات:', error);
+        return [];
+    }
 }
+
 async function updateNotificationUI() {
     const notifications = await fetchNotifications();
     const unread = notifications.filter(n => !n.read).length;
