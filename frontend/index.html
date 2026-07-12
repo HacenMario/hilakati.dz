@@ -2344,6 +2344,7 @@ document.getElementById('searchSalon').addEventListener('input', applyFilters);
 document.getElementById('filterCity').addEventListener('change', applyFilters);
 document.getElementById('filterService').addEventListener('change', applyFilters);
 document.getElementById('filterSalonType').addEventListener('change', applyFilters);
+document.getElementById('filterSort').addEventListener('change', applyFilters);
     
 function getNearbySalons() {
     const salonsWithGps = allSalons.filter(s => s.lat && s.lng);
