@@ -1983,16 +1983,30 @@ async function forgotPassword(userType) {
     const emailInputId = userType === 'salon' ? 'forgotSalonEmail' : 'forgotCustomerEmail';
     const modalId = userType === 'salon' ? 'forgotPasswordModal' : 'forgotPasswordModalCustomer';
     const email = document.getElementById(emailInputId).value.trim();
-    if (!email) { showToast('❌ الرجاء إدخال البريد الإلكتروني'); return; }
+    
+    if (!email) {
+        showToast('❌ الرجاء إدخال البريد الإلكتروني', 'error');
+        return;
+    }
+
     try {
         const res = await fetch(`${API_BASE}/auth/forgot-password`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, userType })
         });
         const data = await res.json();
-        if (res.ok) { showToast('✅ ' + data.message); closeModal(modalId); }
-        else showToast('❌ ' + (data.message || 'فشل العملية'));
-    } catch { showToast('❌ فشل الاتصال'); }
+        
+        if (res.ok) {
+            showToast('✅ ' + data.message, 'success');
+            closeModal(modalId);
+        } else {
+            showToast('❌ ' + (data.message || 'فشل العملية'), 'error');
+        }
+    } catch (error) {
+        console.error('❌ خطأ في forgot-password:', error);
+        showToast('❌ فشل الاتصال بالخادم', 'error');
+    }
 }
 
 window.addEventListener('DOMContentLoaded', () => {
