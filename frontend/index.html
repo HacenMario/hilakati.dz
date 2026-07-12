@@ -1206,7 +1206,7 @@
         <a href="#" class="active" onclick="navigateTo('home')" data-page="home" data-i18n="home">الرئيسية</a>
         <a href="#" onclick="navigateTo('salons')" data-page="salons" data-i18n="salons">الصالونات</a>
         <a href="#" onclick="navigateTo('dashboard')" data-page="dashboard" id="dashNavLink" style="display:none;" data-i18n="dashboard">لوحة التحكم</a>
-        <a href="#" onclick="navigateTo('admin')" data-page="admin" id="adminNavLink" style="display:none;" data-i18n="admin">لوحة المدير</a>
+        <a href="#" onclick="navigateTo('admin')" data-page="admin" id="adminNavLink" style="display:none;" data-i18n="admin">لوحة Admin</a>
         <a href="#" onclick="navigateTo('customer-dashboard')" data-page="customer-dashboard" id="customerDashLink" style="display:none;" data-i18n="myAccount">حسابي</a>
     </nav>
 
@@ -1369,7 +1369,7 @@
 <!-- مدير -->
 <div class="modal-overlay" id="adminLoginModal"><div class="modal-box">
     <button class="modal-close" onclick="closeModal('adminLoginModal')">&times;</button>
-    <h2 data-i18n="adminLogin"><i class="fas fa-user-cog"></i> دخول المدير</h2>
+    <h2 data-i18n="adminLogin"><i class="fas fa-user-cog"></i> دخول Admin</h2>
     <form id="adminLoginForm">
         <div class="form-group"><label>البريد الإلكتروني</label><input type="email" id="adminLoginEmail" required></div>
         <div class="form-group"><label>كلمة المرور</label><input type="password" id="adminLoginPassword" required></div>
@@ -1697,9 +1697,9 @@
     </div>
 </section>
 
-<!-- لوحة المدير -->
+<!-- لوحة Admin -->
 <section class="section hidden" id="page-admin">
-    <h2 class="section-title">لوحة <span class="highlight">تحكم المدير</span></h2>
+    <h2 class="section-title">لوحة <span class="highlight">تحكم Admin</span></h2>
     <div id="adminContent"></div>
     <div style="text-align:center;margin-top:1rem;">
         <button class="btn-gold btn-sm" onclick="openModal('adminChangePasswordModal')"><i class="fas fa-key"></i> تغيير كلمة المرور</button>
@@ -1742,10 +1742,10 @@ function cleanPhoneNumber(phone) {
 // ===== الترجمة =====
 const translations = {
     ar: {
-        home: 'الرئيسية', salons: 'الصالونات', dashboard: 'لوحة التحكم', admin: 'لوحة المدير',
+        home: 'الرئيسية', salons: 'الصالونات', dashboard: 'لوحة التحكم', admin: 'لوحة Admin',
         myAccount: 'حسابي', myBookings: 'حجوزاتي', customerLogin: 'دخول عميل', customerRegister: 'حساب عميل',
         logout: 'خروج', login: 'دخول', registerSalon: 'تسجيل صالون', loginSalon: 'دخول الصالون',
-        adminLogin: 'دخول المدير', booking: 'حجز موعد', review: 'تقييم الصالون',
+        adminLogin: 'دخول Admin', booking: 'حجز موعد', review: 'تقييم الصالون',
         homeSub: 'احجز موعدك بسهولة مع أفضل الحلاقين وخبراء التجميل في مدينتك',
         findSalon: 'ابحث عن صالون', totalSalons: 'صالون مسجل', todayBookings: 'حجوزات اليوم',
         avgRating: 'متوسط التقييم', algerianService: 'خدمة جزائرية 100%', featuredSalons: '🔥 أشهر الصالونات',
@@ -2192,7 +2192,7 @@ async function quickBooking(salonId) {
     }
 }
 // ============================================================
-// حذف جميع تقييمات صالون بواسطة المدير
+// حذف جميع تقييمات صالون بواسطة Admin
 // ============================================================
 async function adminDeleteAllReviews(salonId) {
     // الحصول على اسم الصالون لعرضه في رسالة التأكيد
@@ -2215,7 +2215,7 @@ async function adminDeleteAllReviews(salonId) {
         
         if (deleteRes.ok) {
             showToast(`✅ ${data.message}`, 'success');
-            loadAdminDashboard(); // تحديث لوحة المدير
+            loadAdminDashboard(); // تحديث لوحة Admin
         } else {
             showToast(`❌ ${data.message}`, 'error');
         }
@@ -3342,7 +3342,7 @@ function getCurrentLocation(latId, lngId) {
 }
 
 // ============================================================
-// لوحة تحكم المدير - النسخة النهائية
+// لوحة تحكم Admin - النسخة النهائية
 // ============================================================
 async function loadAdminDashboard() {
     const token = localStorage.getItem('adminToken');
@@ -3456,8 +3456,8 @@ async function loadAdminDashboard() {
         await loadAppointmentsForAdmin();
 
     } catch (error) {
-        console.error('❌ فشل في تحميل لوحة المدير:', error);
-        showToast('❌ فشل في تحميل لوحة المدير', 'error');
+        console.error('❌ فشل في تحميل لوحة Admin:', error);
+        showToast('❌ فشل في تحميل لوحة Admin', 'error');
     }
 }
 
@@ -3847,7 +3847,7 @@ async function init() {
     document.getElementById('bookDate').setAttribute('min', new Date().toISOString().split('T')[0]);
     refreshNotifications();
     setInterval(refreshNotifications, 30000);
-    console.log('🇩🇿 حلاقتي - النسخة الكاملة مع نسيان كلمة المرور وصلاحيات المدير');
+    console.log('🇩🇿 حلاقتي - النسخة الكاملة مع نسيان كلمة المرور وصلاحيات Admin');
 }
 init();
 </script>
