@@ -833,7 +833,6 @@ app.post('/api/appointments/request', async (req, res) => {
                 title: '📅 حجز جديد',
                 message: `حجز من ${clientName} في ${date} الساعة ${time}`,
                 read: false,
-                appointmentTime: time,
                 createdAt: new Date()
             });
             await notification.save();
