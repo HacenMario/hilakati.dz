@@ -980,14 +980,6 @@ app.put('/api/notifications/read-all', async (req, res) => {
 });
 
 // ============================================================
-// الإشعارات
-// ============================================================
-app.get('/api/notifications/salon', authMiddleware, (req, res) => res.json([]));
-app.get('/api/notifications/customer', customerAuthMiddleware, (req, res) => res.json([]));
-app.get('/api/notifications/admin', adminAuthMiddleware, (req, res) => res.json([]));
-app.put('/api/notifications/read-all', (req, res) => res.json({ message: 'تم' }));
-
-// ============================================================
 // مسار الترحيب
 // ============================================================
 app.get('/', (req, res) => {
