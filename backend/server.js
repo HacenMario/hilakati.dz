@@ -759,6 +759,7 @@ try {
             title: '📅 حجز جديد',
             message: `حجز من ${clientName} في ${date} الساعة ${time}`,
             read: false,
+            appointmentTime: time,
             createdAt: new Date() // <-- هذا هو وقت إنشاء الإشعار
         });
         await notification.save();
