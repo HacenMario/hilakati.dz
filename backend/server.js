@@ -77,7 +77,7 @@ const Customer = require('./models/Customer');
 const Appointment = require('./models/Appointment');
 const Review = require('./models/Review');
 const Admin = require('./models/Admin');
-const Notification = require('./models/Notification'); // <-- أضف هذا السطر
+const Notification = require('./models/Notification'); //
 
 // ============================================================
 // Middleware للمصادقة
@@ -749,7 +749,7 @@ app.post('/api/appointments/request', async (req, res) => {
             salonId, customerId, clientName, clientPhone, clientEmail, services, totalPrice, staff, date, time, payment, notes, recurring, status: 'pending'
         });
         await appointment.save();
-        // ===== إنشاء إشعار للصالون =====
+// ===== إنشاء إشعار للصالون =====
 try {
     const salon = await Salon.findById(salonId);
     if (salon) {
@@ -758,23 +758,23 @@ try {
             userType: 'salon',
             title: '📅 حجز جديد',
             message: `حجز من ${clientName} في ${date} الساعة ${time}`,
-            read: false,
-            createdAt: new Date()
+            read: false
         });
         await notification.save();
+        console.log(`✅ تم حفظ إشعار للصالون ${salonId}`);
         
-        // إرسال إشعار فوري عبر Socket.io
+        // إشعار فوري عبر Socket.io
         const io = req.app.get('io');
         if (io) {
             io.to(`salon-${salonId}`).emit('new-notification', {
                 title: '📅 حجز جديد',
                 message: `حجز من ${clientName} في ${date} الساعة ${time}`
             });
+            console.log(`📡 تم إرسال إشعار عبر Socket.io للصالون ${salonId}`);
         }
     }
 } catch (notifError) {
     console.error('❌ فشل إنشاء الإشعار:', notifError);
-    // لا نوقف العملية إذا فشل الإشعار
 }
         res.status(201).json(appointment);
     } catch (err) {
