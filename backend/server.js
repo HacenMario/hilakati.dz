@@ -770,6 +770,44 @@ app.put('/api/appointments/:id/cancel', authMiddleware, async (req, res) => {
 });
 
 // ============================================================
+// إكمال الحجز وتقييم الصالون تلقائياً
+// ============================================================
+app.put('/api/appointments/:id/complete-with-review', authMiddleware, async (req, res) => {
+    try {
+        const { rating, comment } = req.body;
+        const appointment = await Appointment.findById(req.params.id);
+        if (!appointment) return res.status(404).json({ message: 'الحجز غير موجود' });
+        
+        // تحديث حالة الحجز
+        appointment.status = 'completed';
+        await appointment.save();
+
+        // إضافة التقييم
+        const review = new Review({
+            salonId: appointment.salonId,
+            customerId: appointment.customerId,
+            customerName: appointment.clientName,
+            rating: rating || 5,
+            comment: comment || 'شكراً!',
+            date: new Date().toISOString().split('T')[0]
+        });
+        await review.save();
+
+        // تحديث متوسط تقييم الصالون
+        const reviews = await Review.find({ salonId: appointment.salonId });
+        const avg = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+        await Salon.findByIdAndUpdate(appointment.salonId, { 
+            rating: Math.round(avg * 10) / 10, 
+            totalReviews: reviews.length 
+        });
+
+        res.json({ message: '✅ تم إكمال الحجز والتقييم' });
+    } catch (error) {
+        res.status(500).json({ message: 'فشل إكمال الحجز' });
+    }
+});
+
+// ============================================================
 // التقييمات
 // ============================================================
 app.get('/api/reviews/salon/:salonId', async (req, res) => {
