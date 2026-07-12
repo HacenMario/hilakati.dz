@@ -2568,6 +2568,36 @@ async function openBooking(salonId) {
         const salon = await res.json();
 
         document.getElementById('bookSalonName').value = salon.name;
+        
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/appointments/request`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                salonId, customerId, clientName, clientPhone, clientEmail,
+                services, totalPrice, staff, date, time, payment, notes, recurring
+            })
+        });
+        const data = await res.json();
+        console.log('📨 رد الخادم:', data);
+
+        if (res.ok) {
+            showToast('✅ تم إرسال طلب الحجز بنجاح!', 'success');
+            closeModal('bookingModal');
+            document.getElementById('bookingForm').reset();
+            document.getElementById('bookTotalPrice').value = '';
+            refreshNotifications();
+            if (localStorage.getItem('token')) loadDashboard();
+        } else {
+            showToast(`❌ ${data.message || 'فشل الحجز'}`, 'error');
+        }
+    } catch (error) {
+        console.error('❌ خطأ في الحجز:', error);
+        showToast('❌ فشل الاتصال بالخادم', 'error');
+    }
+});
 
         // ============================================================
         // جلب بيانات العميل إذا كان مسجلاً
