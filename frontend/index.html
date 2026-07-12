@@ -1831,6 +1831,15 @@ function closeModal(id) {
 }
 document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', function(e) { if (e.target === this) closeModal(this.id); }));
 
+function updateTotalPrice() {
+    const select = document.getElementById('bookService');
+    let total = 0;
+    for (let option of select.options) {
+        if (option.selected) total += parseInt(option.dataset.price) || 0;
+    }
+    document.getElementById('bookTotalPrice').value = total ? `${total} دج` : '';
+}
+
 function showConfirm(msg, onConfirm) {
     document.getElementById('confirmMsg').textContent = msg;
     document.getElementById('confirmYes').onclick = () => { closeModal('confirmModal'); onConfirm(); };
