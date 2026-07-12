@@ -2726,13 +2726,11 @@ async function loadAdminDashboard() {
     const token = localStorage.getItem('adminToken');
     if (!token) return;
     try {
-        // ===== جلب الإحصائيات المتقدمة =====
         const statsRes = await fetch(`${API_BASE}/admin/stats/advanced`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const stats = await statsRes.json();
 
-        // ===== جلب البيانات =====
         const [salonsRes, customersRes, reviewsRes, appointmentsRes] = await Promise.all([
             fetch(`${API_BASE}/admin/salons`, { headers: { 'Authorization': `Bearer ${token}` } }),
             fetch(`${API_BASE}/admin/customers`, { headers: { 'Authorization': `Bearer ${token}` } }),
@@ -2745,9 +2743,7 @@ async function loadAdminDashboard() {
         const reviews = await reviewsRes.json();
         const appointments = await appointmentsRes.json();
 
-        // ===== بناء محتوى الصفحة =====
         document.getElementById('adminContent').innerHTML = `
-            <!-- ===== إحصائيات متقدمة ===== -->
             <div class="stats-grid">
                 <div class="stat-card"><div class="number">${stats.totalSalons}</div><div class="label">إجمالي الصالونات</div></div>
                 <div class="stat-card"><div class="number">${stats.activeSalons || 0}</div><div class="label">صالونات نشطة</div></div>
@@ -2759,7 +2755,6 @@ async function loadAdminDashboard() {
                 <div class="stat-card"><div class="number">${stats.totalRevenue.toLocaleString()} دج</div><div class="label">إجمالي الإيرادات</div></div>
             </div>
 
-            <!-- ===== أزرار الإجراءات السريعة ===== -->
             <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;">
                 <button class="btn-gold btn-sm" onclick="openModal('broadcastModal')">
                     <i class="fas fa-bullhorn"></i> إرسال إشعار للجميع
@@ -2773,8 +2768,6 @@ async function loadAdminDashboard() {
             </div>
 
             <hr>
-
-            <!-- ===== الصالونات ===== -->
             <h3>📋 الصالونات</h3>
             <div id="adminSalonsList">
                 ${salons.map(s => `
@@ -2793,8 +2786,6 @@ async function loadAdminDashboard() {
             </div>
 
             <hr>
-
-            <!-- ===== العملاء ===== -->
             <h3>👤 العملاء</h3>
             <div id="adminCustomersList">
                 ${customers.map(c => `
@@ -2813,8 +2804,6 @@ async function loadAdminDashboard() {
             </div>
 
             <hr>
-
-            <!-- ===== التقييمات ===== -->
             <h3>⭐ التقييمات</h3>
             <div id="adminReviewsList">
                 ${reviews.map(r => `
@@ -2826,8 +2815,6 @@ async function loadAdminDashboard() {
             </div>
 
             <hr>
-
-            <!-- ===== الحجوزات ===== -->
             <h3>📅 الحجوزات</h3>
             <div class="filter-section">
                 <input type="date" id="filterDate" onchange="filterAppointments()">
@@ -2844,7 +2831,7 @@ async function loadAdminDashboard() {
             <div id="adminAppointmentsList"></div>
         `;
 
-        // ===== تحميل الحجوزات بشكل منفصل =====
+        // تحميل الحجوزات بشكل منفصل
         await loadAppointmentsForAdmin();
 
     } catch (error) {
@@ -2852,11 +2839,12 @@ async function loadAdminDashboard() {
         showToast('❌ فشل في تحميل لوحة المدير', 'error');
     }
 }
-2️⃣ الدوال المساعدة (ضعها بعد loadAdminDashboard)
-javascript
+
 // ============================================================
-// دوال تحميل وعرض الحجوزات
+// دوال الحجوزات (بدون تكرار)
 // ============================================================
+
+let allAppointments = [];
 
 async function loadAppointmentsForAdmin() {
     const token = localStorage.getItem('adminToken');
@@ -2865,43 +2853,54 @@ async function loadAppointmentsForAdmin() {
         const res = await fetch(`${API_BASE}/admin/appointments`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        const appointments = await res.json();
-        const container = document.getElementById('adminAppointmentsList');
-        if (!container) return;
-        if (!appointments || appointments.length === 0) {
-            container.innerHTML = '<p style="color:#888;">لا توجد حجوزات</p>';
-            return;
-        }
-        container.innerHTML = appointments.map(a => `
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:0.3rem 0;border-bottom:1px solid var(--border-color);flex-wrap:wrap;gap:0.3rem;">
-                <span><strong>${a.clientName}</strong> → ${a.salonId?.name || 'صالون'}</span>
-                <span>📅 ${a.date} 🕐 ${a.time}</span>
-                <span class="status ${a.status}">${a.status}</span>
-                <span>💰 ${a.totalPrice || a.price || 0} دج</span>
-                <div style="display:flex;gap:0.3rem;">
-                    ${a.status === 'pending' ? `<button class="btn-success btn-sm" onclick="adminConfirmAppointment('${a._id}')"><i class="fas fa-check"></i></button>` : ''}
-                    ${a.status !== 'cancelled' && a.status !== 'completed' ? `<button class="btn-danger btn-sm" onclick="adminCancelAppointment('${a._id}')"><i class="fas fa-times"></i></button>` : ''}
-                    <button class="btn-danger btn-sm" onclick="adminDeleteAppointment('${a._id}')" style="background:#c0392b;"><i class="fas fa-trash"></i></button>
-                </div>
-            </div>
-        `).join('');
+        allAppointments = await res.json();
+        renderAppointments(allAppointments);
     } catch (error) {
         console.error('❌ فشل في تحميل الحجوزات:', error);
         showToast('❌ فشل في تحميل الحجوزات', 'error');
     }
 }
 
+function renderAppointments(appointments) {
+    const container = document.getElementById('adminAppointmentsList');
+    if (!container) return;
+    if (!appointments || appointments.length === 0) {
+        container.innerHTML = '<p style="color:#888;">لا توجد حجوزات</p>';
+        return;
+    }
+    container.innerHTML = appointments.map(a => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:0.3rem 0;border-bottom:1px solid var(--border-color);flex-wrap:wrap;gap:0.3rem;">
+            <span><strong>${a.clientName}</strong> → ${a.salonId?.name || 'صالون'}</span>
+            <span>📅 ${a.date} 🕐 ${a.time}</span>
+            <span class="status ${a.status}">${a.status}</span>
+            <span>💰 ${a.totalPrice || a.price || 0} دج</span>
+            <div style="display:flex;gap:0.3rem;">
+                ${a.status === 'pending' ? `<button class="btn-success btn-sm" onclick="adminConfirmAppointment('${a._id}')"><i class="fas fa-check"></i></button>` : ''}
+                ${a.status !== 'cancelled' && a.status !== 'completed' ? `<button class="btn-danger btn-sm" onclick="adminCancelAppointment('${a._id}')"><i class="fas fa-times"></i></button>` : ''}
+                <button class="btn-danger btn-sm" onclick="adminDeleteAppointment('${a._id}')" style="background:#c0392b;"><i class="fas fa-trash"></i></button>
+            </div>
+        </div>
+    `).join('');
+}
+
 function filterAppointments() {
     const date = document.getElementById('filterDate').value;
     const status = document.getElementById('filterStatus').value;
-    // نعيد تحميل البيانات من الخادم لتصفيتها (يمكن تحسينها بتخزين البيانات محلياً)
-    loadAppointmentsForAdmin();
+    let filtered = allAppointments || [];
+    if (date) filtered = filtered.filter(a => a.date === date);
+    if (status) filtered = filtered.filter(a => a.status === status);
+    renderAppointments(filtered);
 }
 
 function resetFilters() {
     document.getElementById('filterDate').value = '';
     document.getElementById('filterStatus').value = '';
+    renderAppointments(allAppointments || []);
+}
+
+function loadAllAppointments() {
     loadAppointmentsForAdmin();
+    showToast('🔄 جاري تحميل جميع الحجوزات...', 'info');
 }
 
 // ============================================================
@@ -3005,165 +3004,10 @@ async function toggleCustomerBlock(customerId) {
             showToast(`✅ ${data.message}`, 'success');
             loadAdminDashboard();
         } else {
-            showToast(`❌ ${data.message}`, 'error');
+            showToast(`❌ ${data.message}`, 'error`);
         }
     } catch {
         showToast('❌ فشل الاتصال', 'error');
-    }
-}
-
-// ============================================================
-// دوال إدارة الحجوزات
-// ============================================================
-
-let allAppointments = [];
-
-async function loadAllAppointments() {
-    const token = localStorage.getItem('adminToken');
-    if (!token) return;
-    try {
-        const res = await fetch(`${API_BASE}/admin/appointments`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        window.allAppointments = await res.json();
-        renderAppointments(window.allAppointments);
-    } catch {
-        showToast('❌ فشل في تحميل الحجوزات', 'error');
-    }
-}
-
-function renderAppointments(appointments) {
-    const container = document.getElementById('adminAppointmentsList');
-    if (!container) return;
-    if (!appointments || appointments.length === 0) {
-        container.innerHTML = '<p style="color:#888;">لا توجد حجوزات</p>';
-        return;
-    }
-    container.innerHTML = appointments.map(a => `
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:0.3rem 0;border-bottom:1px solid var(--border-color);flex-wrap:wrap;gap:0.3rem;">
-            <span><strong>${a.clientName}</strong> → ${a.salonId?.name || 'صالون'}</span>
-            <span>📅 ${a.date} 🕐 ${a.time}</span>
-            <span class="status ${a.status}">${a.status}</span>
-            <span>💰 ${a.totalPrice || a.price || 0} دج</span>
-            <div style="display:flex;gap:0.3rem;">
-                ${a.status === 'pending' ? `<button class="btn-success btn-sm" onclick="adminConfirmAppointment('${a._id}')"><i class="fas fa-check"></i></button>` : ''}
-                ${a.status !== 'cancelled' && a.status !== 'completed' ? `<button class="btn-danger btn-sm" onclick="adminCancelAppointment('${a._id}')"><i class="fas fa-times"></i></button>` : ''}
-                <button class="btn-danger btn-sm" onclick="adminDeleteAppointment('${a._id}')" style="background:#c0392b;"><i class="fas fa-trash"></i></button>
-            </div>
-        </div>
-    `).join('');
-}
-
-function filterAppointments() {
-    const date = document.getElementById('filterDate').value;
-    const status = document.getElementById('filterStatus').value;
-    let filtered = window.allAppointments || [];
-    if (date) filtered = filtered.filter(a => a.date === date);
-    if (status) filtered = filtered.filter(a => a.status === status);
-    renderAppointments(filtered);
-}
-
-function resetFilters() {
-    document.getElementById('filterDate').value = '';
-    document.getElementById('filterStatus').value = '';
-    renderAppointments(window.allAppointments || []);
-}
-
-// ============================================================
-// دوال إدارة الحجوزات
-// ============================================================
-
-async function adminConfirmAppointment(id) {
-    if (!confirm('⚠️ تأكيد هذا الموعد؟')) return;
-    const token = localStorage.getItem('adminToken');
-    try {
-        const res = await fetch(`${API_BASE}/appointments/${id}/confirm`, {
-            method: 'PUT',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (res.ok) {
-            showToast('✅ تم تأكيد الموعد', 'success');
-            loadAdminDashboard();
-        } else {
-            const data = await res.json();
-            showToast(`❌ ${data.message}`, 'error');
-        }
-    } catch {
-        showToast('❌ فشل الاتصال', 'error');
-    }
-}
-
-async function adminCancelAppointment(id) {
-    if (!confirm('⚠️ إلغاء هذا الموعد؟')) return;
-    const token = localStorage.getItem('adminToken');
-    try {
-        const res = await fetch(`${API_BASE}/appointments/${id}/cancel`, {
-            method: 'PUT',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (res.ok) {
-            showToast('✅ تم إلغاء الموعد', 'success');
-            loadAdminDashboard();
-        } else {
-            const data = await res.json();
-            showToast(`❌ ${data.message}`, 'error');
-        }
-    } catch {
-        showToast('❌ فشل الاتصال', 'error');
-    }
-}
-
-async function adminDeleteAppointment(appointmentId) {
-    if (!confirm('⚠️ هل أنت متأكد من حذف هذا الحجز نهائياً؟')) return;
-    const token = localStorage.getItem('adminToken');
-    try {
-        const res = await fetch(`${API_BASE}/admin/appointments/${appointmentId}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (res.ok) {
-            showToast('✅ تم حذف الحجز', 'success');
-            loadAdminDashboard();
-        } else {
-            const data = await res.json();
-            showToast(`❌ ${data.message}`, 'error');
-        }
-    } catch {
-        showToast('❌ فشل الاتصال', 'error');
-    }
-}
-
-// ============================================================
-// حذف حجز نهائياً (مدير)
-// ============================================================
-async function adminDeleteAppointment(appointmentId) {
-    if (!confirm('⚠️ هل أنت متأكد من حذف هذا الحجز نهائياً؟\nهذا الإجراء لا يمكن التراجع عنه.')) {
-        return;
-    }
-    
-    const token = localStorage.getItem('adminToken');
-    if (!token) {
-        showToast('❌ يرجى تسجيل الدخول كمدير', 'error');
-        return;
-    }
-    
-    try {
-        const res = await fetch(`${API_BASE}/admin/appointments/${appointmentId}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        const data = await res.json();
-        
-        if (res.ok) {
-            showToast('✅ ' + data.message, 'success');
-            loadAdminDashboard(); // تحديث لوحة المدير
-        } else {
-            showToast('❌ ' + (data.message || 'فشل في حذف الحجز'), 'error');
-        }
-    } catch (error) {
-        console.error('❌ خطأ في حذف الحجز:', error);
-        showToast('❌ فشل الاتصال بالخادم', 'error');
     }
 }
 
@@ -3199,151 +3043,6 @@ async function sendBroadcast() {
         }
     } catch {
         showToast('❌ فشل الاتصال', 'error');
-    }
-}
-
-// ============================================================
-// الدوال الأصلية (مع تعديلات طفيفة)
-// ============================================================
-
-async function adminEditSalon(id) {
-    try {
-        const res = await fetch(`${API_BASE}/admin/salons/${id}`);
-        const salon = await res.json();
-        const newName = prompt('اسم الصالون الجديد:', salon.name); if (!newName) return;
-        const newCity = prompt('المدينة:', salon.city); if (!newCity) return;
-        const token = localStorage.getItem('adminToken');
-        const res2 = await fetch(`${API_BASE}/admin/salons/${id}`, { 
-            method: 'PUT', 
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ name: newName, city: newCity }) 
-        });
-        if (res2.ok) { 
-            showToast('✅ تم التعديل', 'success');
-            loadAdminDashboard(); 
-        } else { 
-            const data = await res2.json(); 
-            showToast(`❌ ${data.message}`, 'error'); 
-        }
-    } catch { 
-        showToast('❌ فشل', 'error'); 
-    }
-}
-
-async function adminDeleteSalon(id) {
-    showConfirm('حذف هذا الصالون؟', async () => {
-        const token = localStorage.getItem('adminToken');
-        try { 
-            const res = await fetch(`${API_BASE}/admin/salons/${id}`, { 
-                method: 'DELETE', 
-                headers: { 'Authorization': `Bearer ${token}` } 
-            }); 
-            if (res.ok) { 
-                showToast('✅ تم الحذف', 'success');
-                loadAdminDashboard(); 
-            } else { 
-                const data = await res.json(); 
-                showToast(`❌ ${data.message}`, 'error'); 
-            } 
-        } catch { 
-            showToast('❌ فشل', 'error'); 
-        }
-    });
-}
-
-async function adminEditCustomer(id) {
-    try {
-        const res = await fetch(`${API_BASE}/admin/customers/${id}`);
-        const customer = await res.json();
-        const newName = prompt('اسم العميل الجديد:', customer.name); if (!newName) return;
-        const newEmail = prompt('البريد:', customer.email); if (!newEmail) return;
-        const token = localStorage.getItem('adminToken');
-        const res2 = await fetch(`${API_BASE}/admin/customers/${id}`, { 
-            method: 'PUT', 
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ name: newName, email: newEmail }) 
-        });
-        if (res2.ok) { 
-            showToast('✅ تم التعديل', 'success');
-            loadAdminDashboard(); 
-        } else { 
-            const data = await res2.json(); 
-            showToast(`❌ ${data.message}`, 'error'); 
-        }
-    } catch { 
-        showToast('❌ فشل', 'error'); 
-    }
-}
-
-async function adminDeleteCustomer(id) {
-    showConfirm('حذف هذا العميل؟', async () => {
-        const token = localStorage.getItem('adminToken');
-        try { 
-            const res = await fetch(`${API_BASE}/admin/customers/${id}`, { 
-                method: 'DELETE', 
-                headers: { 'Authorization': `Bearer ${token}` } 
-            }); 
-            if (res.ok) { 
-                showToast('✅ تم الحذف', 'success');
-                loadAdminDashboard(); 
-            } else { 
-                const data = await res.json(); 
-                showToast(`❌ ${data.message}`, 'error'); 
-            } 
-        } catch { 
-            showToast('❌ فشل', 'error'); 
-        }
-    });
-}
-
-async function adminDeleteReview(id) {
-    showConfirm('حذف هذا التقييم؟', async () => {
-        const token = localStorage.getItem('adminToken');
-        try { 
-            const res = await fetch(`${API_BASE}/admin/reviews/${id}`, { 
-                method: 'DELETE', 
-                headers: { 'Authorization': `Bearer ${token}` } 
-            }); 
-            if (res.ok) { 
-                showToast('✅ تم الحذف', 'success');
-                loadAdminDashboard(); 
-            } else { 
-                const data = await res.json(); 
-                showToast(`❌ ${data.message}`, 'error'); 
-            } 
-        } catch { 
-            showToast('❌ فشل', 'error'); 
-        }
-    });
-}
-
-// ============================================================
-// حذف جميع التقييمات (نسخة محسنة)
-// ============================================================
-
-async function adminDeleteAllReviews(salonId) {
-    try {
-        const res = await fetch(`${API_BASE}/admin/salons/${salonId}`, {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
-        });
-        const salon = await res.json();
-        if (!confirm(`⚠️ هل أنت متأكد من حذف جميع تقييمات صالون "${salon.name}"؟\nهذا الإجراء لا يمكن التراجع عنه.`)) {
-            return;
-        }
-        const deleteRes = await fetch(`${API_BASE}/admin/salons/${salonId}/reviews`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
-        });
-        const data = await deleteRes.json();
-        if (deleteRes.ok) {
-            showToast(`✅ ${data.message}`, 'success');
-            loadAdminDashboard();
-        } else {
-            showToast(`❌ ${data.message}`, 'error');
-        }
-    } catch (error) {
-        console.error('❌ خطأ في حذف التقييمات:', error);
-        showToast('❌ فشل في حذف التقييمات', 'error');
     }
 }
 
