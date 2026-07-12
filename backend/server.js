@@ -489,6 +489,185 @@ app.put('/api/admin/change-user-password', adminAuthMiddleware, async (req, res)
         res.status(500).json({ message: 'فشل تغيير كلمة المرور' });
     }
 });
+// ============================================================
+// مسارات المدير الإضافية - تحسينات لوحة التحكم
+// ============================================================
+
+// 1. إحصائيات متقدمة (صالونات نشطة، حجوزات معلقة/مكتملة)
+app.get('/api/admin/stats/advanced', adminAuthMiddleware, async (req, res) => {
+    try {
+        const totalSalons = await Salon.countDocuments();
+        const activeSalons = await Salon.countDocuments({ isActive: { $ne: false } });
+        const totalCustomers = await Customer.countDocuments();
+        const totalAppointments = await Appointment.countDocuments();
+        const pendingAppointments = await Appointment.countDocuments({ status: 'pending' });
+        const completedAppointments = await Appointment.countDocuments({ status: 'completed' });
+        const totalReviews = await Review.countDocuments();
+        
+        // إجمالي الإيرادات
+        const confirmedAppointments = await Appointment.find({ status: { $in: ['confirmed', 'completed'] } });
+        const totalRevenue = confirmedAppointments.reduce((sum, a) => sum + (a.totalPrice || a.price || 0), 0);
+        
+        res.json({
+            totalSalons,
+            activeSalons,
+            totalCustomers,
+            totalAppointments,
+            pendingAppointments,
+            completedAppointments,
+            totalReviews,
+            totalRevenue
+        });
+    } catch (error) {
+        console.error('❌ خطأ في stats/advanced:', error);
+        res.status(500).json({ message: 'فشل في جلب الإحصائيات المتقدمة' });
+    }
+});
+
+// 2. تفعيل/تعطيل صالون
+app.put('/api/admin/salons/:id/toggle', adminAuthMiddleware, async (req, res) => {
+    try {
+        const salon = await Salon.findById(req.params.id);
+        if (!salon) return res.status(404).json({ message: 'صالون غير موجود' });
+        
+        // تغيير الحالة
+        salon.isActive = salon.isActive === false ? true : false;
+        await salon.save();
+        
+        res.json({ 
+            message: `تم ${salon.isActive ? 'تفعيل' : 'تعطيل'} الصالون ${salon.name}`,
+            isActive: salon.isActive 
+        });
+    } catch (error) {
+        console.error('❌ خطأ في toggle salon:', error);
+        res.status(500).json({ message: 'فشل تغيير حالة الصالون' });
+    }
+});
+
+// 3. حظر/إلغاء حظر عميل
+app.put('/api/admin/customers/:id/toggle-block', adminAuthMiddleware, async (req, res) => {
+    try {
+        const customer = await Customer.findById(req.params.id);
+        if (!customer) return res.status(404).json({ message: 'عميل غير موجود' });
+        
+        customer.isBlocked = customer.isBlocked === true ? false : true;
+        await customer.save();
+        
+        res.json({ 
+            message: `تم ${customer.isBlocked ? 'حظر' : 'إلغاء حظر'} العميل ${customer.name}`,
+            isBlocked: customer.isBlocked 
+        });
+    } catch (error) {
+        console.error('❌ خطأ في toggle customer block:', error);
+        res.status(500).json({ message: 'فشل تغيير حالة العميل' });
+    }
+});
+
+// 4. جلب جميع الحجوزات (للمدير)
+app.get('/api/admin/appointments', adminAuthMiddleware, async (req, res) => {
+    try {
+        const appointments = await Appointment.find()
+            .populate('salonId', 'name')
+            .populate('customerId', 'name')
+            .sort({ createdAt: -1 });
+        res.json(appointments);
+    } catch (error) {
+        console.error('❌ خطأ في admin/appointments:', error);
+        res.status(500).json({ message: 'فشل في جلب الحجوزات' });
+    }
+});
+
+// 5. إرسال إشعار جماعي لجميع الصالونات والعملاء
+app.post('/api/admin/broadcast', adminAuthMiddleware, async (req, res) => {
+    try {
+        const { title, message } = req.body;
+        if (!title || !message) {
+            return res.status(400).json({ message: 'العنوان والنص مطلوبان' });
+        }
+
+        // جلب جميع المستخدمين
+        const salons = await Salon.find().select('_id');
+        const customers = await Customer.find().select('_id');
+        
+        // إنشاء إشعارات لكل مستخدم
+        const notifications = [];
+        
+        salons.forEach(salon => {
+            notifications.push({
+                userId: salon._id,
+                userType: 'salon',
+                title,
+                message,
+                read: false,
+                createdAt: new Date()
+            });
+        });
+        
+        customers.forEach(customer => {
+            notifications.push({
+                userId: customer._id,
+                userType: 'customer',
+                title,
+                message,
+                read: false,
+                createdAt: new Date()
+            });
+        });
+        
+        // حفظ الإشعارات في قاعدة البيانات (إذا كان لديك نموذج Notification)
+        if (notifications.length > 0) {
+            await Notification.insertMany(notifications);
+        }
+        
+        // إرسال إشعار فوري عبر Socket.io للمستخدمين المتصلين
+        const io = req.app.get('io');
+        if (io) {
+            // إرسال لكل صالون متصل
+            salons.forEach(salon => {
+                io.to(`salon-${salon._id}`).emit('new-notification', { title, message });
+            });
+            // إرسال لكل عميل متصل
+            customers.forEach(customer => {
+                io.to(`customer-${customer._id}`).emit('new-notification', { title, message });
+            });
+        }
+        
+        res.json({ 
+            message: `✅ تم إرسال الإشعار إلى ${notifications.length} مستخدم`,
+            count: notifications.length 
+        });
+        
+    } catch (error) {
+        console.error('❌ خطأ في broadcast:', error);
+        res.status(500).json({ message: 'فشل إرسال الإشعارات' });
+    }
+});
+
+// 6. حذف جميع التقييمات لصالون (نسخة محسنة)
+app.delete('/api/admin/salons/:id/reviews', adminAuthMiddleware, async (req, res) => {
+    try {
+        const salonId = req.params.id;
+        const salon = await Salon.findById(salonId);
+        if (!salon) {
+            return res.status(404).json({ message: '❌ الصالون غير موجود' });
+        }
+
+        const result = await Review.deleteMany({ salonId: salonId });
+        
+        // تحديث تقييم الصالون إلى 0
+        salon.rating = 0;
+        salon.totalReviews = 0;
+        await salon.save();
+
+        res.json({
+            message: `✅ تم حذف ${result.deletedCount} تقييم من صالون ${salon.name}`,
+            deletedCount: result.deletedCount
+        });
+    } catch (error) {
+        console.error('❌ خطأ في حذف تقييمات الصالون:', error);
+        res.status(500).json({ message: '❌ فشل في حذف التقييمات' });
+    }
+});
 
 // ============================================================
 // الصالونات العامة
