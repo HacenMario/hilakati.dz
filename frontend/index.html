@@ -1418,6 +1418,7 @@
 <!-- تفاصيل الصالون -->
 <div class="modal-overlay" id="salonDetailsModal"><div class="modal-box" style="max-width:650px;">
     <button class="modal-close" onclick="closeModal('salonDetailsModal')">&times;</button>
+    <button class="btn-success btn-sm" onclick="quickBooking('${salon._id}')" style="background:var(--success);"><i class="fas fa-bolt"></i> حجز سريع</button>
     <div id="salonDetailsContent"></div>
 </div></div>
 
@@ -1534,6 +1535,11 @@
     <h2 class="section-title">جميع <span class="highlight">الصالونات</span></h2>
     <div class="filter-section">
         <input type="text" id="searchSalon" placeholder="🔍 ابحث باسم الصالون..." />
+        <select id="filterSort">
+    <option value="rating">الأعلى تقييماً</option>
+    <option value="price">الأقل سعراً</option>
+    <option value="distance">الأقرب</option>
+</select>
         <select id="filterCity">
             <option value="">جميع الولايات</option>
             <option value="أدرار">أدرار</option><option value="الشلف">الشلف</option><option value="الأغواط">الأغواط</option>
@@ -2032,6 +2038,66 @@ document.getElementById('adminLoginForm').addEventListener('submit', async (e) =
         } else showToast(`❌ ${data.message}`);
     } catch { showToast('❌ فشل الاتصال'); }
 });
+
+// ============================================================
+// حجز سريع (أقرب موعد متاح)
+// ============================================================
+async function quickBooking(salonId) {
+    const customerToken = localStorage.getItem('customerToken');
+    if (!customerToken) {
+        showToast('❌ يرجى تسجيل الدخول أولاً', 'error');
+        openModal('customerLoginModal');
+        return;
+    }
+    try {
+        // جلب بيانات العميل
+        const profileRes = await fetch(`${API_BASE}/customer/auth/profile`, {
+            headers: { 'Authorization': `Bearer ${customerToken}` }
+        });
+        const profile = await profileRes.json();
+        
+        // جلب الصالون
+        const salonRes = await fetch(`${API_BASE}/salons/${salonId}`);
+        const salon = await salonRes.json();
+        
+        // اختيار أول خدمة وأول موظف
+        const service = salon.services?.[0] || { name: 'خدمة أساسية', price: 500 };
+        const staff = salon.staff?.[0] || 'موظف رئيسي';
+        const today = new Date().toISOString().split('T')[0];
+        const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+        
+        // إرسال الحجز
+        const res = await fetch(`${API_BASE}/appointments/request`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                salonId,
+                customerId: localStorage.getItem('customerId'),
+                clientName: profile.name,
+                clientPhone: profile.phone,
+                clientEmail: profile.email,
+                services: [service],
+                totalPrice: service.price,
+                staff,
+                date: tomorrow,
+                time: '10:00',
+                payment: 'cash',
+                notes: 'حجز سريع',
+                recurring: 'none'
+            })
+        });
+        if (res.ok) {
+            showToast('✅ تم الحجز السريع!', 'success');
+            loadSalons();
+        } else {
+            const data = await res.json();
+            showToast(`❌ ${data.message}`, 'error');
+        }
+    } catch {
+        showToast('❌ فشل الحجز السريع', 'error');
+    }
+}
+
 // ============================================================
 // حذف جميع تقييمات صالون بواسطة المدير
 // ============================================================
@@ -2259,6 +2325,15 @@ document.getElementById('searchSalon').addEventListener('input', applyFilters);
 document.getElementById('filterCity').addEventListener('change', applyFilters);
 document.getElementById('filterService').addEventListener('change', applyFilters);
 document.getElementById('filterSalonType').addEventListener('change', applyFilters);
+    const sort = document.getElementById('filterSort').value;
+    if (sort === 'rating') result.sort((a,b) => (b.rating || 0) - (a.rating || 0));
+    else if (sort === 'price') {
+        result.sort((a,b) => {
+            const minA = a.services?.length ? Math.min(...a.services.map(s => s.price)) : 999999;
+            const minB = b.services?.length ? Math.min(...b.services.map(s => s.price)) : 999999;
+            return minA - minB;
+        });
+    }
 
 function getNearbySalons() {
     const salonsWithGps = allSalons.filter(s => s.lat && s.lng);
