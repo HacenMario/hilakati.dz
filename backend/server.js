@@ -748,6 +748,33 @@ app.post('/api/appointments/request', async (req, res) => {
             salonId, customerId, clientName, clientPhone, clientEmail, services, totalPrice, staff, date, time, payment, notes, recurring, status: 'pending'
         });
         await appointment.save();
+        // ===== إنشاء إشعار للصالون =====
+try {
+    const salon = await Salon.findById(salonId);
+    if (salon) {
+        const notification = new Notification({
+            userId: salonId,
+            userType: 'salon',
+            title: '📅 حجز جديد',
+            message: `حجز من ${clientName} في ${date} الساعة ${time}`,
+            read: false,
+            createdAt: new Date()
+        });
+        await notification.save();
+        
+        // إرسال إشعار فوري عبر Socket.io
+        const io = req.app.get('io');
+        if (io) {
+            io.to(`salon-${salonId}`).emit('new-notification', {
+                title: '📅 حجز جديد',
+                message: `حجز من ${clientName} في ${date} الساعة ${time}`
+            });
+        }
+    }
+} catch (notifError) {
+    console.error('❌ فشل إنشاء الإشعار:', notifError);
+    // لا نوقف العملية إذا فشل الإشعار
+}
         res.status(201).json(appointment);
     } catch (err) {
         res.status(500).json({ message: 'فشل إنشاء الحجز' });
