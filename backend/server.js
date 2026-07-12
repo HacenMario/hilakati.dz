@@ -861,7 +861,7 @@ app.get('/api/notifications/salon', authMiddleware, async (req, res) => {
         res.status(500).json([]);
     }
 });
-
+        
 app.get('/api/notifications/customer', customerAuthMiddleware, async (req, res) => {
     try {
         const notifications = await Notification.find({ userId: req.customerId, userType: 'customer' })
