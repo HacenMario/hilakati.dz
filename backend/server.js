@@ -745,95 +745,103 @@ app.get('/api/appointments/client/:phone', async (req, res) => {
 app.post('/api/appointments/request', async (req, res) => {
     try {
         const { salonId, customerId, clientName, clientPhone, clientEmail, services, totalPrice, staff, date, time, payment, notes, recurring } = req.body;
-        const appointment = new Appointment({
-            salonId, customerId, clientName, clientPhone, clientEmail, services, totalPrice, staff, date, time, payment, notes, recurring, status: 'pending'
-        });
-        await appointment.save();
-// ===== إنشاء إشعار للصالون =====
-try {
-    const salon = await Salon.findById(salonId);
-    if (salon) {
-        const notification = new Notification({
-            userId: salonId,
-            userType: 'salon',
-            title: '📅 حجز جديد',
-            message: `حجز من ${clientName} في ${date} الساعة ${time}`,
-            read: false,
-            appointmentTime: time,
-            createdAt: new Date() // <-- هذا هو وقت إنشاء الإشعار
-        });
-        await notification.save();
-        console.log(`✅ تم حفظ إشعار للصالون ${salonId}`);
-        
-        // إشعار فوري عبر Socket.io
-        const io = req.app.get('io');
-        if (io) {
-            io.to(`salon-${salonId}`).emit('new-notification', {
-                title: '📅 حجز جديد',
-                message: `حجز من ${clientName} في ${date} الساعة ${time}`
-            });
-            console.log(`📡 تم إرسال إشعار عبر Socket.io للصالون ${salonId}`);
+
+        // ============================================================
+        // 1. جلب بيانات الصالون
+        // ============================================================
+        const salon = await Salon.findById(salonId);
+        if (!salon) {
+            return res.status(404).json({ message: '❌ الصالون غير موجود' });
         }
-    }
-} catch (notifError) {
-    console.error('❌ فشل إنشاء الإشعار:', notifError);
-}
-        res.status(201).json(appointment);
-    } catch (err) {
-        res.status(500).json({ message: 'فشل إنشاء الحجز' });
-    }
-});
 
-app.put('/api/appointments/:id/confirm', authMiddleware, async (req, res) => {
-    await Appointment.findByIdAndUpdate(req.params.id, { status: 'confirmed' });
-    res.json({ message: 'تم تأكيد الموعد' });
-});
-
-app.put('/api/appointments/:id/complete', authMiddleware, async (req, res) => {
-    await Appointment.findByIdAndUpdate(req.params.id, { status: 'completed' });
-    res.json({ message: 'تم إكمال الموعد' });
-});
-
-app.put('/api/appointments/:id/cancel', authMiddleware, async (req, res) => {
-    await Appointment.findByIdAndUpdate(req.params.id, { status: 'cancelled' });
-    res.json({ message: 'تم إلغاء الموعد' });
-});
-
-// ============================================================
-// إكمال الحجز وتقييم الصالون تلقائياً
-// ============================================================
-app.put('/api/appointments/:id/complete-with-review', authMiddleware, async (req, res) => {
-    try {
-        const { rating, comment } = req.body;
-        const appointment = await Appointment.findById(req.params.id);
-        if (!appointment) return res.status(404).json({ message: 'الحجز غير موجود' });
+        // ============================================================
+        // 2. التحقق من ساعات العمل
+        // ============================================================
+        const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+        const selectedDate = new Date(date);
+        const dayIndex = selectedDate.getDay();
+        const dayName = dayNames[dayIndex];
         
-        // تحديث حالة الحجز
-        appointment.status = 'completed';
+        // جلب ساعات العمل لهذا اليوم
+        const dayHours = salon.hours ? salon.hours.get(dayName) : null;
+        
+        // إذا لم توجد ساعات عمل لهذا اليوم أو كانت "مغلق"
+        if (!dayHours || dayHours === 'مغلق' || dayHours === 'closed') {
+            return res.status(400).json({
+                message: `❌ الصالون مغلق يوم ${dayName}`
+            });
+        }
+
+        // تحليل وقت الفتح والإغلاق (مثال: "09:00-18:00")
+        const [openTime, closeTime] = dayHours.split('-').map(t => t.trim());
+        
+        // التحقق من أن الوقت المطلوب ضمن ساعات العمل
+        if (time < openTime || time > closeTime) {
+            return res.status(400).json({
+                message: `❌ وقت الحجز (${time}) خارج ساعات العمل (${openTime} - ${closeTime})`
+            });
+        }
+
+        // ============================================================
+        // 3. التحقق من عدم وجود حجز مكرر في نفس الوقت
+        // ============================================================
+        const existingAppointment = await Appointment.findOne({
+            salonId,
+            date,
+            time,
+            status: { $in: ['pending', 'confirmed'] }
+        });
+
+        if (existingAppointment) {
+            return res.status(409).json({
+                message: `❌ هذا الموعد محجوز مسبقاً في ${date} الساعة ${time}`
+            });
+        }
+
+        // ============================================================
+        // 4. إنشاء الحجز
+        // ============================================================
+        const appointment = new Appointment({
+            salonId, customerId, clientName, clientPhone, clientEmail,
+            services, totalPrice, staff, date, time, payment, notes,
+            recurring, status: 'pending'
+        });
         await appointment.save();
 
-        // إضافة التقييم
-        const review = new Review({
-            salonId: appointment.salonId,
-            customerId: appointment.customerId,
-            customerName: appointment.clientName,
-            rating: rating || 5,
-            comment: comment || 'شكراً!',
-            date: new Date().toISOString().split('T')[0]
-        });
-        await review.save();
+        // ===== إنشاء إشعار للصالون =====
+        try {
+            const notification = new Notification({
+                userId: salonId,
+                userType: 'salon',
+                title: '📅 حجز جديد',
+                message: `حجز من ${clientName} في ${date} الساعة ${time}`,
+                read: false,
+                appointmentTime: time,
+                createdAt: new Date()
+            });
+            await notification.save();
+            console.log(`✅ تم حفظ إشعار للصالون ${salonId}`);
+            
+            const io = req.app.get('io');
+            if (io) {
+                io.to(`salon-${salonId}`).emit('new-notification', {
+                    title: '📅 حجز جديد',
+                    message: `حجز من ${clientName} في ${date} الساعة ${time}`
+                });
+                console.log(`📡 تم إرسال إشعار عبر Socket.io للصالون ${salonId}`);
+            }
+        } catch (notifError) {
+            console.error('❌ فشل إنشاء الإشعار:', notifError);
+        }
 
-        // تحديث متوسط تقييم الصالون
-        const reviews = await Review.find({ salonId: appointment.salonId });
-        const avg = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
-        await Salon.findByIdAndUpdate(appointment.salonId, { 
-            rating: Math.round(avg * 10) / 10, 
-            totalReviews: reviews.length 
+        res.status(201).json({
+            message: '✅ تم إرسال طلب الحجز بنجاح!',
+            appointment
         });
 
-        res.json({ message: '✅ تم إكمال الحجز والتقييم' });
-    } catch (error) {
-        res.status(500).json({ message: 'فشل إكمال الحجز' });
+    } catch (err) {
+        console.error('❌ فشل إنشاء الحجز:', err);
+        res.status(500).json({ message: '❌ فشل إنشاء الحجز' });
     }
 });
 
