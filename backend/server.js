@@ -293,52 +293,41 @@ app.post('/api/auth/forgot-password', async (req, res) => {
     console.log('📧 طلب إعادة تعيين كلمة المرور:', email, userType);
 
     try {
-        // البحث عن المستخدم حسب النوع
         let user;
         if (userType === 'salon') {
             user = await Salon.findOne({ email });
         } else if (userType === 'customer') {
             user = await Customer.findOne({ email });
         } else {
-            console.log('❌ نوع مستخدم غير صحيح:', userType);
             return res.status(400).json({ message: 'نوع المستخدم غير صحيح' });
         }
 
         if (!user) {
-            console.log('❌ البريد غير مسجل:', email);
             return res.status(404).json({ message: 'البريد الإلكتروني غير مسجل' });
         }
 
-        console.log('✅ تم العثور على المستخدم:', user._id);
-
-        // إنشاء توكن إعادة تعيين
+        // إنشاء توكن إعادة تعيين (صلاحية 30 دقيقة)
         const resetToken = jwt.sign(
             { id: user._id, userType },
             process.env.JWT_RESET_SECRET || 'reset_secret_key_change_me',
             { expiresIn: '30m' }
         );
 
-        const resetUrl = `${process.env.FRONTEND_URL || 'https://halakati-project.vercel.app'}?token=${resetToken}&userType=${userType}`;
-
-        // حفظ التوكن في قاعدة البيانات
+        // حفظ التوكن في قاعدة البيانات (اختياري)
         user.resetPasswordToken = resetToken;
-        user.resetPasswordExpires = Date.now() + 30 * 60 * 1000; // 30 دقيقة
+        user.resetPasswordExpires = Date.now() + 30 * 60 * 1000;
         await user.save();
 
-        console.log('🔑 رابط إعادة التعيين:', resetUrl);
-
-        // إرسال الرد مع الرابط
+        // ✅ إرجاع التوكن مباشرة (بدون إرسال بريد إلكتروني)
         res.json({
-            message: '✅ تم إنشاء رابط إعادة التعيين (تحقق من السجلات)',
-            resetLink: resetUrl
+            message: '✅ تم التحقق من البريد، أدخل كلمة المرور الجديدة',
+            resetToken: resetToken,
+            userType: userType
         });
 
     } catch (error) {
         console.error('❌ خطأ في forgot-password:', error);
-        res.status(500).json({
-            message: 'فشل في إنشاء رابط إعادة التعيين',
-            error: error.message
-        });
+        res.status(500).json({ message: 'فشل في إنشاء طلب إعادة التعيين' });
     }
 });
 
