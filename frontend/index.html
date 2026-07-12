@@ -2327,11 +2327,6 @@ async function showSalonDetails(id) {
                                 <i class="fab fa-whatsapp"></i> لا يوجد رقم
                               </button>`;
         }
-${localStorage.getItem('adminToken') ? `
-    <button class="btn-danger btn-sm" onclick="adminDeleteAllReviews('${salon._id}')">
-        <i class="fas fa-star"></i> حذف كل التقييمات (مدير)
-    </button>
-` : ''}
         // ============================================================
         // عرض المحتوى الكامل
         // ============================================================
