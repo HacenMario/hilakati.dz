@@ -862,7 +862,7 @@ app.post('/api/appointments/request', async (req, res) => {
     }
 });
 // ============================================================
-// تأكيد الحجز
+// تأكيد الحجز مع إشعار
 // ============================================================
 app.put('/api/appointments/:id/confirm', authMiddleware, async (req, res) => {
     try {
@@ -872,6 +872,24 @@ app.put('/api/appointments/:id/confirm', authMiddleware, async (req, res) => {
         }
         appointment.status = 'confirmed';
         await appointment.save();
+
+        // ===== إشعار للعميل =====
+        if (appointment.customerId) {
+            try {
+                const notification = new Notification({
+                    userId: appointment.customerId,
+                    userType: 'customer',
+                    title: '✅ تم تأكيد حجزك',
+                    message: `تم تأكيد حجزك في ${appointment.date} الساعة ${appointment.time}`,
+                    read: false
+                });
+                await notification.save();
+                console.log(`✅ تم إرسال إشعار تأكيد للعميل ${appointment.customerId}`);
+            } catch (err) {
+                console.error('❌ فشل إرسال إشعار التأكيد:', err);
+            }
+        }
+
         res.json({ message: '✅ تم تأكيد الموعد' });
     } catch (error) {
         console.error('❌ خطأ في تأكيد الموعد:', error);
@@ -880,25 +898,7 @@ app.put('/api/appointments/:id/confirm', authMiddleware, async (req, res) => {
 });
 
 // ============================================================
-// إلغاء الحجز
-// ============================================================
-app.put('/api/appointments/:id/cancel', authMiddleware, async (req, res) => {
-    try {
-        const appointment = await Appointment.findById(req.params.id);
-        if (!appointment) {
-            return res.status(404).json({ message: '❌ الحجز غير موجود' });
-        }
-        appointment.status = 'cancelled';
-        await appointment.save();
-        res.json({ message: '✅ تم إلغاء الموعد' });
-    } catch (error) {
-        console.error('❌ خطأ في إلغاء الموعد:', error);
-        res.status(500).json({ message: '❌ فشل إلغاء الموعد' });
-    }
-});
-
-// ============================================================
-// إكمال الحجز
+// إكمال الحجز مع إشعار
 // ============================================================
 app.put('/api/appointments/:id/complete', authMiddleware, async (req, res) => {
     try {
@@ -908,10 +908,64 @@ app.put('/api/appointments/:id/complete', authMiddleware, async (req, res) => {
         }
         appointment.status = 'completed';
         await appointment.save();
+
+        // ===== إشعار للعميل =====
+        if (appointment.customerId) {
+            try {
+                const notification = new Notification({
+                    userId: appointment.customerId,
+                    userType: 'customer',
+                    title: '✅ تم إكمال حجزك',
+                    message: `تم إكمال حجزك في ${appointment.date} الساعة ${appointment.time}. شكراً لزيارتنا!`,
+                    read: false
+                });
+                await notification.save();
+                console.log(`✅ تم إرسال إشعار إكمال للعميل ${appointment.customerId}`);
+            } catch (err) {
+                console.error('❌ فشل إرسال إشعار الإكمال:', err);
+            }
+        }
+
         res.json({ message: '✅ تم إكمال الموعد' });
     } catch (error) {
         console.error('❌ خطأ في إكمال الموعد:', error);
         res.status(500).json({ message: '❌ فشل إكمال الموعد' });
+    }
+});
+
+// ============================================================
+// إلغاء الحجز مع إشعار
+// ============================================================
+app.put('/api/appointments/:id/cancel', authMiddleware, async (req, res) => {
+    try {
+        const appointment = await Appointment.findById(req.params.id);
+        if (!appointment) {
+            return res.status(404).json({ message: '❌ الحجز غير موجود' });
+        }
+        appointment.status = 'cancelled';
+        await appointment.save();
+
+        // ===== إشعار للعميل =====
+        if (appointment.customerId) {
+            try {
+                const notification = new Notification({
+                    userId: appointment.customerId,
+                    userType: 'customer',
+                    title: '❌ تم إلغاء حجزك',
+                    message: `تم إلغاء حجزك في ${appointment.date} الساعة ${appointment.time}`,
+                    read: false
+                });
+                await notification.save();
+                console.log(`✅ تم إرسال إشعار إلغاء للعميل ${appointment.customerId}`);
+            } catch (err) {
+                console.error('❌ فشل إرسال إشعار الإلغاء:', err);
+            }
+        }
+
+        res.json({ message: '✅ تم إلغاء الموعد' });
+    } catch (error) {
+        console.error('❌ خطأ في إلغاء الموعد:', error);
+        res.status(500).json({ message: '❌ فشل إلغاء الموعد' });
     }
 });
 
