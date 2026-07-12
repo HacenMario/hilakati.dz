@@ -909,6 +909,28 @@ app.get('/', (req, res) => {
 });
 
 // ============================================================
+// إرسال رسالة واتساب
+// ============================================================
+function sendWhatsApp(phone, message) {
+    const cleanPhone = phone.replace(/[^0-9]/g, '');
+    const whatsappUrl = `https://wa.me/213${cleanPhone}?text=${encodeURIComponent(message)}`;
+    // نستخدم console.log لمحاكاة الإرسال (للتطوير)
+    console.log(`📱 واتساب إلى ${phone}: ${message}`);
+    console.log(`🔗 ${whatsappUrl}`);
+    return whatsappUrl;
+}
+
+// في مسار إنشاء الحجز
+app.post('/api/appointments/request', async (req, res) => {
+    // ... الكود الموجود ...
+    // بعد حفظ الحجز
+    const salon = await Salon.findById(salonId);
+    const message = `مرحباً ${clientName}، تم تأكيد حجزك في ${salon.name} بتاريخ ${date} الساعة ${time}. ننتظرك! 💈`;
+    sendWhatsApp(clientPhone, message);
+    // ...
+});
+
+// ============================================================
 // تشغيل الخادم
 // ============================================================
 const PORT = process.env.PORT || 5000;
