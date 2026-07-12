@@ -1391,6 +1391,30 @@
     <div id="myBookingsList"></div>
 </div></div>
 
+    <!-- نافذة تقييم سريع بعد الحجز -->
+<div class="modal-overlay" id="quickReviewModal">
+    <div class="modal-box" style="max-width:450px;">
+        <h2><i class="fas fa-star"></i> كيف كانت تجربتك؟</h2>
+        <p style="text-align:center;color:var(--text-color);opacity:0.7;">قيم الصالون لتساعد الآخرين في الاختيار</p>
+        <div style="text-align:center;margin:1rem 0;">
+            <div id="quickStars" style="font-size:2.5rem;direction:ltr;display:flex;justify-content:center;gap:0.3rem;cursor:pointer;">
+                <span data-value="1">☆</span>
+                <span data-value="2">☆</span>
+                <span data-value="3">☆</span>
+                <span data-value="4">☆</span>
+                <span data-value="5">☆</span>
+            </div>
+            <input type="hidden" id="quickRating" value="5">
+            <textarea id="quickComment" placeholder="شاركنا رأيك (اختياري)" rows="2" style="width:100%;margin-top:0.5rem;padding:0.5rem;border-radius:8px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--text-color);"></textarea>
+        </div>
+        <input type="hidden" id="quickAppointmentId">
+        <button class="btn-gold" style="width:100%;padding:0.5rem;" onclick="submitQuickReview()">
+            <i class="fas fa-check"></i> إرسال التقييم
+        </button>
+        <button class="btn-outline btn-sm" style="width:100%;margin-top:0.3rem;" onclick="skipQuickReview()">تخطي</button>
+    </div>
+</div>
+
 <!-- تفاصيل الصالون -->
 <div class="modal-overlay" id="salonDetailsModal"><div class="modal-box" style="max-width:650px;">
     <button class="modal-close" onclick="closeModal('salonDetailsModal')">&times;</button>
@@ -2961,6 +2985,81 @@ async function adminDeleteAppointment(appointmentId) {
     } catch {
         showToast('❌ فشل الاتصال', 'error');
     }
+}
+// ============================================================
+// نظام التقييم السريع
+// ============================================================
+let quickAppointmentId = null;
+
+// تفعيل اختيار النجوم
+document.querySelectorAll('#quickStars span').forEach(star => {
+    star.addEventListener('click', function() {
+        const value = parseInt(this.dataset.value);
+        document.getElementById('quickRating').value = value;
+        document.querySelectorAll('#quickStars span').forEach(s => {
+            s.textContent = parseInt(s.dataset.value) <= value ? '★' : '☆';
+        });
+    });
+    star.addEventListener('mouseenter', function() {
+        const value = parseInt(this.dataset.value);
+        document.querySelectorAll('#quickStars span').forEach(s => {
+            s.textContent = parseInt(s.dataset.value) <= value ? '★' : '☆';
+        });
+    });
+    star.addEventListener('mouseleave', function() {
+        const current = parseInt(document.getElementById('quickRating').value);
+        document.querySelectorAll('#quickStars span').forEach(s => {
+            s.textContent = parseInt(s.dataset.value) <= current ? '★' : '☆';
+        });
+    });
+});
+
+// فتح نافذة التقييم السريع
+function openQuickReview(appointmentId) {
+    quickAppointmentId = appointmentId;
+    document.getElementById('quickAppointmentId').value = appointmentId;
+    document.getElementById('quickComment').value = '';
+    document.getElementById('quickRating').value = 5;
+    document.querySelectorAll('#quickStars span').forEach(s => {
+        s.textContent = parseInt(s.dataset.value) <= 5 ? '★' : '☆';
+    });
+    openModal('quickReviewModal');
+}
+
+// إرسال التقييم
+async function submitQuickReview() {
+    const rating = parseInt(document.getElementById('quickRating').value);
+    const comment = document.getElementById('quickComment').value.trim();
+    const token = localStorage.getItem('customerToken');
+    if (!token) {
+        showToast('❌ يرجى تسجيل الدخول', 'error');
+        return;
+    }
+    try {
+        const res = await fetch(`${API_BASE}/appointments/${quickAppointmentId}/complete-with-review`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ rating, comment })
+        });
+        if (res.ok) {
+            showToast('✅ شكراً لتقييمك!', 'success');
+            closeModal('quickReviewModal');
+            loadCustomerDashboard();
+        } else {
+            const data = await res.json();
+            showToast(`❌ ${data.message}`, 'error');
+        }
+    } catch {
+        showToast('❌ فشل الاتصال', 'error');
+    }
+}
+
+function skipQuickReview() {
+    closeModal('quickReviewModal');
+    showToast('يمكنك التقييم لاحقاً', 'info');
 }
 
 // ============================================================
