@@ -288,9 +288,12 @@ app.put('/api/admin/auth/change-password', adminAuthMiddleware, async (req, res)
 // ============================================================
 // نسيان كلمة المرور
 // ============================================================
+// ============================================================
+// نسيان كلمة المرور
+// ============================================================
 app.post('/api/auth/forgot-password', async (req, res) => {
     const { email, userType } = req.body;
-    console.log('📧 طلب إعادة تعيين كلمة المرور:', email, userType); // للتأكد من وصول الطلب
+    console.log('📧 طلب إعادة تعيين كلمة المرور:', email, userType);
 
     try {
         let user;
@@ -306,7 +309,6 @@ app.post('/api/auth/forgot-password', async (req, res) => {
             return res.status(404).json({ message: 'البريد الإلكتروني غير مسجل' });
         }
 
-        // إنشاء توكن إعادة تعيين
         const resetToken = jwt.sign(
             { id: user._id, userType },
             process.env.JWT_RESET_SECRET || 'reset_secret_key_change_me',
@@ -315,32 +317,35 @@ app.post('/api/auth/forgot-password', async (req, res) => {
 
         const resetUrl = `${process.env.FRONTEND_URL || 'https://halakati-project.vercel.app'}?token=${resetToken}&userType=${userType}`;
 
-        // حفظ التوكن في قاعدة البيانات (اختياري - يمكنك تخطي هذه الخطوة إذا كنت تستخدم JWT فقط)
         user.resetPasswordToken = resetToken;
-        user.resetPasswordExpires = Date.now() + 30 * 60 * 1000; // 30 دقيقة
+        user.resetPasswordExpires = Date.now() + 30 * 60 * 1000;
         await user.save();
 
-        // إرسال البريد الإلكتروني
-        try {
-            await transporter.sendMail({
-                from: `"حلاقتي" <${process.env.EMAIL_USER}>`,
-                to: email,
-                subject: 'إعادة تعيين كلمة المرور - حلاقتي',
-                html: `
-                    <div dir="rtl" style="font-family: 'Tajawal', sans-serif; text-align: right; background: #f8f9fa; padding: 20px; border-radius: 10px;">
-                        <h3 style="color: #f5b042;">طلب إعادة تعيين كلمة المرور</h3>
-                        <p>مرحباً،</p>
-                        <p>لقد تلقينا طلباً لإعادة تعيين كلمة المرور لحسابك في منصة <strong>حلاقتي</strong>.</p>
-                        <p>لتغيير كلمة المرور، اضغط على الرابط أدناه (صالح لمدة 30 دقيقة):</p>
-                        <a href="${resetUrl}" style="display: inline-block; padding: 12px 24px; background-color: #f5b042; color: #1a1a2e; text-decoration: none; border-radius: 50px; font-weight: bold; margin: 15px 0;">إعادة تعيين كلمة المرور</a>
-                        <p>إذا لم تطلب ذلك، يرجى تجاهل هذا البريد الإلكتروني.</p>
-                        <p>شكراً لك،<br>فريق حلاقتي</p>
-                    </div>
-                `
-            });
-        } catch (emailError) {
-            console.error('❌ فشل إرسال البريد الإلكتروني:', emailError);
-            // لا نعيد الخطأ للمستخدم، فقط نسجلها
+        // إرسال البريد الإلكتروني (اختياري)
+        if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+            try {
+                await transporter.sendMail({
+                    from: `"حلاقتي" <${process.env.EMAIL_USER}>`,
+                    to: email,
+                    subject: 'إعادة تعيين كلمة المرور - حلاقتي',
+                    html: `
+                        <div dir="rtl" style="font-family: 'Tajawal', sans-serif; text-align: right; background: #f8f9fa; padding: 20px; border-radius: 10px;">
+                            <h3 style="color: #f5b042;">طلب إعادة تعيين كلمة المرور</h3>
+                            <p>مرحباً،</p>
+                            <p>لقد تلقينا طلباً لإعادة تعيين كلمة المرور لحسابك في منصة <strong>حلاقتي</strong>.</p>
+                            <p>لتغيير كلمة المرور، اضغط على الرابط أدناه (صالح لمدة 30 دقيقة):</p>
+                            <a href="${resetUrl}" style="display: inline-block; padding: 12px 24px; background-color: #f5b042; color: #1a1a2e; text-decoration: none; border-radius: 50px; font-weight: bold; margin: 15px 0;">إعادة تعيين كلمة المرور</a>
+                            <p>إذا لم تطلب ذلك، يرجى تجاهل هذا البريد الإلكتروني.</p>
+                            <p>شكراً لك،<br>فريق حلاقتي</p>
+                        </div>
+                    `
+                });
+                console.log('✅ تم إرسال البريد الإلكتروني إلى:', email);
+            } catch (emailError) {
+                console.error('❌ فشل إرسال البريد الإلكتروني:', emailError);
+            }
+        } else {
+            console.log('🔑 رابط إعادة التعيين (للتطوير):', resetUrl);
         }
 
         res.json({
