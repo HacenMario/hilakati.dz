@@ -2311,13 +2311,32 @@ function applyFilters() {
     const city = document.getElementById('filterCity').value;
     const service = document.getElementById('filterService').value;
     const type = document.getElementById('filterSalonType').value;
+    const sort = document.getElementById('filterSort')?.value || 'rating';
+
+    // ===== التصفية =====
     let result = allSalons.filter(salon => {
         const matchName = salon.name.toLowerCase().includes(query);
         const matchCity = city ? salon.city === city : true;
-        let matchService = true; if (service) matchService = (salon.services || []).some(s => s.name === service);
+        let matchService = true;
+        if (service) matchService = (salon.services || []).some(s => s.name === service);
         const matchType = type ? salon.salonType === type : true;
         return matchName && matchCity && matchService && matchType;
     });
+
+    // ===== الترتيب =====
+    if (sort === 'rating') {
+        result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    } else if (sort === 'price') {
+        result.sort((a, b) => {
+            const minA = a.services?.length ? Math.min(...a.services.map(s => s.price)) : Infinity;
+            const minB = b.services?.length ? Math.min(...b.services.map(s => s.price)) : Infinity;
+            return minA - minB;
+        });
+    } else if (sort === 'distance') {
+        result.sort((a, b) => (a.distance || 999) - (b.distance || 999));
+    }
+
+    // ===== عرض النتائج =====
     currentPage = 1;
     renderAllSalons(result);
 }
@@ -2325,16 +2344,7 @@ document.getElementById('searchSalon').addEventListener('input', applyFilters);
 document.getElementById('filterCity').addEventListener('change', applyFilters);
 document.getElementById('filterService').addEventListener('change', applyFilters);
 document.getElementById('filterSalonType').addEventListener('change', applyFilters);
-    const sort = document.getElementById('filterSort').value;
-    if (sort === 'rating') result.sort((a,b) => (b.rating || 0) - (a.rating || 0));
-    else if (sort === 'price') {
-        result.sort((a,b) => {
-            const minA = a.services?.length ? Math.min(...a.services.map(s => s.price)) : 999999;
-            const minB = b.services?.length ? Math.min(...b.services.map(s => s.price)) : 999999;
-            return minA - minB;
-        });
-    }
-
+    
 function getNearbySalons() {
     const salonsWithGps = allSalons.filter(s => s.lat && s.lng);
     if (salonsWithGps.length === 0) { showToast('⚠️ لا توجد صالونات بموقع GPS'); return; }
