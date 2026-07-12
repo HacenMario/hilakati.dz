@@ -1472,8 +1472,11 @@
     <div class="modal-box">
         <button class="modal-close" onclick="closeModal('resetPasswordModal')">&times;</button>
         <h2><i class="fas fa-lock"></i> تعيين كلمة مرور جديدة</h2>
-        <div class="form-group"><input type="password" id="newPasswordReset" placeholder="كلمة المرور الجديدة" minlength="6" required></div>
-        <input type="hidden" id="resetToken"><input type="hidden" id="resetUserType">
+        <div class="form-group">
+            <input type="password" id="newPasswordReset" placeholder="كلمة المرور الجديدة" minlength="6" required>
+        </div>
+        <input type="hidden" id="resetToken">
+        <input type="hidden" id="resetUserType">
         <button class="btn-gold" style="width:100%;" onclick="resetPassword()">تغيير كلمة المرور</button>
     </div>
 </div>
@@ -1784,8 +1787,8 @@ function showToast(msg) {
     clearTimeout(toast._timer);
     toast._timer = setTimeout(() => toast.classList.remove('show'), 4000);
 }
-function openModal(id) { document.getElementById(id).classList.add('active'); document.body.style.overflow = 'hidden'; }
-function closeModal(id) { document.getElementById(id).classList.remove('active'); document.body.style.overflow = 'auto'; }
+function openModal(id) { document.getElementById(id).classList.add('active'); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', function(e) { if (e.target === this) closeModal(this.id); }));
 
 function showConfirm(msg, onConfirm) {
