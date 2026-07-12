@@ -2005,7 +2005,6 @@ async function forgotPassword(userType) {
         console.log('📨 حالة الرد:', res.status); // <-- أضف هذا
         
         const data = await res.json();
-        console.log('📦 بيانات الرد:', data); // <-- أضف هذا
         console.log('🔑 رابط إعادة التعيين:', data.resetLink); // <-- أضف هذا
         
         if (res.ok) {
