@@ -2568,14 +2568,18 @@ async function updateNotificationUI() {
     `).join('');
 }
 async function toggleNotifications() {
-    document.getElementById('notifDropdown').classList.toggle('active');
-    const token = localStorage.getItem('token');
-    const customerToken = localStorage.getItem('customerToken');
-    const adminToken = localStorage.getItem('adminToken');
-    const userId = localStorage.getItem('salonId') || localStorage.getItem('customerId') || localStorage.getItem('adminId');
-    const userType = token ? 'salon' : customerToken ? 'customer' : adminToken ? 'admin' : null;
-    if (userId && userType) {
-        try { await fetch(`${API_BASE}/notifications/read-all`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ userId, userType }) }); setTimeout(updateNotificationUI, 500); } catch {}
+    const dropdown = document.getElementById('notifDropdown');
+    if (!dropdown) {
+        console.error('❌ عنصر #notifDropdown غير موجود');
+        return;
+    }
+
+    // تبديل الفئة 'active'
+    dropdown.classList.toggle('active');
+
+    // إذا أصبحت ظاهرة، حدّث القائمة
+    if (dropdown.classList.contains('active')) {
+        await updateNotificationUI();
     }
 }
 document.addEventListener('click', function(e) {
