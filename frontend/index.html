@@ -2568,7 +2568,32 @@ async function openBooking(salonId) {
         const salon = await res.json();
 
         document.getElementById('bookSalonName').value = salon.name;
-        
+// ============================================================
+// معالج نموذج الحجز
+// ============================================================
+document.getElementById('bookingForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    console.log('🟢 محاولة تأكيد الحجز...');
+
+    const salonId = bookingSalonId;
+    const select = document.getElementById('bookService');
+    const selectedOptions = Array.from(select.selectedOptions);
+    const services = selectedOptions.map(opt => ({ name: opt.value, price: parseInt(opt.dataset.price) || 0 }));
+    const totalPrice = services.reduce((s, item) => s + item.price, 0);
+    const staff = document.getElementById('bookStaff').value;
+    const date = document.getElementById('bookDate').value;
+    const time = document.getElementById('bookTime').value;
+    const clientName = document.getElementById('bookClientName').value.trim();
+    const clientPhone = document.getElementById('bookClientPhone').value.trim();
+    const clientEmail = document.getElementById('bookClientEmail').value.trim();
+    const payment = document.getElementById('bookPayment').value;
+    const notes = document.getElementById('bookNotes').value.trim();
+    const recurring = document.getElementById('bookRecurring').value;
+    const customerId = localStorage.getItem('customerId') || null;
+
+    if (!services.length || !staff || !date || !time || !clientName || !clientPhone) {
+        showToast('❌ الرجاء اختيار خدمة وملء جميع الحقول المطلوبة', 'error');
+        return;
     }
 
     try {
@@ -2598,7 +2623,7 @@ async function openBooking(salonId) {
         showToast('❌ فشل الاتصال بالخادم', 'error');
     }
 });
-
+   
         // ============================================================
         // جلب بيانات العميل إذا كان مسجلاً
         // ============================================================
