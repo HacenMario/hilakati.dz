@@ -2585,12 +2585,18 @@ async function openBooking(salonId) {
         if (!salon.staff?.length) staffSelect.innerHTML += '<option value="موظف رئيسي">موظف رئيسي</option>';
 
         // ============================================================
-        // تعبئة الخدمات
+        // تعبئة الخدمات (مع التأكد من تشغيل updateTotalPrice)
         // ============================================================
         const serviceSelect = document.getElementById('bookService');
         serviceSelect.innerHTML = '';
-        (salon.services || []).forEach(s => serviceSelect.innerHTML += `<option value="${s.name}" data-price="${s.price}">${s.name} - ${s.price} دج</option>`);
-        if (!salon.services?.length) serviceSelect.innerHTML += '<option value="حلاقة رجالي" data-price="500">حلاقة رجالي - 500 دج</option>';
+        (salon.services || []).forEach(s => {
+            serviceSelect.innerHTML += `<option value="${s.name}" data-price="${s.price}">${s.name} - ${s.price} دج</option>`;
+        });
+        if (!salon.services?.length) {
+            serviceSelect.innerHTML += '<option value="حلاقة رجالي" data-price="500">حلاقة رجالي - 500 دج</option>';
+        }
+        // إعادة تعيين السعر الإجمالي
+        document.getElementById('bookTotalPrice').value = '';
 
         // ============================================================
         // تعبئة الأوقات المتاحة حسب ساعات العمل
@@ -2598,9 +2604,9 @@ async function openBooking(salonId) {
         const timeSelect = document.getElementById('bookTime');
         timeSelect.innerHTML = '<option value="">اختر الوقت</option>';
 
-        // الحصول على اليوم الحالي
+        // الحصول على اليوم الحالي واسم اليوم
         const today = new Date();
-        const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+        const dayNames = ['الأحد', 'الإثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت'];
         const dayName = dayNames[today.getDay()];
 
         // جلب ساعات العمل لهذا اليوم
@@ -2609,57 +2615,83 @@ async function openBooking(salonId) {
         if (dayHours && dayHours !== 'مغلق' && dayHours !== 'closed') {
             const [openTime, closeTime] = dayHours.split('-').map(t => t.trim());
             
-            // إنشاء قائمة الأوقات بفواصل 30 دقيقة
-            let current = openTime;
-            while (current <= closeTime) {
-                // لا نضيف وقت الحجز الحالي إذا كان في الماضي (فارق 30 دقيقة)
-                const [hours, minutes] = current.split(':').map(Number);
-                const now = new Date();
-                const selectedDateTime = new Date();
-                selectedDateTime.setHours(hours, minutes, 0, 0);
-                const minBookingTime = new Date(now.getTime() + 30 * 60 * 1000);
+            // تحويل الأوقات إلى دقائق لتسهيل المقارنة
+            const openMinutes = timeToMinutes(openTime);
+            const closeMinutes = timeToMinutes(closeTime);
+            const now = new Date();
+            const todayStr = now.toISOString().split('T')[0];
+            const selectedDateStr = document.getElementById('bookDate').value;
+
+            // توليد الأوقات بفواصل 30 دقيقة
+            for (let minutes = openMinutes; minutes <= closeMinutes; minutes += 30) {
+                const hours = String(Math.floor(minutes / 60)).padStart(2, '0');
+                const mins = String(minutes % 60).padStart(2, '0');
+                const timeStr = `${hours}:${mins}`;
                 
-                // إذا كان الوقت في المستقبل (أو بعد 30 دقيقة على الأقل)
-                if (selectedDateTime >= minBookingTime || today.toISOString().split('T')[0] !== today.toISOString().split('T')[0]) {
-                    timeSelect.innerHTML += `<option value="${current}">${current}</option>`;
+                // التحقق من أن الوقت ليس في الماضي (إذا كان اليوم هو اليوم)
+                let includeTime = true;
+                if (selectedDateStr === todayStr) {
+                    const [h, m] = timeStr.split(':').map(Number);
+                    const selectedDateTime = new Date();
+                    selectedDateTime.setHours(h, m, 0, 0);
+                    const minBookingTime = new Date(now.getTime() + 30 * 60 * 1000);
+                    if (selectedDateTime < minBookingTime) {
+                        includeTime = false;
+                    }
                 }
-                
-                // إضافة 30 دقيقة
-                const [h, m] = current.split(':').map(Number);
-                const next = new Date();
-                next.setHours(h, m + 30, 0, 0);
-                const nextHours = String(next.getHours()).padStart(2, '0');
-                const nextMinutes = String(next.getMinutes()).padStart(2, '0');
-                current = `${nextHours}:${nextMinutes}`;
+                if (includeTime) {
+                    timeSelect.innerHTML += `<option value="${timeStr}">${timeStr}</option>`;
+                }
             }
         } else {
-            // إذا لم توجد ساعات عمل، عرض الأوقات الافتراضية
+            // إذا لم توجد ساعات عمل، عرض الأوقات الافتراضية مع مراعاة الوقت الحالي
             const defaultTimes = ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00'];
             const now = new Date();
             const todayStr = now.toISOString().split('T')[0];
+            const selectedDateStr = document.getElementById('bookDate').value;
             const minBookingTime = new Date(now.getTime() + 30 * 60 * 1000);
             
             defaultTimes.forEach(time => {
                 const [hours, minutes] = time.split(':').map(Number);
                 const selectedDateTime = new Date();
                 selectedDateTime.setHours(hours, minutes, 0, 0);
-                if (selectedDateTime >= minBookingTime) {
+                let includeTime = true;
+                if (selectedDateStr === todayStr && selectedDateTime < minBookingTime) {
+                    includeTime = false;
+                }
+                if (includeTime) {
                     timeSelect.innerHTML += `<option value="${time}">${time}</option>`;
                 }
             });
         }
 
-        document.getElementById('bookTotalPrice').value = '';
+        // إذا لم تظهر أي أوقات، أضف رسالة
+        if (timeSelect.options.length <= 1) {
+            timeSelect.innerHTML = '<option value="">لا توجد أوقات متاحة اليوم</option>';
+        }
+
+        // ============================================================
+        // ضبط الحد الأدنى للتاريخ
+        // ============================================================
         const todayDate = new Date().toISOString().split('T')[0];
         document.getElementById('bookDate').setAttribute('min', todayDate);
         document.getElementById('bookDate').value = todayDate;
 
+        // فتح النافذة
         openModal('bookingModal');
 
     } catch (error) {
         console.error('❌ فشل في تحميل بيانات الصالون:', error);
         showToast('❌ فشل في تحميل بيانات الصالون', 'error');
     }
+}
+
+// ============================================================
+// دالة مساعدة لتحويل الوقت إلى دقائق
+// ============================================================
+function timeToMinutes(timeStr) {
+    const [h, m] = timeStr.split(':').map(Number);
+    return h * 60 + m;
 }
 
 async function showAllBookings() {
