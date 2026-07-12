@@ -1410,17 +1410,19 @@
 </div></div>
 
 <!-- تغيير كلمة المرور (صالون) -->
-<div class="modal-overlay" id="salonChangePasswordModal"><div class="modal-box">
-    <button class="modal-close" onclick="closeModal('salonChangePasswordModal')">&times;</button>
-    <h2><i class="fas fa-key"></i> تغيير كلمة المرور</h2>
-    <form id="salonChangePasswordForm">
-        <div class="form-group"><label>كلمة المرور الحالية</label><input type="password" id="salonOldPassword" required></div>
-        <div class="form-group"><label>كلمة المرور الجديدة</label><input type="password" id="salonNewPassword" required minlength="6"></div>
-        <div class="form-group"><label>تأكيد كلمة المرور</label><input type="password" id="salonConfirmPassword" required></div>
-        <button type="submit" class="btn-gold" style="width:100%;padding:0.5rem;"><i class="fas fa-save"></i> تغيير</button>
-    </form>
-</div></div>
-
+<div class="modal-overlay" id="salonChangePasswordModal">
+    <div class="modal-box">
+        <button class="modal-close" onclick="closeModal('salonChangePasswordModal')">&times;</button>
+        <h2><i class="fas fa-key"></i> تغيير كلمة المرور</h2>
+        <form id="salonChangePasswordForm">
+            <div class="form-group"><label>كلمة المرور الحالية</label><input type="password" id="salonOldPassword" required></div>
+            <div class="form-group"><label>كلمة المرور الجديدة</label><input type="password" id="salonNewPassword" required minlength="6"></div>
+            <div class="form-group"><label>تأكيد كلمة المرور</label><input type="password" id="salonConfirmPassword" required></div>
+            <button type="submit" class="btn-gold" style="width:100%;padding:0.5rem;"><i class="fas fa-save"></i> تغيير</button>
+        </form>
+    </div>
+</div>
+    
 <!-- تغيير كلمة المرور (عميل) -->
 <div class="modal-overlay" id="customerChangePasswordModal"><div class="modal-box">
     <button class="modal-close" onclick="closeModal('customerChangePasswordModal')">&times;</button>
@@ -1854,20 +1856,39 @@ document.getElementById('salonChangePasswordForm').addEventListener('submit', as
     const oldPassword = document.getElementById('salonOldPassword').value;
     const newPassword = document.getElementById('salonNewPassword').value;
     const confirmPassword = document.getElementById('salonConfirmPassword').value;
-    if (newPassword !== confirmPassword) { showToast('❌ كلمة المرور غير متطابقة'); return; }
+    
+    if (newPassword !== confirmPassword) {
+        showToast('❌ كلمة المرور غير متطابقة', 'error');
+        return;
+    }
+    
     const token = localStorage.getItem('token');
-    if (!token) { showToast('❌ يرجى تسجيل الدخول'); return; }
+    if (!token) {
+        showToast('❌ يرجى تسجيل الدخول', 'error');
+        return;
+    }
+    
     try {
         const res = await fetch(`${API_BASE}/auth/change-password`, {
-            method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
             body: JSON.stringify({ oldPassword, newPassword })
         });
         const data = await res.json();
-        if (res.ok) { showToast('✅ تم تغيير كلمة المرور'); closeModal('salonChangePasswordModal'); }
-        else showToast(`❌ ${data.message}`);
-    } catch { showToast('❌ فشل الاتصال'); }
+        if (res.ok) {
+            showToast('✅ تم تغيير كلمة المرور', 'success');
+            closeModal('salonChangePasswordModal');
+            document.getElementById('salonChangePasswordForm').reset();
+        } else {
+            showToast(`❌ ${data.message}`, 'error');
+        }
+    } catch (error) {
+        showToast('❌ فشل الاتصال', 'error');
+    }
 });
-
 document.getElementById('adminChangePasswordForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const oldPassword = document.getElementById('adminOldPassword').value;
