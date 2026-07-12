@@ -2557,59 +2557,110 @@ async function openBooking(salonId) {
     try {
         const res = await fetch(`${API_BASE}/salons/${salonId}`);
         const salon = await res.json();
+
         document.getElementById('bookSalonName').value = salon.name;
+
+        // ============================================================
+        // جلب بيانات العميل إذا كان مسجلاً
+        // ============================================================
         const customerToken = localStorage.getItem('customerToken');
         if (customerToken) {
-            const profileRes = await fetch(`${API_BASE}/customer/auth/profile`, { headers: { 'Authorization': `Bearer ${customerToken}` } });
-            if (profileRes.ok) { const profile = await profileRes.json(); document.getElementById('bookClientName').value = profile.name || ''; document.getElementById('bookClientPhone').value = profile.phone || ''; document.getElementById('bookClientEmail').value = profile.email || ''; }
+            const profileRes = await fetch(`${API_BASE}/customer/auth/profile`, {
+                headers: { 'Authorization': `Bearer ${customerToken}` }
+            });
+            if (profileRes.ok) {
+                const profile = await profileRes.json();
+                document.getElementById('bookClientName').value = profile.name || '';
+                document.getElementById('bookClientPhone').value = profile.phone || '';
+                document.getElementById('bookClientEmail').value = profile.email || '';
+            }
         }
+
+        // ============================================================
+        // تعبئة الموظفين
+        // ============================================================
         const staffSelect = document.getElementById('bookStaff');
         staffSelect.innerHTML = '<option value="">اختر الموظف</option>';
         (salon.staff || []).forEach(s => staffSelect.innerHTML += `<option value="${s}">${s}</option>`);
         if (!salon.staff?.length) staffSelect.innerHTML += '<option value="موظف رئيسي">موظف رئيسي</option>';
+
+        // ============================================================
+        // تعبئة الخدمات
+        // ============================================================
         const serviceSelect = document.getElementById('bookService');
         serviceSelect.innerHTML = '';
         (salon.services || []).forEach(s => serviceSelect.innerHTML += `<option value="${s.name}" data-price="${s.price}">${s.name} - ${s.price} دج</option>`);
         if (!salon.services?.length) serviceSelect.innerHTML += '<option value="حلاقة رجالي" data-price="500">حلاقة رجالي - 500 دج</option>';
+
+        // ============================================================
+        // تعبئة الأوقات المتاحة حسب ساعات العمل
+        // ============================================================
+        const timeSelect = document.getElementById('bookTime');
+        timeSelect.innerHTML = '<option value="">اختر الوقت</option>';
+
+        // الحصول على اليوم الحالي
+        const today = new Date();
+        const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+        const dayName = dayNames[today.getDay()];
+
+        // جلب ساعات العمل لهذا اليوم
+        const dayHours = salon.hours ? salon.hours[dayName] : null;
+
+        if (dayHours && dayHours !== 'مغلق' && dayHours !== 'closed') {
+            const [openTime, closeTime] = dayHours.split('-').map(t => t.trim());
+            
+            // إنشاء قائمة الأوقات بفواصل 30 دقيقة
+            let current = openTime;
+            while (current <= closeTime) {
+                // لا نضيف وقت الحجز الحالي إذا كان في الماضي (فارق 30 دقيقة)
+                const [hours, minutes] = current.split(':').map(Number);
+                const now = new Date();
+                const selectedDateTime = new Date();
+                selectedDateTime.setHours(hours, minutes, 0, 0);
+                const minBookingTime = new Date(now.getTime() + 30 * 60 * 1000);
+                
+                // إذا كان الوقت في المستقبل (أو بعد 30 دقيقة على الأقل)
+                if (selectedDateTime >= minBookingTime || today.toISOString().split('T')[0] !== today.toISOString().split('T')[0]) {
+                    timeSelect.innerHTML += `<option value="${current}">${current}</option>`;
+                }
+                
+                // إضافة 30 دقيقة
+                const [h, m] = current.split(':').map(Number);
+                const next = new Date();
+                next.setHours(h, m + 30, 0, 0);
+                const nextHours = String(next.getHours()).padStart(2, '0');
+                const nextMinutes = String(next.getMinutes()).padStart(2, '0');
+                current = `${nextHours}:${nextMinutes}`;
+            }
+        } else {
+            // إذا لم توجد ساعات عمل، عرض الأوقات الافتراضية
+            const defaultTimes = ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00'];
+            const now = new Date();
+            const todayStr = now.toISOString().split('T')[0];
+            const minBookingTime = new Date(now.getTime() + 30 * 60 * 1000);
+            
+            defaultTimes.forEach(time => {
+                const [hours, minutes] = time.split(':').map(Number);
+                const selectedDateTime = new Date();
+                selectedDateTime.setHours(hours, minutes, 0, 0);
+                if (selectedDateTime >= minBookingTime) {
+                    timeSelect.innerHTML += `<option value="${time}">${time}</option>`;
+                }
+            });
+        }
+
         document.getElementById('bookTotalPrice').value = '';
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('bookDate').setAttribute('min', today);
-        document.getElementById('bookDate').value = today;
+        const todayDate = new Date().toISOString().split('T')[0];
+        document.getElementById('bookDate').setAttribute('min', todayDate);
+        document.getElementById('bookDate').value = todayDate;
+
         openModal('bookingModal');
-    } catch { showToast('❌ فشل في تحميل بيانات الصالون'); }
+
+    } catch (error) {
+        console.error('❌ فشل في تحميل بيانات الصالون:', error);
+        showToast('❌ فشل في تحميل بيانات الصالون', 'error');
+    }
 }
-function updateTotalPrice() {
-    const select = document.getElementById('bookService');
-    let total = 0;
-    for (let option of select.options) { if (option.selected) total += parseInt(option.dataset.price) || 0; }
-    document.getElementById('bookTotalPrice').value = total ? `${total} دج` : '';
-}
-document.getElementById('bookingForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const salonId = bookingSalonId;
-    const select = document.getElementById('bookService');
-    const selectedOptions = Array.from(select.selectedOptions);
-    const services = selectedOptions.map(opt => ({ name: opt.value, price: parseInt(opt.dataset.price) || 0 }));
-    const totalPrice = services.reduce((s, item) => s + item.price, 0);
-    const staff = document.getElementById('bookStaff').value;
-    const date = document.getElementById('bookDate').value;
-    const time = document.getElementById('bookTime').value;
-    const clientName = document.getElementById('bookClientName').value.trim();
-    const clientPhone = document.getElementById('bookClientPhone').value.trim();
-    const clientEmail = document.getElementById('bookClientEmail').value.trim();
-    const payment = document.getElementById('bookPayment').value;
-    const notes = document.getElementById('bookNotes').value.trim();
-    const recurring = document.getElementById('bookRecurring').value;
-    if (!services.length || !staff || !date || !time || !clientName || !clientPhone) { showToast('❌ الرجاء اختيار خدمة وملء جميع الحقول المطلوبة'); return; }
-    const customerId = localStorage.getItem('customerId') || null;
-    try {
-        const res = await fetch(`${API_BASE}/appointments/request`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ salonId, customerId, clientName, clientPhone, clientEmail, services, totalPrice, staff, date, time, payment, notes, recurring }) });
-        const data = await res.json();
-        if (res.status === 409) showToast(`❌ ${data.message}`);
-        else if (res.ok) { showToast('✅ تم إرسال طلب الحجز بنجاح!'); closeModal('bookingModal'); document.getElementById('bookingForm').reset(); document.getElementById('bookTotalPrice').value = ''; refreshNotifications(); if (localStorage.getItem('token')) loadDashboard(); }
-        else showToast(`❌ ${data.message}`);
-    } catch { showToast('❌ فشل الاتصال'); }
-});
 
 async function showAllBookings() {
     const phone = prompt('أدخل رقم هاتفك للاطلاع على حجوزاتك:');
