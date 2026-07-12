@@ -758,7 +758,8 @@ try {
             userType: 'salon',
             title: '📅 حجز جديد',
             message: `حجز من ${clientName} في ${date} الساعة ${time}`,
-            read: false
+            read: false,
+            createdAt: new Date() // <-- هذا هو وقت إنشاء الإشعار
         });
         await notification.save();
         console.log(`✅ تم حفظ إشعار للصالون ${salonId}`);
