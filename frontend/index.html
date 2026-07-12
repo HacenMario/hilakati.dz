@@ -2007,6 +2007,39 @@ document.getElementById('adminLoginForm').addEventListener('submit', async (e) =
         } else showToast(`❌ ${data.message}`);
     } catch { showToast('❌ فشل الاتصال'); }
 });
+// ============================================================
+// حذف جميع تقييمات صالون بواسطة المدير
+// ============================================================
+async function adminDeleteAllReviews(salonId) {
+    // الحصول على اسم الصالون لعرضه في رسالة التأكيد
+    try {
+        const res = await fetch(`${API_BASE}/admin/salons/${salonId}`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
+        });
+        const salon = await res.json();
+        
+        if (!confirm(`⚠️ هل أنت متأكد من حذف جميع تقييمات صالون "${salon.name}"؟\nهذا الإجراء لا يمكن التراجع عنه.`)) {
+            return;
+        }
+        
+        const deleteRes = await fetch(`${API_BASE}/admin/salons/${salonId}/reviews`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
+        });
+        
+        const data = await deleteRes.json();
+        
+        if (deleteRes.ok) {
+            showToast(`✅ ${data.message}`, 'success');
+            loadAdminDashboard(); // تحديث لوحة المدير
+        } else {
+            showToast(`❌ ${data.message}`, 'error');
+        }
+    } catch (error) {
+        console.error('❌ خطأ في حذف التقييمات:', error);
+        showToast('❌ فشل في حذف التقييمات', 'error');
+    }
+}
 function adminLogout() { localStorage.removeItem('adminToken'); localStorage.removeItem('adminId'); showToast('👋 تم تسجيل الخروج'); updateUI(); navigateTo('home'); }
 
 // ===== Forgot & Reset Password =====
@@ -2294,7 +2327,11 @@ async function showSalonDetails(id) {
                                 <i class="fab fa-whatsapp"></i> لا يوجد رقم
                               </button>`;
         }
-
+${localStorage.getItem('adminToken') ? `
+    <button class="btn-danger btn-sm" onclick="adminDeleteAllReviews('${salon._id}')">
+        <i class="fas fa-star"></i> حذف كل التقييمات (مدير)
+    </button>
+` : ''}
         // ============================================================
         // عرض المحتوى الكامل
         // ============================================================
@@ -2712,7 +2749,24 @@ async function loadAdminDashboard() {
             </div>
             <hr>
             <h3>📋 الصالونات</h3>
-            <div id="adminSalonsList">${salons.map(s => `<div style="display:flex;justify-content:space-between;padding:0.2rem 0;border-bottom:1px solid var(--border-color);"><span>${s.name} (${s.city})</span><div><button class="btn-primary btn-sm" onclick="adminEditSalon('${s._id}')"><i class="fas fa-edit"></i></button><button class="btn-warning btn-sm" style="background:var(--warning);color:#000;" onclick="adminResetSalonPassword('${s._id}')"><i class="fas fa-key"></i> كلمة مرور</button><button class="btn-danger btn-sm" onclick="adminDeleteSalon('${s._id}')"><i class="fas fa-trash"></i></button></div></div>`).join('')}</div>
+            <div id="adminSalonsList">
+    ${salons.map(s => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-bottom:1px solid var(--border-color);flex-wrap:wrap;gap:0.3rem;">
+            <span>${s.name} (${s.city}) - ⭐ ${s.rating || 0} (${s.totalReviews || 0} تقييم)</span>
+            <div style="display:flex;gap:0.3rem;flex-wrap:wrap;">
+                <button class="btn-primary btn-sm" onclick="adminEditSalon('${s._id}')">
+                    <i class="fas fa-edit"></i> تعديل
+                </button>
+                <button class="btn-danger btn-sm" onclick="adminDeleteSalon('${s._id}')">
+                    <i class="fas fa-trash"></i> حذف
+                </button>
+                <button class="btn-warning btn-sm" style="background:var(--warning);color:#000;" onclick="adminDeleteAllReviews('${s._id}')">
+                    <i class="fas fa-star"></i> حذف كل التقييمات
+                </button>
+            </div>
+        </div>
+    `).join('')}
+</div>
             <h3>👤 العملاء</h3>
             <div id="adminCustomersList">${customers.map(c => `<div style="display:flex;justify-content:space-between;padding:0.2rem 0;border-bottom:1px solid var(--border-color);"><span>${c.name} (${c.email})</span><div><button class="btn-primary btn-sm" onclick="adminEditCustomer('${c._id}')"><i class="fas fa-edit"></i></button><button class="btn-warning btn-sm" style="background:var(--warning);color:#000;" onclick="adminResetCustomerPassword('${c._id}')"><i class="fas fa-key"></i> كلمة مرور</button><button class="btn-danger btn-sm" onclick="adminDeleteCustomer('${c._id}')"><i class="fas fa-trash"></i></button></div></div>`).join('')}</div>
             <h3>⭐ التقييمات</h3>
