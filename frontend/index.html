@@ -2065,9 +2065,27 @@ document.getElementById('adminLoginForm').addEventListener('submit', async (e) =
 });
 
 // ============================================================
-// حجز سريع (أقرب موعد متاح)
+// حجز سريع (أقرب موعد متاح) - نسخة محسنة
 // ============================================================
 async function quickBooking(salonId) {
+    // ===== التحقق من وجود salonId =====
+    if (!salonId) {
+        console.warn('⚠️ لم يتم تمرير معرف الصالون، سيتم اختيار أول صالون متاح.');
+        try {
+            const res = await fetch(`${API_BASE}/salons`);
+            const salons = await res.json();
+            if (!salons || salons.length === 0) {
+                showToast('❌ لا توجد صالونات متاحة', 'error');
+                return;
+            }
+            salonId = salons[0]._id;
+            console.log('✅ تم اختيار الصالون:', salonId);
+        } catch (err) {
+            showToast('❌ فشل في تحميل الصالونات', 'error');
+            return;
+        }
+    }
+
     const customerToken = localStorage.getItem('customerToken');
     if (!customerToken) {
         showToast('❌ يرجى تسجيل الدخول أولاً', 'error');
@@ -2080,17 +2098,21 @@ async function quickBooking(salonId) {
             headers: { 'Authorization': `Bearer ${customerToken}` }
         });
         const profile = await profileRes.json();
-        
+
         // جلب الصالون
         const salonRes = await fetch(`${API_BASE}/salons/${salonId}`);
+        if (!salonRes.ok) {
+            showToast('❌ الصالون غير موجود', 'error');
+            return;
+        }
         const salon = await salonRes.json();
-        
+
         // اختيار أول خدمة وأول موظف
         const service = salon.services?.[0] || { name: 'خدمة أساسية', price: 500 };
         const staff = salon.staff?.[0] || 'موظف رئيسي';
         const today = new Date().toISOString().split('T')[0];
         const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
-        
+
         // إرسال الحجز
         const res = await fetch(`${API_BASE}/appointments/request`, {
             method: 'POST',
@@ -2111,18 +2133,19 @@ async function quickBooking(salonId) {
                 recurring: 'none'
             })
         });
+
+        const data = await res.json();
         if (res.ok) {
             showToast('✅ تم الحجز السريع!', 'success');
             loadSalons();
         } else {
-            const data = await res.json();
-            showToast(`❌ ${data.message}`, 'error');
+            showToast(`❌ ${data.message || 'فشل الحجز'}`, 'error');
         }
-    } catch {
+    } catch (error) {
+        console.error('❌ فشل الحجز السريع:', error);
         showToast('❌ فشل الحجز السريع', 'error');
     }
 }
-
 // ============================================================
 // حذف جميع تقييمات صالون بواسطة المدير
 // ============================================================
@@ -2325,11 +2348,36 @@ function createSalonCard(salon) {
     const distance = salon.distance !== undefined ? `<span style="color:var(--gold);font-size:0.6rem;"> (${salon.distance.toFixed(1)} كم)</span>` : '';
     const typeLabel = salon.salonType ? { male:'👨 رجالي', female:'👩 نسائي', children:'🧒 أطفال', mixed:'👫 مختلط' }[salon.salonType] : '';
     const mobileLabel = salon.isMobile ? ' 🚗 متنقل' : '';
-    return `<div class="salon-card" onclick="showSalonDetails('${salon._id}')">
-        <div class="cover">${logoHtml}<span class="rating-badge">⭐ ${salon.rating || 'جديد'}</span>${salon.lat && salon.lng ? '<span class="gps-badge"><i class="fas fa-map-marker-alt"></i> GPS</span>' : ''}${minPrice > 0 ? `<span class="price-badge">من ${minPrice} دج</span>` : ''}${salon.featured ? '<span class="featured-badge">⭐ مميز</span>' : ''}</div>
-        <div class="body"><h3>${salon.name} ${distance}</h3><div class="desc">${salon.desc || ''} ${typeLabel} ${mobileLabel}</div><div class="location"><i class="fas fa-map-marker-alt"></i> ${salon.city}</div><div class="tags">${(salon.tags || []).map(t => `<span>#${t}</span>`).join('')}</div><div class="price-info">${minPrice > 0 ? `💰 يبدأ من ${minPrice} دج` : 'اتصل للاستفسار'}</div><button class="btn-book" onclick="event.stopPropagation();openBooking('${salon._id}')"><i class="fas fa-calendar-plus"></i> احجز الآن</button></div></div>`;
+    
+    return `
+        <div class="salon-card" onclick="showSalonDetails('${salon._id}')">
+            <div class="cover">
+                ${logoHtml}
+                <span class="rating-badge">⭐ ${salon.rating || 'جديد'}</span>
+                ${salon.lat && salon.lng ? '<span class="gps-badge"><i class="fas fa-map-marker-alt"></i> GPS</span>' : ''}
+                ${minPrice > 0 ? `<span class="price-badge">من ${minPrice} دج</span>` : ''}
+                ${salon.featured ? '<span class="featured-badge">⭐ مميز</span>' : ''}
+            </div>
+            <div class="body">
+                <h3>${salon.name} ${distance}</h3>
+                <div class="desc">${salon.desc || ''} ${typeLabel} ${mobileLabel}</div>
+                <div class="location"><i class="fas fa-map-marker-alt"></i> ${salon.city}</div>
+                <div class="tags">${(salon.tags || []).map(t => `<span>#${t}</span>`).join('')}</div>
+                <div class="price-info">${minPrice > 0 ? `💰 يبدأ من ${minPrice} دج` : 'اتصل للاستفسار'}</div>
+                
+                <!-- ===== أزرار الإجراءات ===== -->
+                <button class="btn-book" onclick="event.stopPropagation();openBooking('${salon._id}')">
+                    <i class="fas fa-calendar-plus"></i> احجز الآن
+                </button>
+                
+                <!-- ===== زر حجز سريع (جديد) ===== -->
+                <button class="btn-success btn-sm" onclick="event.stopPropagation();quickBooking('${salon._id}')" style="margin-top:0.3rem;width:100%;">
+                    <i class="fas fa-bolt"></i> حجز سريع
+                </button>
+            </div>
+        </div>
+    `;
 }
-
 // ===== Filters & Nearby =====
 function applyFilters() {
     const query = document.getElementById('searchSalon').value.toLowerCase().trim();
