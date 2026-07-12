@@ -33,5 +33,6 @@ SalonSchema.pre('save', async function() {
 SalonSchema.methods.matchPassword = async function(enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
+isActive: { type: Boolean, default: true }
 
 module.exports = mongoose.model('Salon', SalonSchema);
