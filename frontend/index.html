@@ -2533,12 +2533,39 @@ async function fetchNotifications() {
 
 async function updateNotificationUI() {
     const notifications = await fetchNotifications();
+    console.log('📦 الإشعارات المستلمة:', notifications); // <-- أضف هذا
     const unread = notifications.filter(n => !n.read).length;
-    document.getElementById('notifBadge').textContent = unread;
-    document.getElementById('notifBadge').style.display = unread > 0 ? 'inline' : 'none';
+    console.log('🔔 عدد غير المقروء:', unread);
+
+    const badge = document.getElementById('notifBadge');
+    if (badge) {
+        if (unread > 0) {
+            badge.style.display = 'inline-block';
+            badge.textContent = unread > 99 ? '99+' : unread;
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+
     const list = document.getElementById('notifList');
-    if (notifications.length === 0) list.innerHTML = '<div class="notif-empty">📭 لا توجد إشعارات</div>';
-    else list.innerHTML = notifications.slice(0,10).map(n => `<div class="notif-item ${n.read ? '' : 'unread'}"><div class="notif-title">${n.title}</div><div class="notif-msg">${n.message}</div><div class="notif-time">${n.appointmentTime || new Date(n.createdAt).toLocaleTimeString('ar-DZ')}</div></div>`).join('');
+    if (!list) {
+        console.error('❌ عنصر #notifList غير موجود');
+        return;
+    }
+
+    if (notifications.length === 0) {
+        list.innerHTML = '<div class="notif-empty">📭 لا توجد إشعارات</div>';
+        return;
+    }
+
+    // بناء القائمة
+    list.innerHTML = notifications.slice(0, 10).map(n => `
+        <div class="notif-item ${n.read ? '' : 'unread'}">
+            <div class="notif-title">${n.title}</div>
+            <div class="notif-msg">${n.message}</div>
+            <div class="notif-time">${new Date(n.createdAt).toLocaleString('ar-DZ')}</div>
+        </div>
+    `).join('');
 }
 async function toggleNotifications() {
     document.getElementById('notifDropdown').classList.toggle('active');
