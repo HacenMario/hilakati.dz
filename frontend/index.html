@@ -2584,11 +2584,23 @@ async function updateNotificationUI() {
     }
 }
 async function toggleNotifications() {
+    console.log('🔄 تم النقر على الجرس');
     const dropdown = document.getElementById('notifDropdown');
     if (!dropdown) {
         console.error('❌ #notifDropdown غير موجود');
         return;
     }
+
+    if (dropdown.style.display === 'block') {
+        dropdown.style.display = 'none';
+        console.log('🔽 إخفاء القائمة');
+    } else {
+        dropdown.style.display = 'block';
+        console.log('🔼 إظهار القائمة');
+        await updateNotificationUI(); // ✅ تأكد من وجود هذا السطر
+        console.log('✅ تم تحديث الإشعارات');
+    }
+}
 
     // استخدام display بدلاً من classList
     if (dropdown.style.display === 'block') {
