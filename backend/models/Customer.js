@@ -17,5 +17,6 @@ CustomerSchema.pre('save', async function() {
 CustomerSchema.methods.matchPassword = async function(enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
+isBlocked: { type: Boolean, default: false }
 
 module.exports = mongoose.model('Customer', CustomerSchema);
