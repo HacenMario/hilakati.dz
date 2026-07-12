@@ -2414,6 +2414,8 @@ function createSalonCard(salon) {
                 <!-- ===== أزرار الإجراءات ===== -->
                 <button class="btn-book" onclick="event.stopPropagation();openBooking('${salon._id}')">
                     <i class="fas fa-calendar-plus"></i> احجز الآن
+                <button class="btn-success btn-sm" onclick="event.stopPropagation();quickBooking('${salon._id}')" style="margin-top:0.3rem;width:100%;">
+                    <i class="fas fa-bolt"></i> حجز سريع
                 </button>
             </div>
         </div>
