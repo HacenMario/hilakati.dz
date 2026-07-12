@@ -400,19 +400,12 @@ app.post('/api/auth/reset-password', async (req, res) => {
 // ============================================================
 app.delete('/api/admin/appointments/:id', adminAuthMiddleware, async (req, res) => {
     try {
-        const appointmentId = req.params.id;
-        const appointment = await Appointment.findById(appointmentId);
-        if (!appointment) {
-            return res.status(404).json({ message: '❌ الحجز غير موجود' });
-        }
-        await Appointment.findByIdAndDelete(appointmentId);
-        res.json({
-            message: `✅ تم حذف الحجز بنجاح`,
-            appointmentId: appointmentId
-        });
+        const appointment = await Appointment.findById(req.params.id);
+        if (!appointment) return res.status(404).json({ message: 'الحجز غير موجود' });
+        await appointment.deleteOne();
+        res.json({ message: '✅ تم حذف الحجز بنجاح' });
     } catch (error) {
-        console.error('❌ خطأ في حذف الحجز:', error);
-        res.status(500).json({ message: '❌ فشل في حذف الحجز' });
+        res.status(500).json({ message: 'فشل في حذف الحجز' });
     }
 });
 
