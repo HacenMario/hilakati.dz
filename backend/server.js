@@ -852,36 +852,38 @@ app.post('/api/reviews', customerAuthMiddleware, async (req, res) => {
 // ============================================================
 app.get('/api/notifications/salon', authMiddleware, async (req, res) => {
     try {
-        const notifications = await Notification.find({ userId: req.userId, userType: 'salon' })
-            .sort({ createdAt: -1 })
-            .limit(50);
+        console.log('📡 جلب إشعارات للصالون:', req.userId);
+        const notifications = await Notification.find({ 
+            userId: req.userId, 
+            userType: 'salon' 
+        }).sort({ createdAt: -1 }).limit(50);
+        console.log('📦 عدد الإشعارات:', notifications.length);
         res.json(notifications);
     } catch (error) {
         console.error('❌ خطأ في جلب إشعارات الصالون:', error);
         res.status(500).json([]);
     }
 });
-        
+
 app.get('/api/notifications/customer', customerAuthMiddleware, async (req, res) => {
     try {
-        const notifications = await Notification.find({ userId: req.customerId, userType: 'customer' })
-            .sort({ createdAt: -1 })
-            .limit(50);
+        const notifications = await Notification.find({ 
+            userId: req.customerId, 
+            userType: 'customer' 
+        }).sort({ createdAt: -1 }).limit(50);
         res.json(notifications);
     } catch (error) {
-        console.error('❌ خطأ في جلب إشعارات العميل:', error);
         res.status(500).json([]);
     }
 });
 
 app.get('/api/notifications/admin', adminAuthMiddleware, async (req, res) => {
     try {
-        const notifications = await Notification.find({ userType: 'admin' })
-            .sort({ createdAt: -1 })
-            .limit(50);
+        const notifications = await Notification.find({ 
+            userType: 'admin' 
+        }).sort({ createdAt: -1 }).limit(50);
         res.json(notifications);
     } catch (error) {
-        console.error('❌ خطأ في جلب إشعارات المدير:', error);
         res.status(500).json([]);
     }
 });
@@ -892,7 +894,10 @@ app.put('/api/notifications/read-all', async (req, res) => {
         if (!userId || !userType) {
             return res.status(400).json({ message: 'بيانات غير مكتملة' });
         }
-        await Notification.updateMany({ userId, userType, read: false }, { read: true });
+        await Notification.updateMany(
+            { userId, userType, read: false }, 
+            { read: true }
+        );
         res.json({ message: '✅ تم تحديد الكل كمقروء' });
     } catch (error) {
         console.error('❌ خطأ في read-all:', error);
