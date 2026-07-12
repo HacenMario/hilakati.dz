@@ -21,18 +21,26 @@ const SalonSchema = new mongoose.Schema({
   lng: Number,
   salonType: { type: String, enum: ['male', 'female', 'children', 'mixed'], default: 'mixed' },
   isMobile: { type: Boolean, default: false },
-  gallery: [String]
+  gallery: [String],
+  isActive: { type: Boolean, default: true },           // <-- تم إضافة الحقل هنا
+  resetPasswordToken: { type: String, default: null },  // <-- لإعادة تعيين كلمة المرور
+  resetPasswordExpires: { type: Number, default: null } // <-- صلاحية التوكن
 }, { timestamps: true });
 
+// ============================================================
+// تشفير كلمة المرور قبل الحفظ
+// ============================================================
 SalonSchema.pre('save', async function() {
   if (!this.isModified('password')) return;
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
 });
 
+// ============================================================
+// التحقق من كلمة المرور
+// ============================================================
 SalonSchema.methods.matchPassword = async function(enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
-isActive: { type: Boolean, default: true }
 
 module.exports = mongoose.model('Salon', SalonSchema);
