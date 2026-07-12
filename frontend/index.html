@@ -1219,11 +1219,11 @@
     <div class="header-actions">
         <span id="userDisplay" style="display:none;color:var(--gold);font-weight:500;font-size:0.7rem;"></span>
         <span id="customerNameDisplay" style="display:none;color:var(--gold);font-weight:500;font-size:0.7rem;"></span>
-        <div class="notif-bell" onclick="toggleNotifications()" id="notifBell">
-            <i class="fas fa-bell"></i>
-            <span class="badge" id="notifBadge">0</span>
-            <div class="notif-dropdown" id="notifDropdown"><div id="notifList"></div></div>
-        </div>
+        <div class="notif-bell" id="notifBell">
+    <i class="fas fa-bell"></i>
+    <span class="badge" id="notifBadge">0</span>
+    <div class="notif-dropdown" id="notifDropdown"><div id="notifList"></div></div>
+</div>
         <button class="btn-outline btn-sm" onclick="toggleTheme()" id="themeToggle"><i class="fas fa-moon"></i></button>
         <button class="btn-outline btn-sm" onclick="toggleLang()" id="langToggle">🇫🇷 FR</button>
         <div class="role-buttons">
@@ -2606,6 +2606,16 @@ document.addEventListener('click', function(e) {
         dropdown.style.display = 'none';
     }
 });
+document.addEventListener('DOMContentLoaded', function() {
+    const bell = document.getElementById('notifBell');
+    if (bell) {
+        bell.addEventListener('click', toggleNotifications);
+        console.log('✅ تم ربط حدث النقر بالجرس');
+    } else {
+        console.error('❌ عنصر #notifBell غير موجود');
+    }
+});
+
 function refreshNotifications() {
     updateNotificationUI();
 }
