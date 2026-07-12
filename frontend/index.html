@@ -2532,19 +2532,15 @@ async function updateNotificationUI() {
         const notifications = await fetchNotifications();
         console.log('📦 الإشعارات المستلمة:', notifications.length);
 
-        // تحديث البادج (الرقم)
+        // تحديث البادج
         const unread = notifications.filter(n => !n.read).length;
         const badge = document.getElementById('notifBadge');
         if (badge) {
-            if (unread > 0) {
-                badge.style.display = 'inline-block';
-                badge.textContent = unread > 99 ? '99+' : unread;
-            } else {
-                badge.style.display = 'none';
-            }
+            badge.style.display = unread > 0 ? 'inline-block' : 'none';
+            badge.textContent = unread > 99 ? '99+' : unread;
         }
 
-        // تحديث القائمة المنسدلة
+        // تحديث القائمة
         const list = document.getElementById('notifList');
         if (!list) {
             console.error('❌ #notifList غير موجود');
@@ -2558,13 +2554,29 @@ async function updateNotificationUI() {
 
         let html = '';
         notifications.slice(0, 20).forEach(n => {
-            const time = n.createdAt ? new Date(n.createdAt).toLocaleString('ar-DZ') : 'تاريخ غير معروف';
+            // ===== معالجة التاريخ بأمان =====
+            let time = 'تاريخ غير معروف';
+            if (n.createdAt) {
+                try {
+                    const date = new Date(n.createdAt);
+                    if (!isNaN(date.getTime())) {
+                        time = date.toLocaleString('ar-DZ');
+                    }
+                } catch (e) {
+                    // تجاهل
+                }
+            }
+            // إذا كان هناك وقت حجز، استخدمه كبديل
+            if (time === 'تاريخ غير معروف' && n.appointmentTime) {
+                time = n.appointmentTime;
+            }
+
             const isUnread = !n.read;
             html += `
                 <div class="notif-item ${isUnread ? 'unread' : ''}" style="padding:0.5rem 0.8rem;border-bottom:1px solid var(--border-color);${isUnread ? 'background:rgba(245,176,66,0.05);border-right:3px solid var(--gold);' : ''}">
-                    <div class="notif-title">${n.title}</div>
-                    <div class="notif-msg">${n.message}</div>
-                    <div class="notif-time">${time}</div>
+                    <div class="notif-title" style="font-weight:600;color:var(--gold);font-size:0.85rem;">${n.title}</div>
+                    <div class="notif-msg" style="color:var(--text-color);opacity:0.8;font-size:0.8rem;">${n.message}</div>
+                    <div class="notif-time" style="font-size:0.65rem;color:#888;">${time}</div>
                 </div>
             `;
         });
