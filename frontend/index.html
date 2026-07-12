@@ -2026,10 +2026,14 @@ window.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get('token');
     const userType = params.get('userType');
+    
+    console.log('🔍 معاملات الرابط:', { token, userType }); // للتأكد من وصول المعاملات
+    
     if (token && userType) {
         document.getElementById('resetToken').value = token;
         document.getElementById('resetUserType').value = userType;
         openModal('resetPasswordModal');
+        // إزالة المعاملات من الرابط لتجنب إعادة فتح النافذة عند التحديث
         window.history.replaceState({}, document.title, window.location.pathname);
     }
 });
@@ -2037,16 +2041,29 @@ window.addEventListener('DOMContentLoaded', () => {
 async function resetPassword() {
     const token = document.getElementById('resetToken').value;
     const newPassword = document.getElementById('newPasswordReset').value;
-    if (!newPassword || newPassword.length < 6) { showToast('❌ كلمة المرور يجب أن تكون 6 أحرف على الأقل'); return; }
+    
+    if (!newPassword || newPassword.length < 6) {
+        showToast('❌ كلمة المرور يجب أن تكون 6 أحرف على الأقل', 'error');
+        return;
+    }
+    
     try {
         const res = await fetch(`${API_BASE}/auth/reset-password`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ token, newPassword })
         });
         const data = await res.json();
-        if (res.ok) { showToast('✅ تم تغيير كلمة المرور بنجاح'); closeModal('resetPasswordModal'); }
-        else showToast('❌ ' + (data.message || 'فشل إعادة التعيين'));
-    } catch { showToast('❌ فشل الاتصال'); }
+        if (res.ok) {
+            showToast('✅ تم تغيير كلمة المرور بنجاح', 'success');
+            closeModal('resetPasswordModal');
+        } else {
+            showToast('❌ ' + (data.message || 'فشل إعادة التعيين'), 'error');
+        }
+    } catch (error) {
+        console.error('❌ خطأ في reset-password:', error);
+        showToast('❌ فشل الاتصال بالخادم', 'error');
+    }
 }
 
 // ===== Admin: Change User Password =====
