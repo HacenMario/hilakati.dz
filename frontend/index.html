@@ -2063,15 +2063,11 @@ async function forgotPassword(userType) {
         const data = await res.json();
 
         if (res.ok) {
-            // ✅ إغلاق نافذة "نسيت كلمة المرور"
             closeModal(modalId);
-            
-            // ✅ فتح نافذة تغيير كلمة المرور مع التوكن
             document.getElementById('resetToken').value = data.resetToken;
             document.getElementById('resetUserType').value = userType;
-            document.getElementById('resetEmail').value = email;
+            // document.getElementById('resetEmail').value = email; // <-- علّق هذا السطر أو احذفه
             openModal('resetPasswordModal');
-            
             showToast('✅ تم التحقق من البريد، أدخل كلمة المرور الجديدة', 'success');
         } else {
             showToast('❌ ' + (data.message || 'فشل العملية'), 'error');
