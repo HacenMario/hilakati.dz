@@ -2720,7 +2720,7 @@ function getCurrentLocation(latId, lngId) {
 }
 
 // ============================================================
-// لوحة تحكم المدير - النسخة الكاملة
+// لوحة تحكم المدير - النسخة النهائية
 // ============================================================
 async function loadAdminDashboard() {
     const token = localStorage.getItem('adminToken');
@@ -2831,7 +2831,6 @@ async function loadAdminDashboard() {
             <div id="adminAppointmentsList"></div>
         `;
 
-        // تحميل الحجوزات بشكل منفصل
         await loadAppointmentsForAdmin();
 
     } catch (error) {
