@@ -2006,7 +2006,7 @@ async function forgotPassword(userType) {
         
         const data = await res.json();
         console.log('📦 بيانات الرد:', data); // <-- أضف هذا
-        nsole.log('🔑 رابط إعادة التعيين:', data.resetLink); // <-- أضف هذا
+        console.log('🔑 رابط إعادة التعيين:', data.resetLink); // <-- أضف هذا
         
         if (res.ok) {
             showToast('✅ ' + data.message, 'success');
