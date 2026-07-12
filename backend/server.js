@@ -288,9 +288,6 @@ app.put('/api/admin/auth/change-password', adminAuthMiddleware, async (req, res)
 // ============================================================
 // نسيان كلمة المرور
 // ============================================================
-// ============================================================
-// نسيان كلمة المرور
-// ============================================================
 app.post('/api/auth/forgot-password', async (req, res) => {
     const { email, userType } = req.body;
     console.log('📧 طلب إعادة تعيين كلمة المرور:', email, userType);
@@ -309,6 +306,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
             return res.status(404).json({ message: 'البريد الإلكتروني غير مسجل' });
         }
 
+        // إنشاء توكن إعادة تعيين
         const resetToken = jwt.sign(
             { id: user._id, userType },
             process.env.JWT_RESET_SECRET || 'reset_secret_key_change_me',
@@ -317,11 +315,12 @@ app.post('/api/auth/forgot-password', async (req, res) => {
 
         const resetUrl = `${process.env.FRONTEND_URL || 'https://halakati-project.vercel.app'}?token=${resetToken}&userType=${userType}`;
 
+        // حفظ التوكن في قاعدة البيانات
         user.resetPasswordToken = resetToken;
-        user.resetPasswordExpires = Date.now() + 30 * 60 * 1000;
+        user.resetPasswordExpires = Date.now() + 30 * 60 * 1000; // 30 دقيقة
         await user.save();
 
-        // إرسال البريد الإلكتروني (اختياري)
+        // إرسال البريد الإلكتروني (إذا كانت الإعدادات موجودة)
         if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
             try {
                 await transporter.sendMail({
@@ -389,7 +388,6 @@ app.post('/api/auth/reset-password', async (req, res) => {
         res.status(400).json({ message: 'الرابط غير صالح' });
     }
 });
-
 // ============================================================
 // الصالونات العامة
 // ============================================================
