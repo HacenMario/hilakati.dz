@@ -861,6 +861,59 @@ app.post('/api/appointments/request', async (req, res) => {
         res.status(500).json({ message: '❌ فشل إنشاء الحجز' });
     }
 });
+// ============================================================
+// تأكيد الحجز
+// ============================================================
+app.put('/api/appointments/:id/confirm', authMiddleware, async (req, res) => {
+    try {
+        const appointment = await Appointment.findById(req.params.id);
+        if (!appointment) {
+            return res.status(404).json({ message: '❌ الحجز غير موجود' });
+        }
+        appointment.status = 'confirmed';
+        await appointment.save();
+        res.json({ message: '✅ تم تأكيد الموعد' });
+    } catch (error) {
+        console.error('❌ خطأ في تأكيد الموعد:', error);
+        res.status(500).json({ message: '❌ فشل تأكيد الموعد' });
+    }
+});
+
+// ============================================================
+// إلغاء الحجز
+// ============================================================
+app.put('/api/appointments/:id/cancel', authMiddleware, async (req, res) => {
+    try {
+        const appointment = await Appointment.findById(req.params.id);
+        if (!appointment) {
+            return res.status(404).json({ message: '❌ الحجز غير موجود' });
+        }
+        appointment.status = 'cancelled';
+        await appointment.save();
+        res.json({ message: '✅ تم إلغاء الموعد' });
+    } catch (error) {
+        console.error('❌ خطأ في إلغاء الموعد:', error);
+        res.status(500).json({ message: '❌ فشل إلغاء الموعد' });
+    }
+});
+
+// ============================================================
+// إكمال الحجز
+// ============================================================
+app.put('/api/appointments/:id/complete', authMiddleware, async (req, res) => {
+    try {
+        const appointment = await Appointment.findById(req.params.id);
+        if (!appointment) {
+            return res.status(404).json({ message: '❌ الحجز غير موجود' });
+        }
+        appointment.status = 'completed';
+        await appointment.save();
+        res.json({ message: '✅ تم إكمال الموعد' });
+    } catch (error) {
+        console.error('❌ خطأ في إكمال الموعد:', error);
+        res.status(500).json({ message: '❌ فشل إكمال الموعد' });
+    }
+});
 
 // ============================================================
 // التقييمات
