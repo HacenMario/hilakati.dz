@@ -2848,14 +2848,29 @@ async function loadAdminDashboard() {
                 <button class="btn-outline btn-sm" onclick="resetFilters()">إعادة تعيين</button>
             </div>
             <div id="adminAppointmentsList">${appointments.length > 0 ? appointments.map(a => `
-                <div style="display:flex;justify-content:space-between;align-items:center;padding:0.2rem 0;border-bottom:1px solid var(--border-color);flex-wrap:wrap;gap:0.3rem;">
-                    <span>${a.clientName} → ${a.salonId?.name || 'صالون'}</span>
-                    <span>${a.date} ${a.time}</span>
-                    <span class="status ${a.status}">${a.status}</span>
-                    <span>${a.totalPrice || a.price || 0} دج</span>
-                </div>
-            `).join('') : '<p style="color:#888;">لا توجد حجوزات</p>'}</div>
-        `;
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:0.2rem 0;border-bottom:1px solid var(--border-color);flex-wrap:wrap;gap:0.3rem;">
+        <span>${a.clientName} → ${a.salonId?.name || 'صالون'}</span>
+        <span>${a.date} ${a.time}</span>
+        <span class="status ${a.status}">${a.status}</span>
+        <span>${a.totalPrice || a.price || 0} دج</span>
+        <div style="display:flex;gap:0.3rem;">
+            ${a.status === 'pending' ? `
+                <button class="btn-success btn-sm" onclick="adminConfirmAppointment('${a._id}')" title="تأكيد الحجز">
+                    <i class="fas fa-check"></i>
+                </button>
+            ` : ''}
+            ${a.status !== 'cancelled' && a.status !== 'completed' ? `
+                <button class="btn-danger btn-sm" onclick="adminCancelAppointment('${a._id}')" title="إلغاء الحجز" style="background:#e67e22;">
+                    <i class="fas fa-times"></i>
+                </button>
+            ` : ''}
+            <!-- ===== زر حذف الحجز نهائياً ===== -->
+            <button class="btn-danger btn-sm" onclick="adminDeleteAppointment('${a._id}')" title="حذف الحجز نهائياً" style="background:#c0392b;">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    </div>
+`).join('') : '<p style="color:#888;">لا توجد حجوزات</p>'}</div>
         
         // تخزين الحجوزات للتصفية
         window.allAppointments = appointments;
@@ -2970,20 +2985,24 @@ function resetFilters() {
     renderAppointments(allAppointments);
     showToast(`🔄 عرض ${allAppointments.length} حجز`, 'info');
 }
+// ============================================================
+// دوال إدارة الحجوزات للمدير
+// ============================================================
 
+// تأكيد الحجز (مدير)
 async function adminConfirmAppointment(id) {
-    if (!confirm('تأكيد هذا الموعد؟')) return;
+    if (!confirm('⚠️ تأكيد هذا الموعد؟')) return;
     const token = localStorage.getItem('adminToken');
     try {
         const res = await fetch(`${API_BASE}/appointments/${id}/confirm`, {
             method: 'PUT',
             headers: { 'Authorization': `Bearer ${token}` }
         });
+        const data = await res.json();
         if (res.ok) {
             showToast('✅ تم تأكيد الموعد', 'success');
             loadAdminDashboard();
         } else {
-            const data = await res.json();
             showToast(`❌ ${data.message}`, 'error');
         }
     } catch {
@@ -2991,23 +3010,58 @@ async function adminConfirmAppointment(id) {
     }
 }
 
+// إلغاء الحجز (مدير)
 async function adminCancelAppointment(id) {
-    if (!confirm('إلغاء هذا الموعد؟')) return;
+    if (!confirm('⚠️ إلغاء هذا الموعد؟')) return;
     const token = localStorage.getItem('adminToken');
     try {
         const res = await fetch(`${API_BASE}/appointments/${id}/cancel`, {
             method: 'PUT',
             headers: { 'Authorization': `Bearer ${token}` }
         });
+        const data = await res.json();
         if (res.ok) {
             showToast('✅ تم إلغاء الموعد', 'success');
             loadAdminDashboard();
         } else {
-            const data = await res.json();
             showToast(`❌ ${data.message}`, 'error');
         }
     } catch {
         showToast('❌ فشل الاتصال', 'error');
+    }
+}
+
+// ============================================================
+// حذف حجز نهائياً (مدير)
+// ============================================================
+async function adminDeleteAppointment(appointmentId) {
+    if (!confirm('⚠️ هل أنت متأكد من حذف هذا الحجز نهائياً؟\nهذا الإجراء لا يمكن التراجع عنه.')) {
+        return;
+    }
+    
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+        showToast('❌ يرجى تسجيل الدخول كمدير', 'error');
+        return;
+    }
+    
+    try {
+        const res = await fetch(`${API_BASE}/admin/appointments/${appointmentId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        const data = await res.json();
+        
+        if (res.ok) {
+            showToast('✅ ' + data.message, 'success');
+            loadAdminDashboard(); // تحديث لوحة المدير
+        } else {
+            showToast('❌ ' + (data.message || 'فشل في حذف الحجز'), 'error');
+        }
+    } catch (error) {
+        console.error('❌ خطأ في حذف الحجز:', error);
+        showToast('❌ فشل الاتصال بالخادم', 'error');
     }
 }
 
