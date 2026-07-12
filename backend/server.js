@@ -285,6 +285,34 @@ app.put('/api/admin/auth/change-password', adminAuthMiddleware, async (req, res)
     }
 });
 
+app.delete('/api/admin/salons/:id/reviews', adminAuthMiddleware, async (req, res) => {
+    try {
+        const salonId = req.params.id;
+        
+        // التحقق من وجود الصالون
+        const salon = await Salon.findById(salonId);
+        if (!salon) {
+            return res.status(404).json({ message: '❌ الصالون غير موجود' });
+        }
+
+        // حذف جميع التقييمات المرتبطة بهذا الصالون
+        const result = await Review.deleteMany({ salonId: salonId });
+        
+        // تحديث تقييم الصالون إلى 0
+        salon.rating = 0;
+        salon.totalReviews = 0;
+        await salon.save();
+
+        res.json({
+            message: `✅ تم حذف ${result.deletedCount} تقييم من صالون ${salon.name}`,
+            deletedCount: result.deletedCount
+        });
+    } catch (error) {
+        console.error('❌ خطأ في حذف تقييمات الصالون:', error);
+        res.status(500).json({ message: '❌ فشل في حذف التقييمات' });
+    }
+});
+
 // ============================================================
 // نسيان كلمة المرور (نسخة نظيفة)
 // ============================================================
