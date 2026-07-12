@@ -2529,7 +2529,7 @@ async function updateNotificationUI() {
     document.getElementById('notifBadge').style.display = unread > 0 ? 'inline' : 'none';
     const list = document.getElementById('notifList');
     if (notifications.length === 0) list.innerHTML = '<div class="notif-empty">📭 لا توجد إشعارات</div>';
-    else list.innerHTML = notifications.slice(0,10).map(n => `<div class="notif-item ${n.read ? '' : 'unread'}"><div class="notif-title">${n.title}</div><div class="notif-msg">${n.message}</div><div class="notif-time">${new Date(n.createdAt).toLocaleString('ar-DZ')}</div></div>`).join('');
+    else list.innerHTML = notifications.slice(0,10).map(n => `<div class="notif-item ${n.read ? '' : 'unread'}"><div class="notif-title">${n.title}</div><div class="notif-msg">${n.message}</div><div class="notif-time">${n.appointmentTime || new Date(n.createdAt).toLocaleTimeString('ar-DZ')}</div></div>`).join('');
 }
 async function toggleNotifications() {
     document.getElementById('notifDropdown').classList.toggle('active');
