@@ -290,14 +290,23 @@ app.put('/api/admin/auth/change-password', adminAuthMiddleware, async (req, res)
 // ============================================================
 app.post('/api/auth/forgot-password', async (req, res) => {
     const { email, userType } = req.body;
+    console.log('📧 طلب إعادة تعيين كلمة المرور:', email, userType); // للتأكد من وصول الطلب
+
     try {
         let user;
-        if (userType === 'salon') user = await Salon.findOne({ email });
-        else if (userType === 'customer') user = await Customer.findOne({ email });
-        else return res.status(400).json({ message: 'نوع المستخدم غير صحيح' });
+        if (userType === 'salon') {
+            user = await Salon.findOne({ email });
+        } else if (userType === 'customer') {
+            user = await Customer.findOne({ email });
+        } else {
+            return res.status(400).json({ message: 'نوع المستخدم غير صحيح' });
+        }
 
-        if (!user) return res.status(404).json({ message: 'البريد الإلكتروني غير مسجل' });
+        if (!user) {
+            return res.status(404).json({ message: 'البريد الإلكتروني غير مسجل' });
+        }
 
+        // إنشاء توكن إعادة تعيين
         const resetToken = jwt.sign(
             { id: user._id, userType },
             process.env.JWT_RESET_SECRET || 'reset_secret_key_change_me',
@@ -306,32 +315,48 @@ app.post('/api/auth/forgot-password', async (req, res) => {
 
         const resetUrl = `${process.env.FRONTEND_URL || 'https://halakati-project.vercel.app'}?token=${resetToken}&userType=${userType}`;
 
-        await transporter.sendMail({
-            from: `"حلاقتي" <${process.env.EMAIL_USER}>`,
-            to: email,
-            subject: 'إعادة تعيين كلمة المرور - حلاقتي',
-            html: `
-                <div dir="rtl" style="font-family: 'Tajawal', sans-serif; text-align: right; background: #f8f9fa; padding: 20px; border-radius: 10px;">
-                    <h3 style="color: #f5b042;">طلب إعادة تعيين كلمة المرور</h3>
-                    <p>مرحباً،</p>
-                    <p>لقد تلقينا طلباً لإعادة تعيين كلمة المرور لحسابك في منصة <strong>حلاقتي</strong>.</p>
-                    <p>لتغيير كلمة المرور، اضغط على الرابط أدناه (صالح لمدة 30 دقيقة):</p>
-                    <a href="${resetUrl}" style="display: inline-block; padding: 12px 24px; background-color: #f5b042; color: #1a1a2e; text-decoration: none; border-radius: 50px; font-weight: bold; margin: 15px 0;">إعادة تعيين كلمة المرور</a>
-                    <p>أو يمكنك نسخ هذا الرابط ولصقه في متصفحك:</p>
-                    <p style="background: #ffffff; padding: 10px; border-radius: 5px; direction: ltr; text-align: left;">${resetUrl}</p>
-                    <p>إذا لم تطلب ذلك، يرجى تجاهل هذا البريد الإلكتروني.</p>
-                    <p>شكراً لك،<br>فريق حلاقتي</p>
-                </div>
-            `
+        // حفظ التوكن في قاعدة البيانات (اختياري - يمكنك تخطي هذه الخطوة إذا كنت تستخدم JWT فقط)
+        user.resetPasswordToken = resetToken;
+        user.resetPasswordExpires = Date.now() + 30 * 60 * 1000; // 30 دقيقة
+        await user.save();
+
+        // إرسال البريد الإلكتروني
+        try {
+            await transporter.sendMail({
+                from: `"حلاقتي" <${process.env.EMAIL_USER}>`,
+                to: email,
+                subject: 'إعادة تعيين كلمة المرور - حلاقتي',
+                html: `
+                    <div dir="rtl" style="font-family: 'Tajawal', sans-serif; text-align: right; background: #f8f9fa; padding: 20px; border-radius: 10px;">
+                        <h3 style="color: #f5b042;">طلب إعادة تعيين كلمة المرور</h3>
+                        <p>مرحباً،</p>
+                        <p>لقد تلقينا طلباً لإعادة تعيين كلمة المرور لحسابك في منصة <strong>حلاقتي</strong>.</p>
+                        <p>لتغيير كلمة المرور، اضغط على الرابط أدناه (صالح لمدة 30 دقيقة):</p>
+                        <a href="${resetUrl}" style="display: inline-block; padding: 12px 24px; background-color: #f5b042; color: #1a1a2e; text-decoration: none; border-radius: 50px; font-weight: bold; margin: 15px 0;">إعادة تعيين كلمة المرور</a>
+                        <p>إذا لم تطلب ذلك، يرجى تجاهل هذا البريد الإلكتروني.</p>
+                        <p>شكراً لك،<br>فريق حلاقتي</p>
+                    </div>
+                `
+            });
+        } catch (emailError) {
+            console.error('❌ فشل إرسال البريد الإلكتروني:', emailError);
+            // لا نعيد الخطأ للمستخدم، فقط نسجلها
+        }
+
+        res.json({
+            message: '✅ تم إرسال رابط إعادة التعيين إلى بريدك الإلكتروني',
+            resetLink: process.env.NODE_ENV === 'development' ? resetUrl : undefined
         });
 
-        res.json({ message: 'تم إرسال رابط إعادة التعيين إلى بريدك الإلكتروني' });
     } catch (error) {
-        console.error('خطأ في forgot-password:', error);
+        console.error('❌ خطأ في forgot-password:', error);
         res.status(500).json({ message: 'فشل في إرسال البريد الإلكتروني' });
     }
 });
 
+// ============================================================
+// إعادة تعيين كلمة المرور
+// ============================================================
 app.post('/api/auth/reset-password', async (req, res) => {
     const { token, newPassword } = req.body;
     try {
@@ -357,101 +382,6 @@ app.post('/api/auth/reset-password', async (req, res) => {
             return res.status(400).json({ message: 'انتهت صلاحية رابط إعادة التعيين' });
         }
         res.status(400).json({ message: 'الرابط غير صالح' });
-    }
-});
-
-// ============================================================
-// مسارات المدير الإدارية
-// ============================================================
-app.get('/api/admin/stats', adminAuthMiddleware, async (req, res) => {
-    try {
-        const totalSalons = await Salon.countDocuments();
-        const totalCustomers = await Customer.countDocuments();
-        const totalAppointments = await Appointment.countDocuments();
-        const pendingAppointments = await Appointment.countDocuments({ status: 'pending' });
-        const totalReviews = await Review.countDocuments();
-        const confirmedAppointments = await Appointment.find({ status: { $in: ['confirmed', 'completed'] } });
-        const totalRevenue = confirmedAppointments.reduce((sum, a) => sum + (a.totalPrice || a.price || 0), 0);
-        res.json({ totalSalons, totalCustomers, totalAppointments, pendingAppointments, totalReviews, totalRevenue });
-    } catch (err) {
-        res.status(500).json({ message: 'فشل جلب الإحصائيات' });
-    }
-});
-
-app.get('/api/admin/salons', adminAuthMiddleware, async (req, res) => {
-    const salons = await Salon.find().select('-password');
-    res.json(salons);
-});
-
-app.get('/api/admin/salons/:id', adminAuthMiddleware, async (req, res) => {
-    const salon = await Salon.findById(req.params.id).select('-password');
-    if (!salon) return res.status(404).json({ message: 'صالون غير موجود' });
-    res.json(salon);
-});
-
-app.put('/api/admin/salons/:id', adminAuthMiddleware, async (req, res) => {
-    const { name, city, address, phone } = req.body;
-    const salon = await Salon.findByIdAndUpdate(req.params.id, { name, city, address, phone }, { new: true }).select('-password');
-    res.json(salon);
-});
-
-app.delete('/api/admin/salons/:id', adminAuthMiddleware, async (req, res) => {
-    await Salon.findByIdAndDelete(req.params.id);
-    res.json({ message: 'تم حذف الصالون' });
-});
-
-app.get('/api/admin/customers', adminAuthMiddleware, async (req, res) => {
-    const customers = await Customer.find().select('-password');
-    res.json(customers);
-});
-
-app.get('/api/admin/customers/:id', adminAuthMiddleware, async (req, res) => {
-    const customer = await Customer.findById(req.params.id).select('-password');
-    if (!customer) return res.status(404).json({ message: 'عميل غير موجود' });
-    res.json(customer);
-});
-
-app.put('/api/admin/customers/:id', adminAuthMiddleware, async (req, res) => {
-    const { name, email, phone } = req.body;
-    const customer = await Customer.findByIdAndUpdate(req.params.id, { name, email, phone }, { new: true }).select('-password');
-    res.json(customer);
-});
-
-app.delete('/api/admin/customers/:id', adminAuthMiddleware, async (req, res) => {
-    await Customer.findByIdAndDelete(req.params.id);
-    res.json({ message: 'تم حذف العميل' });
-});
-
-app.get('/api/admin/reviews', adminAuthMiddleware, async (req, res) => {
-    const reviews = await Review.find().populate('salonId', 'name');
-    res.json(reviews);
-});
-
-app.delete('/api/admin/reviews/:id', adminAuthMiddleware, async (req, res) => {
-    await Review.findByIdAndDelete(req.params.id);
-    res.json({ message: 'تم حذف التقييم' });
-});
-
-app.put('/api/admin/change-user-password', adminAuthMiddleware, async (req, res) => {
-    const { userId, userType, newPassword } = req.body;
-    if (!userId || !userType || !newPassword) return res.status(400).json({ message: 'جميع الحقول مطلوبة' });
-    if (newPassword.length < 6) return res.status(400).json({ message: 'كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل' });
-
-    try {
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(newPassword, salt);
-
-        if (userType === 'salon') {
-            await Salon.findByIdAndUpdate(userId, { password: hashedPassword });
-        } else if (userType === 'customer') {
-            await Customer.findByIdAndUpdate(userId, { password: hashedPassword });
-        } else {
-            return res.status(400).json({ message: 'نوع المستخدم غير صحيح' });
-        }
-
-        res.json({ message: 'تم تغيير كلمة المرور بنجاح', newPassword });
-    } catch (error) {
-        res.status(500).json({ message: 'فشل تغيير كلمة المرور' });
     }
 });
 
