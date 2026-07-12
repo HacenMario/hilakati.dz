@@ -8,6 +8,7 @@ const NotificationSchema = new mongoose.Schema({
     read: { type: Boolean, default: false },
     link: { type: String, default: '' },
     createdAt: { type: Date, default: Date.now }
+    appointmentTime: { type: String, default: '' }
 });
 
 module.exports = mongoose.model('Notification', NotificationSchema);
