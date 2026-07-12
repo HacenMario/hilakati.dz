@@ -299,26 +299,27 @@ app.post('/api/auth/forgot-password', async (req, res) => {
         } else if (userType === 'customer') {
             user = await Customer.findOne({ email });
         } else {
+            console.log('❌ نوع مستخدم غير صحيح:', userType);
             return res.status(400).json({ message: 'نوع المستخدم غير صحيح' });
         }
 
         if (!user) {
+            console.log('❌ البريد غير مسجل:', email);
             return res.status(404).json({ message: 'البريد الإلكتروني غير مسجل' });
         }
 
-        // إنشاء توكن إعادة تعيين (صلاحية 30 دقيقة)
+        console.log('✅ تم العثور على المستخدم:', user._id);
+
+        // إنشاء توكن إعادة تعيين
         const resetToken = jwt.sign(
             { id: user._id, userType },
             process.env.JWT_RESET_SECRET || 'reset_secret_key_change_me',
             { expiresIn: '30m' }
         );
 
-        // حفظ التوكن في قاعدة البيانات (اختياري)
-        user.resetPasswordToken = resetToken;
-        user.resetPasswordExpires = Date.now() + 30 * 60 * 1000;
-        await user.save();
+        // إرجاع التوكن مباشرة (بدون إرسال بريد إلكتروني)
+        console.log('🔑 تم إنشاء التوكن:', resetToken);
 
-        // ✅ إرجاع التوكن مباشرة (بدون إرسال بريد إلكتروني)
         res.json({
             message: '✅ تم التحقق من البريد، أدخل كلمة المرور الجديدة',
             resetToken: resetToken,
@@ -327,7 +328,11 @@ app.post('/api/auth/forgot-password', async (req, res) => {
 
     } catch (error) {
         console.error('❌ خطأ في forgot-password:', error);
-        res.status(500).json({ message: 'فشل في إنشاء طلب إعادة التعيين' });
+        // ✅ تأكد من إرسال رد حتى في حالة الخطأ
+        res.status(500).json({
+            message: 'فشل في إنشاء طلب إعادة التعيين',
+            error: error.message
+        });
     }
 });
 
