@@ -2546,7 +2546,9 @@ document.addEventListener('click', function(e) {
     const bell = document.getElementById('notifBell'); const dropdown = document.getElementById('notifDropdown');
     if (bell && dropdown && !bell.contains(e.target) && !dropdown.contains(e.target)) dropdown.classList.remove('active');
 });
-function refreshNotifications() { updateNotificationUI(); }
+function refreshNotifications() {
+    updateNotificationUI();
+}
 
 // ===== Booking =====
 let bookingSalonId = null;
