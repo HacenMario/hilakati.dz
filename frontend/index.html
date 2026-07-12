@@ -2563,7 +2563,7 @@ async function updateNotificationUI() {
         <div class="notif-item ${n.read ? '' : 'unread'}">
             <div class="notif-title">${n.title}</div>
             <div class="notif-msg">${n.message}</div>
-            <div class="notif-time">${new Date(n.createdAt).toLocaleString('ar-DZ')}</div>
+            <div class="notif-time">${n.createdAt ? new Date(n.createdAt).toLocaleString('ar-DZ') : 'تاريخ غير معروف'}</div>
         </div>
     `).join('');
 }
