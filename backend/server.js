@@ -559,23 +559,78 @@ app.get('/api/reviews/salon/:salonId', async (req, res) => {
 app.post('/api/reviews', customerAuthMiddleware, async (req, res) => {
     try {
         const { salonId, rating, comment } = req.body;
+
+        // ============================================================
+        // 1. التحقق من وجود العميل
+        // ============================================================
+        const customer = await Customer.findById(req.customerId);
+        if (!customer) {
+            return res.status(404).json({ message: '❌ عميل غير موجود' });
+        }
+
+        // ============================================================
+        // 2. التحقق من أن العميل لديه حجز مكتمل أو مؤكد في هذا الصالون
+        // ============================================================
+        const hasBooking = await Appointment.findOne({
+            customerId: req.customerId,
+            salonId: salonId,
+            status: { $in: ['confirmed', 'completed'] }
+        });
+
+        if (!hasBooking) {
+            return res.status(403).json({
+                message: '❌ لا يمكنك تقييم هذا الصالون دون حجز مكتمل أو مؤكد'
+            });
+        }
+
+        // ============================================================
+        // 3. التحقق من أن العميل لم يقم بتقييم هذا الصالون مسبقاً (اختياري)
+        // ============================================================
+        const existingReview = await Review.findOne({
+            salonId: salonId,
+            customerId: req.customerId
+        });
+
+        if (existingReview) {
+            return res.status(409).json({
+                message: '❌ لقد قمت بتقييم هذا الصالون مسبقاً'
+            });
+        }
+
+        // ============================================================
+        // 4. إنشاء التقييم الجديد
+        // ============================================================
         const review = new Review({
             salonId,
             customerId: req.customerId,
-            customerName: req.body.customerName || 'عميل',
+            customerName: customer.name, // ✅ اسم العميل الحقيقي
             rating,
             comment,
             date: new Date().toISOString().split('T')[0]
         });
         await review.save();
 
+        // ============================================================
+        // 5. تحديث متوسط التقييمات في الصالون
+        // ============================================================
         const reviews = await Review.find({ salonId });
         const avg = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
-        await Salon.findByIdAndUpdate(salonId, { rating: Math.round(avg * 10) / 10, totalReviews: reviews.length });
+        await Salon.findByIdAndUpdate(salonId, {
+            rating: Math.round(avg * 10) / 10,
+            totalReviews: reviews.length
+        });
 
-        res.status(201).json(review);
+        // ============================================================
+        // 6. إرسال الرد
+        // ============================================================
+        res.status(201).json({
+            message: '✅ تم إضافة التقييم بنجاح',
+            review: review
+        });
+
     } catch (err) {
-        res.status(500).json({ message: 'فشل إضافة التقييم' });
+        console.error('❌ فشل إضافة التقييم:', err);
+        res.status(500).json({ message: '❌ فشل إضافة التقييم' });
     }
 });
 
