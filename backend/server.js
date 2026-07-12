@@ -1101,24 +1101,52 @@ app.get('/api/notifications/admin', adminAuthMiddleware, async (req, res) => {
         res.status(500).json([]);
     }
 });
+// ============================================================
+// مسارات الإشعارات الإضافية
+// ============================================================
 
+// تحديد إشعار واحد كمقروء
+app.put('/api/notifications/:id/read', authMiddleware, async (req, res) => {
+    try {
+        const notification = await Notification.findOne({ _id: req.params.id, userId: req.userId });
+        if (!notification) return res.status(404).json({ message: 'الإشعار غير موجود' });
+        notification.read = true;
+        await notification.save();
+        res.json({ message: '✅ تم التحديث' });
+    } catch (error) {
+        res.status(500).json({ message: 'فشل التحديث' });
+    }
+});
+
+// مسح جميع الإشعارات
+app.delete('/api/notifications/clear', async (req, res) => {
+    try {
+        const { userId, userType } = req.body;
+        if (!userId || !userType) {
+            return res.status(400).json({ message: 'بيانات غير مكتملة' });
+        }
+        await Notification.deleteMany({ userId, userType });
+        res.json({ message: '✅ تم مسح الإشعارات' });
+    } catch (error) {
+        console.error('❌ خطأ في clear notifications:', error);
+        res.status(500).json({ message: 'فشل مسح الإشعارات' });
+    }
+});
+
+// تحديد الكل كمقروء (موجود مسبقاً، تأكد من وجوده)
 app.put('/api/notifications/read-all', async (req, res) => {
     try {
         const { userId, userType } = req.body;
         if (!userId || !userType) {
             return res.status(400).json({ message: 'بيانات غير مكتملة' });
         }
-        await Notification.updateMany(
-            { userId, userType, read: false }, 
-            { read: true }
-        );
+        await Notification.updateMany({ userId, userType, read: false }, { read: true });
         res.json({ message: '✅ تم تحديد الكل كمقروء' });
     } catch (error) {
         console.error('❌ خطأ في read-all:', error);
         res.status(500).json({ message: 'فشل تحديث الإشعارات' });
     }
 });
-
 // ============================================================
 // إرسال رسالة واتساب
 // ============================================================
