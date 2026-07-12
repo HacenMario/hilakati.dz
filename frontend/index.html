@@ -1672,6 +1672,22 @@ let socket = null;
 let currentPage = 1;
 const ITEMS_PER_PAGE = 12;
 
+// ===== دالة تنظيف رقم الهاتف لواتساب =====
+function cleanPhoneNumber(phone) {
+    if (!phone) return '';
+    // إزالة كل ما ليس رقماً
+    let cleaned = phone.replace(/[^0-9]/g, '');
+    // إذا كان الرقم يبدأ بـ 0، أزله
+    if (cleaned.startsWith('0')) {
+        cleaned = cleaned.substring(1);
+    }
+    // إذا كان الرقم لا يبدأ بـ 213، أضفه (للجزائر)
+    if (!cleaned.startsWith('213') && cleaned.length >= 9) {
+        cleaned = '213' + cleaned;
+    }
+    return cleaned;
+}
+
 // ===== الترجمة =====
 const translations = {
     ar: {
@@ -2150,10 +2166,68 @@ async function showSalonDetails(id) {
         const salon = await salonRes.json();
         const reviews = await reviewsRes.json();
         const content = document.getElementById('salonDetailsContent');
-        const hoursHtml = Object.entries(salon.hours || {}).map(([day, hours]) => `<div style="display:flex;justify-content:space-between;padding:0.15rem 0;border-bottom:1px solid var(--border-color);"><span>${day}</span><span>${hours}</span></div>`).join('');
-        const galleryHtml = (salon.gallery || []).map(url => `<img src="${url}" class="gallery-img">`).join('');
-        const reviewsHtml = reviews.map(r => `<div class="review-item"><div class="review-header"><span>${r.customerName}</span><span>${'★'.repeat(r.rating)}</span></div><div class="review-comment">${r.comment}</div><div class="review-date">${r.date}</div></div>`).join('') || '<p style="color:var(--text-color);opacity:0.4;">لا توجد تقييمات بعد</p>';
-        const mapLink = salon.lat && salon.lng ? `https://www.google.com/maps/search/?api=1&query=${salon.lat},${salon.lng}` : '#';
+        
+        // ============================================================
+        // ساعات العمل
+        // ============================================================
+        const hoursHtml = Object.entries(salon.hours || {}).map(([day, hours]) => 
+            `<div style="display:flex;justify-content:space-between;padding:0.15rem 0;border-bottom:1px solid var(--border-color);">
+                <span>${day}</span><span>${hours}</span>
+            </div>`
+        ).join('');
+
+        // ============================================================
+        // معرض الصور
+        // ============================================================
+        const galleryHtml = (salon.gallery || []).map(url => 
+            `<img src="${url}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border-color);">`
+        ).join('');
+
+        // ============================================================
+        // التقييمات
+        // ============================================================
+        const reviewsHtml = reviews.map(r => 
+            `<div class="review-item">
+                <div class="review-header"><span>${r.customerName}</span><span>${'★'.repeat(r.rating)}</span></div>
+                <div class="review-comment">${r.comment}</div>
+                <div class="review-date">${r.date}</div>
+            </div>`
+        ).join('') || '<p style="color:var(--text-color);opacity:0.4;">لا توجد تقييمات بعد</p>';
+
+        // ============================================================
+        // الزر: عرض على الخريطة (مُصَحَّح)
+        // ============================================================
+        let mapButton = '';
+        if (salon.lat && salon.lng) {
+            const mapUrl = `https://www.google.com/maps/search/?api=1&query=${salon.lat},${salon.lng}`;
+            mapButton = `<button class="btn-primary btn-sm" onclick="window.open('${mapUrl}', '_blank')">
+                            <i class="fas fa-map-marked-alt"></i> عرض على الخريطة
+                         </button>`;
+        } else {
+            mapButton = `<button class="btn-outline btn-sm" disabled style="opacity:0.5;cursor:not-allowed;">
+                            <i class="fas fa-map-marked-alt"></i> لا توجد خريطة
+                         </button>`;
+        }
+
+        // ============================================================
+        // الزر: واتساب (مُصَحَّح)
+        // ============================================================
+        let whatsappButton = '';
+        if (salon.phone) {
+            const cleanPhone = cleanPhoneNumber(salon.phone);
+            const whatsappUrl = `https://wa.me/${cleanPhone}`;
+            whatsappButton = `<button class="btn-whatsapp btn-sm" onclick="window.open('${whatsappUrl}', '_blank')">
+                                <i class="fab fa-whatsapp"></i> واتساب
+                              </button>`;
+        } else {
+            whatsappButton = `<button class="btn-outline btn-sm" disabled style="opacity:0.5;cursor:not-allowed;">
+                                <i class="fab fa-whatsapp"></i> لا يوجد رقم
+                              </button>`;
+        }
+
+        // ============================================================
+        // عرض المحتوى الكامل
+        // ============================================================
         content.innerHTML = `
             <div style="text-align:center;margin-bottom:0.8rem;">
                 ${salon.logo ? `<img src="${salon.logo}" style="width:90px;height:90px;border-radius:50%;object-fit:cover;border:2px solid var(--gold);margin-bottom:0.3rem;">` : ''}
@@ -2163,21 +2237,34 @@ async function showSalonDetails(id) {
                 <div style="font-size:0.85rem;color:var(--gold);"><i class="fas fa-phone"></i> ${salon.phone}</div>
                 <div>${'★'.repeat(Math.floor(salon.rating || 0))} (${salon.totalReviews || 0} تقييم)</div>
                 ${salon.isMobile ? '<div style="color:var(--gold);">🚗 خدمة متنقلة</div>' : ''}
-                ${salon.lat && salon.lng ? `<button class="btn-primary btn-sm" onclick="window.open('${mapLink}','_blank')"><i class="fas fa-map-marked-alt"></i> عرض على الخريطة</button>` : ''}
-                ${galleryHtml ? `<div style="display:flex;gap:0.3rem;flex-wrap:wrap;justify-content:center;margin-top:0.3rem;">${galleryHtml}</div>` : ''}
             </div>
+            
             <div><h4 style="color:var(--gold);">🕐 ساعات العمل</h4>${hoursHtml || '<p>لا توجد ساعات عمل</p>'}</div>
-            <div><h4 style="color:var(--gold);">✂️ الخدمات</h4>${(salon.services || []).map(s => `<div style="display:flex;justify-content:space-between;"><span>${s.name}</span><span style="color:var(--gold);">${s.price} دج</span></div>`).join('') || '<p>لا توجد خدمات</p>'}</div>
-            <div><h4 style="color:var(--gold);">👨‍💼 الموظفون</h4><div>${(salon.staff || []).map(s => `<span style="background:rgba(233,69,96,0.12);color:var(--accent);padding:0.1rem 0.4rem;border-radius:50px;">${s}</span>`).join(' ') || 'لا يوجد'}</div></div>
+            
+            <div><h4 style="color:var(--gold);">✂️ الخدمات</h4>${(salon.services || []).map(s => 
+                `<div style="display:flex;justify-content:space-between;"><span>${s.name}</span><span style="color:var(--gold);">${s.price} دج</span></div>`
+            ).join('') || '<p>لا توجد خدمات</p>'}</div>
+            
+            <div><h4 style="color:var(--gold);">👨‍💼 الموظفون</h4><div>${(salon.staff || []).map(s => 
+                `<span style="background:rgba(233,69,96,0.12);color:var(--accent);padding:0.1rem 0.4rem;border-radius:50px;">${s}</span>`
+            ).join(' ') || 'لا يوجد'}</div></div>
+            
+            ${galleryHtml ? `<div style="display:flex;gap:0.3rem;flex-wrap:wrap;justify-content:center;margin-top:0.3rem;">${galleryHtml}</div>` : ''}
+            
             <div><h4 style="color:var(--gold);">⭐ التقييمات</h4>${reviewsHtml}</div>
+            
             <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-top:0.6rem;">
                 <button class="btn-gold btn-sm" onclick="closeModal('salonDetailsModal');openBooking('${salon._id}')"><i class="fas fa-calendar-plus"></i> احجز الآن</button>
                 <button class="btn-primary btn-sm" onclick="closeModal('salonDetailsModal');openReview('${salon._id}')"><i class="fas fa-star"></i> قيم الصالون</button>
-                <button class="btn-whatsapp btn-sm" onclick="window.open('https://wa.me/213${salon.phone.replace(/[^0-9]/g,'')}','_blank')"><i class="fab fa-whatsapp"></i> واتساب</button>
+                ${mapButton}
+                ${whatsappButton}
             </div>
         `;
         openModal('salonDetailsModal');
-    } catch { showToast('❌ فشل في تحميل التفاصيل'); }
+    } catch (error) {
+        console.error('❌ فشل في تحميل التفاصيل:', error);
+        showToast('❌ فشل في تحميل التفاصيل');
+    }
 }
 
 function openReview(salonId) { document.getElementById('reviewSalonId').value = salonId; openModal('reviewModal'); }
