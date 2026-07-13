@@ -1,19 +1,52 @@
 const express = require('express');
 const auth = require('../middleware/auth');
 const Salon = require('../models/Salon');
+const Appointment = require('../models/Appointment');
+const Review = require('../models/Review');
+const Notification = require('../models/Notification');
 const router = express.Router();
 
+// ✅ جلب كل الصالونات (بدون صور - لتحسين الأداء)
 router.get('/', async (req, res) => {
-  const salons = await Salon.find().select('-password');
-  res.json(salons);
+  try {
+    const salons = await Salon.find().select('-password -logo -gallery');
+    res.json(salons);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 });
 
+// ✅ جلب صالون واحد (بدون صورة)
 router.get('/:id', async (req, res) => {
-  const salon = await Salon.findById(req.params.id).select('-password');
-  if (!salon) return res.status(404).json({ message: 'غير موجود' });
-  res.json(salon);
+  try {
+    const salon = await Salon.findById(req.params.id).select('-password -logo -gallery');
+    if (!salon) return res.status(404).json({ message: 'غير موجود' });
+    res.json(salon);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 });
 
+// ✅ جلب صورة اللوغو فقط (تُستخدم عند عرض تفاصيل الصالون)
+router.get('/:id/logo', async (req, res) => {
+  try {
+    const salon = await Salon.findById(req.params.id).select('logo');
+    if (!salon || !salon.logo) {
+      return res.status(404).json({ message: 'Logo غير موجود' });
+    }
+    
+    // تحويل Base64 إلى صورة
+    const base64Data = salon.logo.replace(/^data:image\/\w+;base64,/, '');
+    const imgBuffer = Buffer.from(base64Data, 'base64');
+    
+    res.set('Content-Type', 'image/png');
+    res.send(imgBuffer);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// ✅ تحديث خدمات الصالون
 router.put('/:id/services', auth, async (req, res) => {
   const { services } = req.body;
   const salon = await Salon.findById(req.params.id);
@@ -24,6 +57,7 @@ router.put('/:id/services', auth, async (req, res) => {
   res.json({ message: 'تم التحديث', services: salon.services });
 });
 
+// ✅ تحديث فريق العمل
 router.put('/:id/staff', auth, async (req, res) => {
   const { staff } = req.body;
   const salon = await Salon.findById(req.params.id);
@@ -34,6 +68,7 @@ router.put('/:id/staff', auth, async (req, res) => {
   res.json({ message: 'تم التحديث', staff: salon.staff });
 });
 
+// ✅ تحديث ساعات العمل
 router.put('/:id/hours', auth, async (req, res) => {
   const { hours } = req.body;
   const salon = await Salon.findById(req.params.id);
@@ -44,6 +79,7 @@ router.put('/:id/hours', auth, async (req, res) => {
   res.json({ message: 'تم التحديث', hours: salon.hours });
 });
 
+// ✅ تحديث إعدادات الصالون (الملف الشخصي)
 router.put('/:id/settings', auth, async (req, res) => {
   const { name, city, address, phone, desc, salonType, isMobile, gallery, lat, lng, logo } = req.body;
   const salon = await Salon.findById(req.params.id);
@@ -63,6 +99,7 @@ router.put('/:id/settings', auth, async (req, res) => {
   res.json({ message: 'تم التحديث', salon });
 });
 
+// ✅ حذف الصالون وجميع بياناته المرتبطة
 router.delete('/me', auth, async (req, res) => {
   const salon = await Salon.findById(req.salonId);
   if (!salon) return res.status(404).json({ message: 'غير موجود' });
