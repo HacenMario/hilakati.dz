@@ -3227,114 +3227,191 @@ document.getElementById('reviewForm').addEventListener('submit', async (e) => {
     } catch { showToast('❌ فشل الاتصال'); }
 });
 
-// ===== Notifications =====
 // ============================================================
-// نظام الإشعارات المتكامل
+// نظام الإشعارات المتكامل - النسخة المستقرة
 // ============================================================
 
 // ============================================================
-// 1. جلب الإشعارات من الخادم
+// 1. جلب الإشعارات من الخادم (نسخة آمنة تمامًا)
 // ============================================================
 async function fetchNotifications() {
-    const token = localStorage.getItem('token');
-    const customerToken = localStorage.getItem('customerToken');
-    const adminToken = localStorage.getItem('adminToken');
-    let url = '', headers = {};
-
-    if (token) {
-        url = `${API_BASE}/notifications/salon`;
-        headers = { 'Authorization': `Bearer ${token}` };
-    } else if (customerToken) {
-        url = `${API_BASE}/notifications/customer`;
-        headers = { 'Authorization': `Bearer ${customerToken}` };
-    } else if (adminToken) {
-        url = `${API_BASE}/notifications/admin`;
-        headers = { 'Authorization': `Bearer ${adminToken}` };
-    } else {
-        return [];
-    }
-
     try {
+        const token = localStorage.getItem('token');
+        const customerToken = localStorage.getItem('customerToken');
+        const adminToken = localStorage.getItem('adminToken');
+        
+        let url = '';
+        let headers = {};
+
+        if (token) {
+            url = `${API_BASE}/notifications/salon`;
+            headers = { 'Authorization': `Bearer ${token}` };
+        } else if (customerToken) {
+            url = `${API_BASE}/notifications/customer`;
+            headers = { 'Authorization': `Bearer ${customerToken}` };
+        } else if (adminToken) {
+            url = `${API_BASE}/notifications/admin`;
+            headers = { 'Authorization': `Bearer ${adminToken}` };
+        } else {
+            console.log('ℹ️ لا يوجد مستخدم مسجل الدخول');
+            return []; // ✅ دائماً مصفوفة
+        }
+
+        console.log('📡 جلب الإشعارات من:', url);
+        
         const res = await fetch(url, { headers });
+        
         if (!res.ok) {
             console.warn('⚠️ فشل جلب الإشعارات، الحالة:', res.status);
-            return [];
+            return []; // ✅ دائماً مصفوفة
         }
+        
         const data = await res.json();
-        return data || [];
+        console.log('📦 البيانات الخام:', data);
+        
+        // ✅ معالجة البيانات بغض النظر عن تنسيقها
+        let result = [];
+        
+        if (data === null || data === undefined) {
+            result = [];
+        } else if (Array.isArray(data)) {
+            result = data;
+        } else if (typeof data === 'object') {
+            // البحث عن مصفوفة في الكائن
+            if (Array.isArray(data.notifications)) {
+                result = data.notifications;
+            } else if (Array.isArray(data.data)) {
+                result = data.data;
+            } else if (Array.isArray(data.items)) {
+                result = data.items;
+            } else {
+                // محاولة العثور على أي مصفوفة في الكائن
+                const found = Object.values(data).find(val => Array.isArray(val));
+                if (found) {
+                    result = found;
+                } else {
+                    // إذا لم نجد، نحول الكائن إلى مصفوفة (إذا كان يحتوي على مفاتيح رقمية)
+                    const keys = Object.keys(data);
+                    if (keys.length > 0 && keys.every(k => !isNaN(k))) {
+                        result = Object.values(data);
+                    } else {
+                        result = [];
+                    }
+                }
+            }
+        } else {
+            result = [];
+        }
+        
+        // ✅ التأكد النهائي من أن النتيجة مصفوفة
+        if (!Array.isArray(result)) {
+            console.warn('⚠️ النتيجة ليست مصفوفة، نعيد مصفوفة فارغة');
+            result = [];
+        }
+        
+        console.log(`📦 الإشعارات المستلمة (بعد المعالجة): ${result.length}`);
+        return result;
+        
     } catch (error) {
         console.error('❌ فشل في جلب الإشعارات:', error);
-        return [];
+        return []; // ✅ دائماً مصفوفة
     }
 }
+// ============================================================
+// 2. تحديث واجهة الإشعارات
+// ============================================================
+let notificationTimeout = null;
 
-// ============================================================
-// 2. تحديث واجهة الإشعارات (البادج والقائمة)
-// ============================================================
 async function updateNotificationUI() {
-    try {
-        const notifications = await fetchNotifications();
-        console.log('📦 الإشعارات المستلمة:', notifications.length);
+    if (notificationTimeout) {
+        clearTimeout(notificationTimeout);
+        notificationTimeout = null;
+    }
 
-        const unread = notifications.filter(n => !n.read).length;
-        const badge = document.getElementById('notifBadge');
-        if (badge) {
-            badge.style.display = unread > 0 ? 'inline-block' : 'none';
-            badge.textContent = unread > 99 ? '99+' : unread;
-        }
+    notificationTimeout = setTimeout(async () => {
+        try {
+            // ✅ fetchNotifications دائماً ترجع مصفوفة
+            const notifications = await fetchNotifications();
+            
+            // ✅ تأكيد إضافي أنها مصفوفة
+            const notificationArray = Array.isArray(notifications) ? notifications : [];
+            console.log('📦 الإشعارات المستلمة (نهائي):', notificationArray.length);
 
-        const list = document.getElementById('notifList');
-        if (!list) {
-            console.error('❌ #notifList غير موجود');
-            return;
-        }
-
-        if (!notifications || notifications.length === 0) {
-            list.innerHTML = '<div class="notif-empty" style="padding:1rem;text-align:center;color:#888;">📭 لا توجد إشعارات</div>';
-            return;
-        }
-
-        let html = '';
-        notifications.slice(0, 20).forEach(n => {
-            let time = 'تاريخ غير معروف';
-            if (n.createdAt) {
-                try {
-                    const date = new Date(n.createdAt);
-                    if (!isNaN(date.getTime())) {
-                        time = date.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' }) + '، ' + date.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
-                    }
-                } catch (e) {}
+            // ✅ تحديث البادج
+            const unread = notificationArray.filter(n => n && !n.read).length;
+            const badge = document.getElementById('notifBadge');
+            if (badge) {
+                badge.style.display = unread > 0 ? 'inline-block' : 'none';
+                badge.textContent = unread > 99 ? '99+' : unread;
             }
 
-            const isUnread = !n.read;
-            html += `
-                <div class="notif-item ${isUnread ? 'unread' : ''}" style="padding:0.5rem 0.8rem;border-bottom:1px solid var(--border-color);${isUnread ? 'background:rgba(245,176,66,0.05);border-right:3px solid var(--gold);cursor:pointer;' : ''}" onclick="markAllRead()">
-                    <div style="font-weight:600;color:var(--gold);font-size:0.85rem;">${n.title}</div>
-                    <div style="color:var(--text-color);opacity:0.8;font-size:0.8rem;">${n.message}</div>
-                    <div style="font-size:0.65rem;color:#888;">${time}</div>
-                </div>
-            `;
-        });
-        list.innerHTML = html;
-        console.log('✅ تم تحديث القائمة بـ', notifications.length, 'إشعارات');
+            // ✅ تحديث القائمة
+            const list = document.getElementById('notifList');
+            if (!list) {
+                console.error('❌ #notifList غير موجود');
+                notificationTimeout = null;
+                return;
+            }
 
-    } catch (error) {
-        console.error('❌ خطأ في updateNotificationUI:', error);
-    }
+            if (notificationArray.length === 0) {
+                list.innerHTML = '<div class="notif-empty" style="padding:1rem;text-align:center;color:#888;">📭 لا توجد إشعارات</div>';
+                notificationTimeout = null;
+                return;
+            }
+
+            // ✅ عرض الإشعارات
+            let html = '';
+            notificationArray.slice(0, 20).forEach(n => {
+                if (!n) return;
+                
+                let time = 'تاريخ غير معروف';
+                if (n.createdAt) {
+                    try {
+                        const date = new Date(n.createdAt);
+                        if (!isNaN(date.getTime())) {
+                            time = date.toLocaleDateString('ar-EG', { 
+                                year: 'numeric', 
+                                month: 'long', 
+                                day: 'numeric' 
+                            }) + '، ' + date.toLocaleTimeString('ar-EG', { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                            });
+                        }
+                    } catch (e) {}
+                }
+
+                const isUnread = !n.read;
+                html += `
+                    <div class="notif-item ${isUnread ? 'unread' : ''}" 
+                         style="padding:0.5rem 0.8rem;border-bottom:1px solid var(--border-color);
+                                ${isUnread ? 'background:rgba(245,176,66,0.05);border-right:3px solid var(--gold);cursor:pointer;' : ''}" 
+                         onclick="markAllRead()">
+                        <div style="font-weight:600;color:var(--gold);font-size:0.85rem;">${n.title || 'بدون عنوان'}</div>
+                        <div style="color:var(--text-color);opacity:0.8;font-size:0.8rem;">${n.message || 'بدون محتوى'}</div>
+                        <div style="font-size:0.65rem;color:#888;">${time}</div>
+                    </div>
+                `;
+            });
+
+            list.innerHTML = html;
+            console.log('✅ تم تحديث القائمة بـ', Math.min(notificationArray.length, 20), 'إشعارات');
+
+        } catch (error) {
+            console.error('❌ خطأ في updateNotificationUI:', error);
+        }
+        notificationTimeout = null;
+    }, 300);
 }
-
 // ============================================================
-// 3. تحديد الكل كمقروء (مسار موحد)
+// 3. تحديد الكل كمقروء
 // ============================================================
 async function markAllRead() {
-    // ✅ استخدم نفس منطق جلب التوكن من fetchNotifications
     const token = localStorage.getItem('token') || localStorage.getItem('customerToken');
     if (!token) {
         showToast('❌ يرجى تسجيل الدخول', 'error');
         return;
     }
-
-    console.log('📡 التوكن المستخدم:', token.substring(0, 20) + '...');
 
     try {
         const res = await fetch(`${API_BASE}/notifications/read-all`, {
@@ -3348,12 +3425,13 @@ async function markAllRead() {
         if (!res.ok) {
             const errorText = await res.text();
             console.error('❌ استجابة الخطأ:', errorText);
-            throw new Error(`الخادم رد بـ ${res.status}: ${errorText}`);
+            throw new Error(`الخادم رد بـ ${res.status}`);
         }
 
         const data = await res.json();
         showToast(`✅ ${data.message}`, 'success');
         await updateNotificationUI();
+        
         const dropdown = document.getElementById('notifDropdown');
         if (dropdown) dropdown.style.display = 'none';
     } catch (error) {
@@ -3363,7 +3441,7 @@ async function markAllRead() {
 }
 
 // ============================================================
-// مسح جميع الإشعارات
+// 4. مسح جميع الإشعارات
 // ============================================================
 async function clearAllNotifications() {
     if (!confirm('⚠️ هل أنت متأكد من مسح جميع الإشعارات؟')) return;
@@ -3400,8 +3478,9 @@ async function clearAllNotifications() {
         showToast('❌ فشل مسح الإشعارات', 'error');
     }
 }
+
 // ============================================================
-// 5. تبديل إظهار/إخفاء القائمة
+// 5. تبديل إظهار القائمة
 // ============================================================
 async function toggleNotifications() {
     console.log('🔄 تم النقر على الجرس');
@@ -3435,6 +3514,8 @@ function refreshNotifications() {
 document.addEventListener('DOMContentLoaded', function() {
     const bell = document.getElementById('notifBell');
     if (bell) {
+        // إزالة المستمعين القديمين لتجنب التكرار
+        bell.removeEventListener('click', toggleNotifications);
         bell.addEventListener('click', toggleNotifications);
         console.log('✅ تم ربط حدث النقر بالجرس');
     } else {
@@ -3452,7 +3533,7 @@ document.addEventListener('click', function(e) {
         dropdown.style.display = 'none';
     }
 });
-
+    
 // ===== Booking =====
 let bookingSalonId = null;
 async function openBooking(salonId) {
