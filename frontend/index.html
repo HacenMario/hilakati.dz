@@ -10,6 +10,10 @@
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <!-- PWA -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#f5b042">
@@ -1470,6 +1474,7 @@
 </div></div>
 
     <!-- نافذة تقييم سريع بعد الحجز -->
+<!-- نافذة تقييم سريع بعد الحجز -->
 <div class="modal-overlay" id="quickReviewModal">
     <div class="modal-box" style="max-width:450px;">
         <h2><i class="fas fa-star"></i> كيف كانت تجربتك؟</h2>
@@ -1483,7 +1488,7 @@
                 <span data-value="5">☆</span>
             </div>
             <input type="hidden" id="quickRating" value="5">
-            <textarea id="quickComment" placeholder="شاركنا رأيك (اختياري)" rows="2" style="width:100%;margin-top:0.5rem;padding:0.5rem;border-radius:8px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--text-color);"></textarea>
+            <textarea id="quickComment" placeholder="شاركنا رأيك (اختياري)" rows="3" style="width:100%;margin-top:0.5rem;padding:0.5rem;border-radius:8px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--text-color);"></textarea>
         </div>
         <input type="hidden" id="quickAppointmentId">
         <button class="btn-gold" style="width:100%;padding:0.5rem;" onclick="submitQuickReview()">
@@ -1492,7 +1497,6 @@
         <button class="btn-outline btn-sm" style="width:100%;margin-top:0.3rem;" onclick="skipQuickReview()">تخطي</button>
     </div>
 </div>
-
 <!-- تفاصيل الصالون -->
 <div class="modal-overlay" id="salonDetailsModal"><div class="modal-box" style="max-width:650px;">
     <button class="modal-close" onclick="closeModal('salonDetailsModal')">&times;</button>
@@ -1879,6 +1883,116 @@
 </section>
 
 <script>
+// ===== الخريطة التفاعلية =====
+function openInteractiveMap(salonId, salonName, lat, lng) {
+    // إنشاء نافذة منبثقة للخريطة
+    const modalHtml = `
+        <div id="mapModal" class="modal-overlay active" style="z-index:3000;">
+            <div class="modal-box" style="max-width:700px;padding:0.5rem;">
+                <button class="modal-close" onclick="closeModal('mapModal')" style="position:absolute;top:10px;right:15px;z-index:10;">&times;</button>
+                <h3 style="text-align:center;color:var(--gold);padding:0.5rem;">📍 ${salonName} - موقع الصالون</h3>
+                <div id="interactiveMap" style="width:100%;height:400px;border-radius:10px;"></div>
+                <div style="display:flex;gap:0.5rem;justify-content:center;margin-top:0.5rem;flex-wrap:wrap;">
+                    <button class="btn-success btn-sm" onclick="getDirections(${lat}, ${lng})">
+                        <i class="fas fa-directions"></i> اتجاهات
+                    </button>
+                    <button class="btn-outline btn-sm" onclick="findNearbySalons(${lat}, ${lng})">
+                        <i class="fas fa-search-location"></i> صالونات قريبة
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // إضافة النافذة للصفحة
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // تهيئة الخريطة بعد 100ms (لتأكد من ظهور النافذة)
+    setTimeout(() => {
+        const map = L.map('interactiveMap').setView([lat, lng], 15);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+        
+        // إضافة علامة للصالون
+        L.marker([lat, lng])
+            .addTo(map)
+            .bindPopup(`<b>${salonName}</b><br>📍 ${salon.address || ''}`)
+            .openPopup();
+            
+        // إضافة علامات للصالونات القريبة (إذا كانت محملة)
+        const nearby = allSalons.filter(s => s.lat && s.lng && s._id !== salonId);
+        nearby.slice(0, 10).forEach(s => {
+            const dist = calculateDistance(lat, lng, s.lat, s.lng);
+            if (dist <= 10) {
+                const color = s.salonType === 'male' ? '#3498db' : 
+                             s.salonType === 'female' ? '#e91e63' : 
+                             s.salonType === 'children' ? '#f39c12' : '#2ecc71';
+                L.circleMarker([s.lat, s.lng], {
+                    radius: 8,
+                    color: color,
+                    fillColor: color,
+                    fillOpacity: 0.7
+                })
+                .addTo(map)
+                .bindPopup(`<b>${s.name}</b><br>📍 ${s.city}<br>📏 ${dist.toFixed(1)} كم`);
+            }
+        });
+        
+        // تحديث حجم الخريطة عند ظهورها
+        setTimeout(() => map.invalidateSize(), 200);
+    }, 200);
+}
+
+// ===== حساب المسافة بين نقطتين =====
+function calculateDistance(lat1, lng1, lat2, lng2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat/2)**2 + 
+              Math.cos(lat1 * Math.PI/180) * 
+              Math.cos(lat2 * Math.PI/180) * 
+              Math.sin(dLng/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+// ===== اتجاهات Google Maps =====
+function getDirections(lat, lng) {
+    window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
+}
+
+// ===== صالونات قريبة =====
+function findNearbySalons(lat, lng) {
+    const nearby = allSalons
+        .filter(s => s.lat && s.lng)
+        .map(s => ({ ...s, distance: calculateDistance(lat, lng, s.lat, s.lng) }))
+        .filter(s => s.distance <= 10)
+        .sort((a, b) => a.distance - b.distance);
+    
+    if (nearby.length === 0) {
+        showToast('❌ لا توجد صالونات ضمن 10 كم', 'error');
+        return;
+    }
+    
+    showToast(`✅ ${nearby.length} صالون ضمن 10 كم`, 'success');
+    // عرضها في القائمة
+    allSalons = allSalons.map(s => {
+        const found = nearby.find(n => n._id === s._id);
+        return found ? { ...s, distance: found.distance } : s;
+    });
+    renderAllSalons(nearby);
+}
+// ===== أيقونات نوع الصالون =====
+function getSalonTypeIcon(type) {
+    const icons = {
+        'male': { icon: 'fa-mars', color: '#3498db', label: 'رجالي' },
+        'female': { icon: 'fa-venus', color: '#e91e63', label: 'نسائي' },
+        'children': { icon: 'fa-child', color: '#f39c12', label: 'أطفال' },
+        'mixed': { icon: 'fa-people-arrows', color: '#2ecc71', label: 'مختلط' }
+    };
+    return icons[type] || icons['mixed'];
+}
 // ===== تهيئة EmailJS =====
 (function() {
     emailjs.init('zYIcaJnLsBBaPgfdi'); // Public Key
@@ -2757,6 +2871,10 @@ function renderAllSalons(salons) {
 function goToPage(page) { currentPage = page; renderAllSalons(allSalons); }
 
 function createSalonCard(salon) {
+    const typeInfo = getSalonTypeIcon(salon.salonType);
+    const typeIcon = `<span style="display:inline-flex;align-items:center;gap:4px;background:${typeInfo.color}20;color:${typeInfo.color};padding:0.1rem 0.4rem;border-radius:50px;font-size:0.65rem;">
+    <i class="fas ${typeInfo.icon}"></i> ${typeInfo.label}
+    </span>`;
     const minPrice = salon.services?.length ? Math.min(...salon.services.map(s => s.price)) : 0;
     const firstLetter = salon.name?.charAt(0)?.toUpperCase() || '?';
     const getColorFromName = (str) => {
@@ -2776,6 +2894,7 @@ function createSalonCard(salon) {
     return `
         <div class="salon-card" onclick="showSalonDetails('${salon._id}')">
             <div class="cover">
+            <div class="desc">${salon.desc || ''} ${typeIcon} ${mobileLabel}</div>
                 ${logoHtml}
                 <span class="rating-badge">⭐ ${salon.rating || 'جديد'}</span>
                 ${salon.lat && salon.lng ? '<span class="gps-badge"><i class="fas fa-map-marker-alt"></i> GPS</span>' : ''}
@@ -4217,9 +4336,7 @@ async function adminDeleteAppointment(appointmentId) {
         showToast('❌ فشل الاتصال', 'error');
     }
 }
-// ============================================================
-// نظام التقييم السريع
-// ============================================================
+// ===== نظام التقييم السريع =====
 let quickAppointmentId = null;
 
 // تفعيل اختيار النجوم
@@ -4245,7 +4362,6 @@ document.querySelectorAll('#quickStars span').forEach(star => {
     });
 });
 
-// فتح نافذة التقييم السريع
 function openQuickReview(appointmentId) {
     quickAppointmentId = appointmentId;
     document.getElementById('quickAppointmentId').value = appointmentId;
@@ -4257,7 +4373,6 @@ function openQuickReview(appointmentId) {
     openModal('quickReviewModal');
 }
 
-// إرسال التقييم
 async function submitQuickReview() {
     const rating = parseInt(document.getElementById('quickRating').value);
     const comment = document.getElementById('quickComment').value.trim();
