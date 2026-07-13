@@ -3380,32 +3380,45 @@ async function markAsRead(notificationId) {
 // 5. تحديد الكل كمقروء
 // ============================================================
 async function markAllRead() {
-    const token = localStorage.getItem('token');
-    const customerToken = localStorage.getItem('customerToken');
-    const adminToken = localStorage.getItem('adminToken');
-    let userId = localStorage.getItem('salonId') || localStorage.getItem('customerId') || localStorage.getItem('adminId');
-    let userType = token ? 'salon' : customerToken ? 'customer' : adminToken ? 'admin' : null;
-
-    if (!userId || !userType) {
+    const token = localStorage.getItem('token') || localStorage.getItem('customerToken');
+    if (!token) {
         showToast('❌ يرجى تسجيل الدخول', 'error');
         return;
     }
 
+    // تحديد المسار المناسب حسب نوع المستخدم
+    const isCustomer = !!localStorage.getItem('customerToken');
+    const endpoint = isCustomer ? '/api/notifications/read-all-customer' : '/api/notifications/read-all';
+
     try {
-        const res = await fetch(`${API_BASE}/notifications/read-all`, {
+        const res = await fetch(endpoint, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId, userType })
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
         });
+
+        const data = await res.json();
+
         if (res.ok) {
-            showToast('✅ تم تحديد الكل كمقروء', 'success');
-            await updateNotificationUI();
+            showToast(`✅ ${data.message}`, 'success');
+            await updateNotificationUI(); // تحديث القائمة
+            // إغلاق القائمة المنسدلة
+            document.getElementById('notifDropdown').style.display = 'none';
         } else {
-            showToast('❌ فشل تحديث الإشعارات', 'error');
+            showToast(`❌ ${data.message || 'فشل التحديث'}`, 'error');
         }
-    } catch {
-        showToast('❌ فشل الاتصال', 'error');
+    } catch (error) {
+        console.error('❌ فشل تحديث الإشعارات:', error);
+        showToast('❌ فشل الاتصال بالخادم', 'error');
     }
+}
+
+// ✅ عند النقر على إشعار فردي، نحدد الكل كمقروء (تبسيط)
+async function markAsRead(notificationId) {
+    // بدلاً من تحديث إشعار واحد، نحدد الكل كمقروء
+    await markAllRead();
 }
 
 // ============================================================
