@@ -4137,7 +4137,7 @@ function skipQuickReview() {
 // ============================================================
 // دوال إدارة الصالونات والعملاء
 // ============================================================
-
+// تفعيل/تعطيل صالون مع تحديث القائمة تلقائياً
 async function toggleSalonStatus(salonId) {
     if (!confirm('⚠️ هل أنت متأكد من تغيير حالة هذا الصالون؟')) return;
     const token = localStorage.getItem('adminToken');
@@ -4146,11 +4146,13 @@ async function toggleSalonStatus(salonId) {
             method: 'PUT',
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        const data = await res.json();
         if (res.ok) {
-            showToast(`✅ ${data.message}`, 'success');
-            loadAdminDashboard();
+            showToast('✅ تم تغيير الحالة', 'success');
+            // ✅ إعادة تحميل الصالونات والقائمة
+            await loadSalons();          // تحديث قائمة الصالونات الرئيسية
+            await loadAdminDashboard();  // تحديث لوحة Admin
         } else {
+            const data = await res.json();
             showToast(`❌ ${data.message}`, 'error');
         }
     } catch {
