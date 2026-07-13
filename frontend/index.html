@@ -2806,10 +2806,8 @@ function applyFilters() {
     const type = document.getElementById('filterSalonType')?.value || '';
     const sort = document.getElementById('filterSort')?.value || 'rating';
 
-    // ✅ للتشخيص: طباعة قيمة الترتيب المختارة
     console.log('🔍 الترتيب المختار:', sort);
 
-    // ===== التصفية =====
     let result = allSalons.filter(salon => {
         const matchName = salon.name.toLowerCase().includes(query);
         const matchCity = city ? salon.city === city : true;
@@ -2822,16 +2820,7 @@ function applyFilters() {
     // ===== الترتيب =====
     if (sort === 'rating') {
         console.log('⭐ الترتيب حسب الأعلى تقييماً');
-        result.sort((a, b) => {
-            const ratingA = a.rating || 0;
-            const ratingB = b.rating || 0;
-            return ratingB - ratingA;
-        });
-        // عرض عينة من النتائج للتأكد
-        if (result.length > 0) {
-            console.log('📌 أعلى تقييم:', result[0].name, result[0].rating);
-            console.log('📌 أدنى تقييم:', result[result.length-1].name, result[result.length-1].rating);
-        }
+        result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
     } 
     else if (sort === 'price') {
         console.log('💰 الترتيب حسب الأقل سعراً');
@@ -2840,14 +2829,6 @@ function applyFilters() {
             const minB = b.services?.length ? Math.min(...b.services.map(s => s.price || 0)) : Infinity;
             return minA - minB;
         });
-        if (result.length > 0) {
-            const first = result[0];
-            const last = result[result.length-1];
-            const firstPrice = first.services?.length ? Math.min(...first.services.map(s => s.price || 0)) : 'لا يوجد';
-            const lastPrice = last.services?.length ? Math.min(...last.services.map(s => s.price || 0)) : 'لا يوجد';
-            console.log('📌 أقل سعر:', first.name, firstPrice);
-            console.log('📌 أعلى سعر:', last.name, lastPrice);
-        }
     } 
     else if (sort === 'distance') {
         console.log('📍 الترتيب حسب الأقرب (ضمن 10 كم)');
@@ -2874,9 +2855,61 @@ function applyFilters() {
     console.log(`📊 عدد النتائج بعد الترتيب: ${result.length}`);
     renderAllSalons(result);
 }
-        showToast('❌ فشل تحديد الموقع، تأكد من تشغيل GPS', 'error'); 
+
+// ===== مستمعات الأحداث =====
+document.getElementById('searchSalon')?.addEventListener('input', applyFilters);
+document.getElementById('filterCity')?.addEventListener('change', applyFilters);
+document.getElementById('filterSalonType')?.addEventListener('change', applyFilters);
+document.getElementById('filterSort')?.addEventListener('change', applyFilters);
+
+// ===== الحصول على الصالونات القريبة =====
+function getNearbySalons() {
+    const salonsWithGps = allSalons.filter(s => s.lat && s.lng);
+    if (salonsWithGps.length === 0) {
+        showToast('⚠️ لا توجد صالونات بموقع GPS');
+        return;
+    }
+    if (!navigator.geolocation) {
+        showToast('❌ متصفحك لا يدعم GPS');
+        return;
+    }
+    showToast('⏳ جاري تحديد موقعك...');
+    
+    navigator.geolocation.getCurrentPosition(pos => {
+        const userLat = pos.coords.latitude;
+        const userLng = pos.coords.longitude;
+        const R = 6371;
+        
+        allSalons = allSalons.map(s => {
+            if (s.lat && s.lng) {
+                const dLat = (s.lat - userLat) * Math.PI / 180;
+                const dLng = (s.lng - userLng) * Math.PI / 180;
+                const a = Math.sin(dLat/2)**2 + 
+                          Math.cos(userLat * Math.PI/180) * 
+                          Math.cos(s.lat * Math.PI/180) * 
+                          Math.sin(dLng/2)**2;
+                const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                return { ...s, distance: dist };
+            }
+            return { ...s, distance: undefined };
+        });
+        
+        const nearby = allSalons.filter(s => s.distance !== undefined && s.distance <= 10);
+        if (nearby.length === 0) {
+            showToast('❌ لا توجد صالونات ضمن 10 كم', 'error');
+            renderAllSalons(allSalons.filter(s => s.distance !== undefined));
+        } else {
+            nearby.sort((a, b) => a.distance - b.distance);
+            showToast(`✅ ${nearby.length} صالون ضمن 10 كم`, 'success');
+            currentPage = 1;
+            renderAllSalons(nearby);
+        }
+    }, () => {
+        showToast('❌ فشل تحديد الموقع، تأكد من تشغيل GPS', 'error');
+    });
 }
-// ===== تحديث المسافات لجميع الصالونات =====
+
+// ===== تحديث المسافات لجميع الصالونات (اختياري) =====
 function updateAllDistances(userLat, userLng) {
     const R = 6371;
     allSalons = allSalons.map(s => {
