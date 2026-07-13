@@ -4156,27 +4156,7 @@ async function init() {
     setInterval(refreshNotifications, 30000);
     console.log('🇩🇿 حلاقتي - النسخة الكاملة مع نسيان كلمة المرور وصلاحيات Admin');
 }
-// ===== معالج نموذج الاتصال =====
-document.getElementById('contactForm')?.addEventListener('submit', function(e) {
-    e.preventDefault();
-    const name = document.getElementById('contactName').value.trim();
-    const email = document.getElementById('contactEmail').value.trim();
-    const message = document.getElementById('contactMessage').value.trim();
-
-    if (!name || !email || !message) {
-        showToast('❌ الرجاء ملء جميع الحقول', 'error');
-        return;
-    }
-
-    // ✅ يمكنك إرسال البيانات إلى خادمك أو فتح عميل البريد
-    // الحل البسيط: فتح البريد الإلكتروني
-    const mailto = `mailto:support@halakati.dz?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(`الاسم: ${name}\nالبريد: ${email}\n\n${message}`)}`;
-    window.open(mailto, '_blank');
-    
-    showToast('✅ تم إرسال رسالتك!', 'success');
-    this.reset();
-});
-// ===== إرسال رسالة الاتصال (حل mailto) =====
+// ===== إرسال رسالة الاتصال (نسخة mailto مع تصحيح) =====
 function sendContactMessage(e) {
     e.preventDefault();
     
@@ -4185,8 +4165,10 @@ function sendContactMessage(e) {
     const emailInput = document.getElementById('contactEmail');
     const messageInput = document.getElementById('contactMessage');
 
+    // ✅ التحقق من وجود العناصر
     if (!nameInput || !emailInput || !messageInput) {
         showToast('❌ حدث خطأ في النموذج، حاول تحديث الصفحة', 'error');
+        console.error('❌ أحد العناصر غير موجود:', { nameInput, emailInput, messageInput });
         return;
     }
 
@@ -4194,12 +4176,16 @@ function sendContactMessage(e) {
     const email = emailInput.value.trim();
     const message = messageInput.value.trim();
 
+    // ✅ طباعة القيم للتصحيح
+    console.log('📝 القيم المقروءة:', { name, email, message });
+
     if (!name || !email || !message) {
         showToast('❌ الرجاء ملء جميع الحقول', 'error');
+        console.warn('⚠️ حقل فارغ:', { name, email, message });
         return;
     }
 
-    // ✅ إنشاء رابط mailto لفتح البريد الإلكتروني
+    // ✅ إنشاء رابط mailto
     const subject = encodeURIComponent('رسالة من موقع حلاقتي');
     const body = encodeURIComponent(
         `الاسم: ${name}\n` +
@@ -4209,45 +4195,7 @@ function sendContactMessage(e) {
     
     const mailtoLink = `mailto:stevenhacen@gmail.com?subject=${subject}&body=${body}`;
     
-    // فتح البريد الإلكتروني في نافذة جديدة
-    window.open(mailtoLink, '_blank');
-    
-    showToast('✅ تم فتح بريدك! أرسل الرسالة لإتمام الإرسال', 'success');
-    document.getElementById('contactForm').reset();
-}// ===== إرسال رسالة الاتصال (حل mailto) =====
-function sendContactMessage(e) {
-    e.preventDefault();
-    
-    // قراءة القيم مع التحقق من وجود العناصر
-    const nameInput = document.getElementById('contactName');
-    const emailInput = document.getElementById('contactEmail');
-    const messageInput = document.getElementById('contactMessage');
-
-    if (!nameInput || !emailInput || !messageInput) {
-        showToast('❌ حدث خطأ في النموذج، حاول تحديث الصفحة', 'error');
-        return;
-    }
-
-    const name = nameInput.value.trim();
-    const email = emailInput.value.trim();
-    const message = messageInput.value.trim();
-
-    if (!name || !email || !message) {
-        showToast('❌ الرجاء ملء جميع الحقول', 'error');
-        return;
-    }
-
-    // ✅ إنشاء رابط mailto لفتح البريد الإلكتروني
-    const subject = encodeURIComponent('رسالة من موقع حلاقتي');
-    const body = encodeURIComponent(
-        `الاسم: ${name}\n` +
-        `البريد الإلكتروني: ${email}\n\n` +
-        `الرسالة:\n${message}`
-    );
-    
-    const mailtoLink = `mailto:stevenhacen@gmail.com?subject=${subject}&body=${body}`;
-    
-    // فتح البريد الإلكتروني في نافذة جديدة
+    // فتح البريد الإلكتروني
     window.open(mailtoLink, '_blank');
     
     showToast('✅ تم فتح بريدك! أرسل الرسالة لإتمام الإرسال', 'success');
