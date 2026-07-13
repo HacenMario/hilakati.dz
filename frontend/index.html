@@ -1733,51 +1733,79 @@
 
 <!-- ===== صفحة اتصل بنا ===== -->
 <section class="section hidden" id="page-contact">
-    <div style="max-width:700px;margin:0 auto;padding:1rem;">
+    <div style="max-width:800px;margin:0 auto;padding:1rem;">
         <h2 class="section-title">اتصل <span class="highlight">بنا</span></h2>
-        <div style="background:var(--card-bg);border-radius:var(--radius);padding:1.5rem;border:1px solid var(--border-color);box-shadow:var(--shadow);">
-            <p style="text-align:center;margin-bottom:1.5rem;opacity:0.7;">لديك سؤال أو استفسار؟ تواصل معنا وسنرد عليك في أقرب وقت.</p>
-            <form id="contactForm">
-                <div class="form-group">
-                    <label>الاسم الكامل</label>
-                    <input type="text" id="contactName" placeholder="أدخل اسمك" required>
-                </div>
-                <div class="form-group">
-                    <label>البريد الإلكتروني</label>
-                    <input type="email" id="contactEmail" placeholder="أدخل بريدك الإلكتروني" required>
-                </div>
-                <div class="form-group">
-                    <label>الموضوع</label>
-                    <input type="text" id="contactSubject" placeholder="موضوع الرسالة" required>
-                </div>
-                <div class="form-group">
-                    <label>الرسالة</label>
-                    <textarea id="contactMessage" rows="4" placeholder="اكتب رسالتك هنا..." required></textarea>
-                </div>
-                <button type="submit" class="btn-gold" style="width:100%;padding:0.6rem;font-size:1rem;">
-                    <i class="fas fa-paper-plane"></i> إرسال
-                </button>
-            </form>
-            <div style="margin-top:1.5rem;border-top:1px solid var(--border-color);padding-top:1.5rem;">
-                <h4 style="color:var(--gold);text-align:center;">معلومات التواصل</h4>
-                <div style="display:flex;flex-direction:column;gap:0.5rem;margin-top:0.5rem;">
-                    <div style="display:flex;align-items:center;gap:8px;justify-content:center;">
-                        <i class="fas fa-envelope" style="color:var(--gold);width:24px;"></i>
-                        <span>stevenhacen@gmail.com</span>
-                    </div>
-                    <div style="display:flex;align-items:center;gap:8px;justify-content:center;">
-                        <i class="fas fa-phone" style="color:var(--gold);width:24px;"></i>
-                        <span>+213 542 16 35 26</span>
-                    </div>
-                    <div style="display:flex;align-items:center;gap:8px;justify-content:center;">
-                        <i class="fab fa-facebook" style="color:var(--gold);width:24px;"></i>
-                        <span>facebook.com/halakati.dz</span>
-                    </div>
-                    <div style="display:flex;align-items:center;gap:8px;justify-content:center;">
-                        <i class="fab fa-instagram" style="color:var(--gold);width:24px;"></i>
-                        <span>@halakati.dz</span>
+        <p class="section-subtitle">نحن هنا لمساعدتك! تواصل معنا عبر أي من القنوات التالية</p>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-top:1rem;">
+            <!-- ===== جهة اليمين: معلومات التواصل ===== -->
+            <div style="background:var(--card-bg);padding:1.5rem;border-radius:var(--radius);border:1px solid var(--border-color);">
+                <h3 style="color:var(--gold);margin-bottom:1rem;"><i class="fas fa-address-card"></i> معلومات التواصل</h3>
+                
+                <!-- البريد الإلكتروني -->
+                <div style="display:flex;align-items:center;gap:0.8rem;padding:0.5rem 0;border-bottom:1px solid var(--border-color);">
+                    <i class="fas fa-envelope" style="color:var(--gold);font-size:1.2rem;width:30px;"></i>
+                    <div>
+                        <div style="font-size:0.7rem;opacity:0.5;">البريد الإلكتروني</div>
+                        <a href="mailto:stevenhacen@gmail.com" style="color:var(--text-color);">stevenhacen@gmail.com</a>
                     </div>
                 </div>
+
+                <!-- رقم الهاتف -->
+                <div style="display:flex;align-items:center;gap:0.8rem;padding:0.5rem 0;border-bottom:1px solid var(--border-color);">
+                    <i class="fas fa-phone" style="color:var(--gold);font-size:1.2rem;width:30px;"></i>
+                    <div>
+                        <div style="font-size:0.7rem;opacity:0.5;">رقم الهاتف</div>
+                        <a href="tel:+213542163526" style="color:var(--text-color);direction:ltr;display:inline-block;">+213 542 16 35 26</a>
+                    </div>
+                </div>
+
+                <!-- فيسبوك -->
+                <div style="display:flex;align-items:center;gap:0.8rem;padding:0.5rem 0;border-bottom:1px solid var(--border-color);">
+                    <i class="fab fa-facebook" style="color:#1877f2;font-size:1.2rem;width:30px;"></i>
+                    <div>
+                        <div style="font-size:0.7rem;opacity:0.5;">فيسبوك</div>
+                        <a href="https://facebook.com/halakati.dz" target="_blank" style="color:var(--text-color);">facebook.com/halakati.dz</a>
+                    </div>
+                </div>
+
+                <!-- الموقع الإلكتروني -->
+                <div style="display:flex;align-items:center;gap:0.8rem;padding:0.5rem 0;">
+                    <i class="fas fa-globe" style="color:var(--gold);font-size:1.2rem;width:30px;"></i>
+                    <div>
+                        <div style="font-size:0.7rem;opacity:0.5;">الموقع الإلكتروني</div>
+                        <a href="https://halakati.dz" target="_blank" style="color:var(--text-color);">halakati.dz</a>
+                    </div>
+                </div>
+
+                <!-- زر واتساب سريع -->
+                <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border-color);">
+                    <a href="https://wa.me/213542163526" target="_blank" class="btn-whatsapp" style="display:inline-block;width:100%;text-align:center;padding:0.5rem;border-radius:50px;">
+                        <i class="fab fa-whatsapp"></i> تواصل عبر واتساب
+                    </a>
+                </div>
+            </div>
+
+            <!-- ===== جهة اليسار: نموذج الاتصال ===== -->
+            <div style="background:var(--card-bg);padding:1.5rem;border-radius:var(--radius);border:1px solid var(--border-color);">
+                <h3 style="color:var(--gold);margin-bottom:1rem;"><i class="fas fa-paper-plane"></i> أرسل رسالة</h3>
+                <form id="contactForm" onsubmit="sendContactMessage(event)">
+                    <div class="form-group">
+                        <label>الاسم الكامل</label>
+                        <input type="text" id="contactName" required placeholder="أدخل اسمك">
+                    </div>
+                    <div class="form-group">
+                        <label>البريد الإلكتروني</label>
+                        <input type="email" id="contactEmail" required placeholder="example@email.com">
+                    </div>
+                    <div class="form-group">
+                        <label>الرسالة</label>
+                        <textarea id="contactMessage" rows="4" required placeholder="اكتب رسالتك هنا..."></textarea>
+                    </div>
+                    <button type="submit" class="btn-gold" style="width:100%;padding:0.6rem;">
+                        <i class="fas fa-paper-plane"></i> إرسال
+                    </button>
+                </form>
             </div>
         </div>
     </div>
