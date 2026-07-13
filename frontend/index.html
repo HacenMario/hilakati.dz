@@ -2502,25 +2502,19 @@ async function showSalonDetails(id) {
         const reviews = await reviewsRes.json();
         const content = document.getElementById('salonDetailsContent');
         
-        // ============================================================
-        // ساعات العمل
-        // ============================================================
+        // ===== ساعات العمل =====
         const hoursHtml = Object.entries(salon.hours || {}).map(([day, hours]) => 
             `<div style="display:flex;justify-content:space-between;padding:0.15rem 0;border-bottom:1px solid var(--border-color);">
                 <span>${day}</span><span>${hours}</span>
             </div>`
         ).join('');
 
-        // ============================================================
-        // معرض الصور
-        // ============================================================
+        // ===== معرض الصور =====
         const galleryHtml = (salon.gallery || []).map(url => 
             `<img src="${url}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border-color);">`
         ).join('');
 
-        // ============================================================
-        // التقييمات
-        // ============================================================
+        // ===== التقييمات =====
         const reviewsHtml = reviews.map(r => 
             `<div class="review-item">
                 <div class="review-header"><span>${r.customerName}</span><span>${'★'.repeat(r.rating)}</span></div>
@@ -2529,9 +2523,7 @@ async function showSalonDetails(id) {
             </div>`
         ).join('') || '<p style="color:var(--text-color);opacity:0.4;">لا توجد تقييمات بعد</p>';
 
-        // ============================================================
-        // الزر: عرض على الخريطة (مُصَحَّح)
-        // ============================================================
+        // ===== زر الخريطة =====
         let mapButton = '';
         if (salon.lat && salon.lng) {
             const mapUrl = `https://www.google.com/maps/search/?api=1&query=${salon.lat},${salon.lng}`;
@@ -2544,9 +2536,7 @@ async function showSalonDetails(id) {
                          </button>`;
         }
 
-        // ============================================================
-        // الزر: واتساب (مُصَحَّح)
-        // ============================================================
+        // ===== زر واتساب =====
         let whatsappButton = '';
         if (salon.phone) {
             const cleanPhone = cleanPhoneNumber(salon.phone);
@@ -2559,78 +2549,79 @@ async function showSalonDetails(id) {
                                 <i class="fab fa-whatsapp"></i> لا يوجد رقم
                               </button>`;
         }
-        // ============================================================
-        // عرض المحتوى الكامل
-        // ============================================================
-let logoHtml = '';
-try {
-    // ✅ استخدم '/salons/' بدلاً من '/salon/'
-    const logoResponse = await fetch(`${API_BASE}/salons/${id}/logo`);
-    if (logoResponse.ok) {
-        const blob = await logoResponse.blob();
-        const url = URL.createObjectURL(blob);
-        logoHtml = `<img src="${url}" style="width:90px;height:90px;border-radius:50%;object-fit:cover;border:2px solid var(--gold);margin-bottom:0.3rem;">`;
-    } else {
-        // ❌ إذا لم يوجد لوغو، استخدم الحرف الأول
-        const firstLetter = salon.name?.charAt(0)?.toUpperCase() || '?';
-        const getColorFromName = (str) => {
-            let hash = 0;
-            for (let i = 0; i < str.length; i++) {
-                hash = str.charCodeAt(i) + ((hash << 5) - hash);
-            }
-            const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9', '#F8C471', '#82E0AA', '#F1948A', '#85929E', '#73C6B6', '#E59866'];
-            return colors[Math.abs(hash) % colors.length];
-        };
-        const bgColor = getColorFromName(salon.name || '');
-        logoHtml = `<div style="width:90px;height:90px;border-radius:50%;background:${bgColor};display:flex;align-items:center;justify-content:center;color:#fff;font-size:36px;font-weight:bold;font-family:'Tajawal',sans-serif;text-transform:uppercase;border:2px solid var(--gold);margin:0 auto 0.3rem;">${firstLetter}</div>`;
-    }
-} catch {
-    // ❌ في حال فشل جلب اللوغو، استخدم الحرف الأول
-    const firstLetter = salon.name?.charAt(0)?.toUpperCase() || '?';
-    const getColorFromName = (str) => {
-        let hash = 0;
-        for (let i = 0; i < str.length; i++) {
-            hash = str.charCodeAt(i) + ((hash << 5) - hash);
-        }
-        const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9', '#F8C471', '#82E0AA', '#F1948A', '#85929E', '#73C6B6', '#E59866'];
-        return colors[Math.abs(hash) % colors.length];
-    };
-    const bgColor = getColorFromName(salon.name || '');
-    logoHtml = `<div style="width:90px;height:90px;border-radius:50%;background:${bgColor};display:flex;align-items:center;justify-content:center;color:#fff;font-size:36px;font-weight:bold;font-family:'Tajawal',sans-serif;text-transform:uppercase;border:2px solid var(--gold);margin:0 auto 0.3rem;">${firstLetter}</div>`;
-}
 
-content.innerHTML = `
-    <div style="text-align:center;margin-bottom:0.8rem;">
-        ${logoHtml}
-        <h2 style="color:var(--gold);font-size:1.2rem;">${salon.name} ${salon.featured ? '⭐' : ''}</h2>
-        <div style="color:var(--text-color);opacity:0.8;font-size:0.85rem;">${salon.desc || ''}</div>
-        <div style="color:var(--text-color);opacity:0.5;font-size:0.8rem;">${salon.address || salon.city}</div>
-        <div style="font-size:0.85rem;color:var(--gold);"><i class="fas fa-phone"></i> ${salon.phone}</div>
-        <div>${'★'.repeat(Math.floor(salon.rating || 0))} (${salon.totalReviews || 0} تقييم)</div>
-        ${salon.isMobile ? '<div style="color:var(--gold);">🚗 خدمة متنقلة</div>' : ''}
-    </div>
-    
-    <div><h4 style="color:var(--gold);">🕐 ساعات العمل</h4>${hoursHtml || '<p>لا توجد ساعات عمل</p>'}</div>
-    
-    <div><h4 style="color:var(--gold);">✂️ الخدمات</h4>${(salon.services || []).map(s => 
-        `<div style="display:flex;justify-content:space-between;"><span>${s.name}</span><span style="color:var(--gold);">${s.price} دج</span></div>`
-    ).join('') || '<p>لا توجد خدمات</p>'}</div>
-    
-    <div><h4 style="color:var(--gold);">👨‍💼 الموظفون</h4><div>${(salon.staff || []).map(s => 
-        `<span style="background:rgba(233,69,96,0.12);color:var(--accent);padding:0.1rem 0.4rem;border-radius:50px;">${s}</span>`
-    ).join(' ') || 'لا يوجد'}</div></div>
-    
-    ${galleryHtml ? `<div style="display:flex;gap:0.3rem;flex-wrap:wrap;justify-content:center;margin-top:0.3rem;">${galleryHtml}</div>` : ''}
-    
-    <div><h4 style="color:var(--gold);">⭐ التقييمات</h4>${reviewsHtml}</div>
-    
-    <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-top:0.6rem;">
-        <button class="btn-gold btn-sm" onclick="closeModal('salonDetailsModal');openBooking('${salon._id}')"><i class="fas fa-calendar-plus"></i> احجز الآن</button>
-        <button class="btn-primary btn-sm" onclick="closeModal('salonDetailsModal');openReview('${salon._id}')"><i class="fas fa-star"></i> قيم الصالون</button>
-        ${mapButton}
-        ${whatsappButton}
-    </div>
-`;
+        // ===== جلب اللوغو الحقيقي (مع المسار الصحيح) =====
+        let logoHtml = '';
+        try {
+            // ✅ المسار الصحيح: /api/salons/:id/logo
+            const logoResponse = await fetch(`${API_BASE}/salons/${id}/logo`);
+            if (logoResponse.ok) {
+                const blob = await logoResponse.blob();
+                const url = URL.createObjectURL(blob);
+                logoHtml = `<img src="${url}" style="width:90px;height:90px;border-radius:50%;object-fit:cover;border:2px solid var(--gold);margin-bottom:0.3rem;">`;
+            } else {
+                // ❌ إذا لم يوجد لوغو، استخدم الحرف الأول
+                const firstLetter = salon.name?.charAt(0)?.toUpperCase() || '?';
+                const getColorFromName = (str) => {
+                    let hash = 0;
+                    for (let i = 0; i < str.length; i++) {
+                        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+                    }
+                    const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9', '#F8C471', '#82E0AA', '#F1948A', '#85929E', '#73C6B6', '#E59866'];
+                    return colors[Math.abs(hash) % colors.length];
+                };
+                const bgColor = getColorFromName(salon.name || '');
+                logoHtml = `<div style="width:90px;height:90px;border-radius:50%;background:${bgColor};display:flex;align-items:center;justify-content:center;color:#fff;font-size:36px;font-weight:bold;font-family:'Tajawal',sans-serif;text-transform:uppercase;border:2px solid var(--gold);margin:0 auto 0.3rem;">${firstLetter}</div>`;
+            }
+        } catch (error) {
+            console.error('❌ فشل جلب اللوغو:', error);
+            // ❌ في حال فشل جلب اللوغو، استخدم الحرف الأول
+            const firstLetter = salon.name?.charAt(0)?.toUpperCase() || '?';
+            const getColorFromName = (str) => {
+                let hash = 0;
+                for (let i = 0; i < str.length; i++) {
+                    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+                }
+                const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9', '#F8C471', '#82E0AA', '#F1948A', '#85929E', '#73C6B6', '#E59866'];
+                return colors[Math.abs(hash) % colors.length];
+            };
+            const bgColor = getColorFromName(salon.name || '');
+            logoHtml = `<div style="width:90px;height:90px;border-radius:50%;background:${bgColor};display:flex;align-items:center;justify-content:center;color:#fff;font-size:36px;font-weight:bold;font-family:'Tajawal',sans-serif;text-transform:uppercase;border:2px solid var(--gold);margin:0 auto 0.3rem;">${firstLetter}</div>`;
+        }
+
+        // ===== عرض المحتوى =====
+        content.innerHTML = `
+            <div style="text-align:center;margin-bottom:0.8rem;">
+                ${logoHtml}
+                <h2 style="color:var(--gold);font-size:1.2rem;">${salon.name} ${salon.featured ? '⭐' : ''}</h2>
+                <div style="color:var(--text-color);opacity:0.8;font-size:0.85rem;">${salon.desc || ''}</div>
+                <div style="color:var(--text-color);opacity:0.5;font-size:0.8rem;">${salon.address || salon.city}</div>
+                <div style="font-size:0.85rem;color:var(--gold);"><i class="fas fa-phone"></i> ${salon.phone}</div>
+                <div>${'★'.repeat(Math.floor(salon.rating || 0))} (${salon.totalReviews || 0} تقييم)</div>
+                ${salon.isMobile ? '<div style="color:var(--gold);">🚗 خدمة متنقلة</div>' : ''}
+            </div>
+            
+            <div><h4 style="color:var(--gold);">🕐 ساعات العمل</h4>${hoursHtml || '<p>لا توجد ساعات عمل</p>'}</div>
+            
+            <div><h4 style="color:var(--gold);">✂️ الخدمات</h4>${(salon.services || []).map(s => 
+                `<div style="display:flex;justify-content:space-between;"><span>${s.name}</span><span style="color:var(--gold);">${s.price} دج</span></div>`
+            ).join('') || '<p>لا توجد خدمات</p>'}</div>
+            
+            <div><h4 style="color:var(--gold);">👨‍💼 الموظفون</h4><div>${(salon.staff || []).map(s => 
+                `<span style="background:rgba(233,69,96,0.12);color:var(--accent);padding:0.1rem 0.4rem;border-radius:50px;">${s}</span>`
+            ).join(' ') || 'لا يوجد'}</div></div>
+            
+            ${galleryHtml ? `<div style="display:flex;gap:0.3rem;flex-wrap:wrap;justify-content:center;margin-top:0.3rem;">${galleryHtml}</div>` : ''}
+            
+            <div><h4 style="color:var(--gold);">⭐ التقييمات</h4>${reviewsHtml}</div>
+            
+            <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-top:0.6rem;">
+                <button class="btn-gold btn-sm" onclick="closeModal('salonDetailsModal');openBooking('${salon._id}')"><i class="fas fa-calendar-plus"></i> احجز الآن</button>
+                <button class="btn-primary btn-sm" onclick="closeModal('salonDetailsModal');openReview('${salon._id}')"><i class="fas fa-star"></i> قيم الصالون</button>
+                ${mapButton}
+                ${whatsappButton}
+            </div>
+        `;
         openModal('salonDetailsModal');
     } catch (error) {
         console.error('❌ فشل في تحميل التفاصيل:', error);
