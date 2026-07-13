@@ -1772,23 +1772,23 @@
         <!-- ===== نموذج الاتصال ===== -->
         <div style="background:var(--card-bg);padding:1.5rem;border-radius:var(--radius);border:1px solid var(--border-color);">
             <h3 style="color:var(--gold);margin-bottom:0.5rem;text-align:center;"><i class="fas fa-paper-plane"></i> أرسل رسالة مباشرة</h3>
-            <form id="contactForm" onsubmit="sendContactMessage(event)">
-                <div class="form-group">
-                    <label>الاسم الكامل</label>
-                    <input type="text" id="contactName" required placeholder="أدخل اسمك">
-                </div>
-                <div class="form-group">
-                    <label>البريد الإلكتروني</label>
-                    <input type="email" id="contactEmail" required placeholder="example@email.com">
-                </div>
-                <div class="form-group">
-                    <label>الرسالة</label>
-                    <textarea id="contactMessage" rows="4" required placeholder="اكتب رسالتك هنا..."></textarea>
-                </div>
-                <button type="submit" class="btn-gold" style="width:100%;padding:0.6rem;">
-                    <i class="fas fa-paper-plane"></i> إرسال
-                </button>
-            </form>
+<form id="contactForm" onsubmit="sendContactMessage(event)">
+    <div class="form-group">
+        <label>الاسم الكامل</label>
+        <input type="text" id="contactName" required placeholder="أدخل اسمك">
+    </div>
+    <div class="form-group">
+        <label>البريد الإلكتروني</label>
+        <input type="email" id="contactEmail" required placeholder="example@email.com">
+    </div>
+    <div class="form-group">
+        <label>الرسالة</label>
+        <textarea id="contactMessage" rows="5" required placeholder="اكتب رسالتك هنا..."></textarea>
+    </div>
+    <button type="submit" class="btn-gold" style="width:100%;padding:0.6rem;">
+        <i class="fas fa-paper-plane"></i> إرسال
+    </button>
+</form>
         </div>
     </div>
 </section>
@@ -4176,8 +4176,8 @@ document.getElementById('contactForm')?.addEventListener('submit', function(e) {
     showToast('✅ تم إرسال رسالتك!', 'success');
     this.reset();
 });
-// ===== إرسال رسالة الاتصال =====
-async function sendContactMessage(e) {
+// ===== إرسال رسالة الاتصال (حل mailto) =====
+function sendContactMessage(e) {
     e.preventDefault();
     
     // قراءة القيم مع التحقق من وجود العناصر
@@ -4199,26 +4199,59 @@ async function sendContactMessage(e) {
         return;
     }
 
-    try {
-        // محاولة إرسال إلى الخادم
-        const response = await fetch('/api/contact', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, email, message })
-        });
+    // ✅ إنشاء رابط mailto لفتح البريد الإلكتروني
+    const subject = encodeURIComponent('رسالة من موقع حلاقتي');
+    const body = encodeURIComponent(
+        `الاسم: ${name}\n` +
+        `البريد الإلكتروني: ${email}\n\n` +
+        `الرسالة:\n${message}`
+    );
+    
+    const mailtoLink = `mailto:stevenhacen@gmail.com?subject=${subject}&body=${body}`;
+    
+    // فتح البريد الإلكتروني في نافذة جديدة
+    window.open(mailtoLink, '_blank');
+    
+    showToast('✅ تم فتح بريدك! أرسل الرسالة لإتمام الإرسال', 'success');
+    document.getElementById('contactForm').reset();
+}// ===== إرسال رسالة الاتصال (حل mailto) =====
+function sendContactMessage(e) {
+    e.preventDefault();
+    
+    // قراءة القيم مع التحقق من وجود العناصر
+    const nameInput = document.getElementById('contactName');
+    const emailInput = document.getElementById('contactEmail');
+    const messageInput = document.getElementById('contactMessage');
 
-        if (!response.ok) {
-            throw new Error('فشل الإرسال');
-        }
-
-        const data = await response.json();
-        showToast('✅ تم إرسال رسالتك! سنتواصل معك قريباً', 'success');
-        document.getElementById('contactForm').reset();
-        navigateTo('home');
-    } catch (error) {
-        console.error('❌ فشل الإرسال:', error);
-        showToast('❌ فشل الإرسال، حاول مرة أخرى', 'error');
+    if (!nameInput || !emailInput || !messageInput) {
+        showToast('❌ حدث خطأ في النموذج، حاول تحديث الصفحة', 'error');
+        return;
     }
+
+    const name = nameInput.value.trim();
+    const email = emailInput.value.trim();
+    const message = messageInput.value.trim();
+
+    if (!name || !email || !message) {
+        showToast('❌ الرجاء ملء جميع الحقول', 'error');
+        return;
+    }
+
+    // ✅ إنشاء رابط mailto لفتح البريد الإلكتروني
+    const subject = encodeURIComponent('رسالة من موقع حلاقتي');
+    const body = encodeURIComponent(
+        `الاسم: ${name}\n` +
+        `البريد الإلكتروني: ${email}\n\n` +
+        `الرسالة:\n${message}`
+    );
+    
+    const mailtoLink = `mailto:stevenhacen@gmail.com?subject=${subject}&body=${body}`;
+    
+    // فتح البريد الإلكتروني في نافذة جديدة
+    window.open(mailtoLink, '_blank');
+    
+    showToast('✅ تم فتح بريدك! أرسل الرسالة لإتمام الإرسال', 'success');
+    document.getElementById('contactForm').reset();
 }
 
 init();
