@@ -3889,20 +3889,21 @@ const pendingHtml = pendingSalons.map(s => `
     </div>
 `).join('') || '<p style="color:var(--text-color);opacity:0.4;">لا توجد طلبات معلقة</p>';
 
-        const [salonsRes, customersRes, reviewsRes, appointmentsRes] = await Promise.all([
-            fetch(`${API_BASE}/admin/salons`, { headers: { 'Authorization': `Bearer ${token}` } }),
-            fetch(`${API_BASE}/admin/customers`, { headers: { 'Authorization': `Bearer ${token}` } }),
-            fetch(`${API_BASE}/admin/reviews`, { headers: { 'Authorization': `Bearer ${token}` } }),
-            fetch(`${API_BASE}/admin/appointments`, { headers: { 'Authorization': `Bearer ${token}` } })
-        ]);
+const [salonsRes, customersRes, reviewsRes, appointmentsRes] = await Promise.all([
+    fetch(`${API_BASE}/admin/salons`, { headers: { 'Authorization': `Bearer ${token}` } }),
+    fetch(`${API_BASE}/admin/customers`, { headers: { 'Authorization': `Bearer ${token}` } }),
+    fetch(`${API_BASE}/admin/reviews`, { headers: { 'Authorization': `Bearer ${token}` } }),
+    fetch(`${API_BASE}/admin/appointments`, { headers: { 'Authorization': `Bearer ${token}` } })
+]);
 
-        const salons = await salonsRes.json();
-        const customers = await customersRes.json();
-        const reviews = await reviewsRes.json();
-        const appointments = await appointmentsRes.json();
+const salons = await salonsRes.json();
+const customers = await customersRes.json();
+const reviews = await reviewsRes.json();
+const appointments = await appointmentsRes.json();
 
-        document.getElementById('adminContent').innerHTML = `
-        adminContent.innerHTML = `
+// ✅ بناء المحتوى الكامل بشكل صحيح
+const adminContent = document.getElementById('adminContent');
+adminContent.innerHTML = `
     <div style="margin-bottom:1.5rem;background:var(--card-bg);padding:1rem;border-radius:var(--radius);border:1px solid var(--border-color);">
         <h3 style="color:var(--gold);display:flex;justify-content:space-between;align-items:center;">
             📌 طلبات الموافقة
@@ -3910,95 +3911,92 @@ const pendingHtml = pendingSalons.map(s => `
         </h3>
         ${pendingHtml}
     </div>
-    ${adminContent.innerHTML}
+    <div class="stats-grid">
+        <div class="stat-card"><div class="number">${stats.totalSalons}</div><div class="label">إجمالي الصالونات</div></div>
+        <div class="stat-card"><div class="number">${stats.activeSalons || 0}</div><div class="label">صالونات نشطة</div></div>
+        <div class="stat-card"><div class="number">${stats.totalCustomers}</div><div class="label">إجمالي العملاء</div></div>
+        <div class="stat-card"><div class="number">${stats.totalAppointments}</div><div class="label">إجمالي الحجوزات</div></div>
+        <div class="stat-card"><div class="number">${stats.pendingAppointments || 0}</div><div class="label">حجوزات معلقة</div></div>
+        <div class="stat-card"><div class="number">${stats.completedAppointments || 0}</div><div class="label">حجوزات مكتملة</div></div>
+        <div class="stat-card"><div class="number">${stats.totalReviews}</div><div class="label">إجمالي التقييمات</div></div>
+        <div class="stat-card"><div class="number">${stats.totalRevenue.toLocaleString()} دج</div><div class="label">إجمالي الإيرادات</div></div>
+    </div>
+
+    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;">
+        <button class="btn-gold btn-sm" onclick="openModal('broadcastModal')">
+            <i class="fas fa-bullhorn"></i> إرسال إشعار للجميع
+        </button>
+        <button class="btn-primary btn-sm" onclick="loadAllAppointments()">
+            <i class="fas fa-calendar-alt"></i> عرض كل الحجوزات
+        </button>
+        <button class="btn-outline btn-sm" onclick="loadAdminDashboard()">
+            <i class="fas fa-sync"></i> تحديث
+        </button>
+    </div>
+
+    <hr>
+    <h3>📋 الصالونات</h3>
+    <div id="adminSalonsList">
+        ${salons.map(s => `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-bottom:1px solid var(--border-color);flex-wrap:wrap;gap:0.3rem;">
+                <span>${s.name} (${s.city}) - ⭐ ${s.rating || 0} (${s.totalReviews || 0} تقييم)</span>
+                <div style="display:flex;gap:0.3rem;flex-wrap:wrap;">
+                    <button class="btn-${s.isActive !== false ? 'success' : 'danger'} btn-sm" onclick="toggleSalonStatus('${s._id}')">
+                        ${s.isActive !== false ? '✅ مفعل' : '❌ معطل'}
+                    </button>
+                    <button class="btn-primary btn-sm" onclick="adminEditSalon('${s._id}')"><i class="fas fa-edit"></i></button>
+                    <button class="btn-danger btn-sm" onclick="adminDeleteSalon('${s._id}')"><i class="fas fa-trash"></i></button>
+                    <button class="btn-warning btn-sm" style="background:var(--warning);color:#000;" onclick="adminDeleteAllReviews('${s._id}')"><i class="fas fa-star"></i></button>
+                </div>
+            </div>
+        `).join('')}
+    </div>
+
+    <hr>
+    <h3>👤 العملاء</h3>
+    <div id="adminCustomersList">
+        ${customers.map(c => `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:0.2rem 0;border-bottom:1px solid var(--border-color);flex-wrap:wrap;gap:0.3rem;">
+                <span>${c.name} (${c.email}) ${c.isBlocked ? '🔒' : ''}</span>
+                <div style="display:flex;gap:0.3rem;flex-wrap:wrap;">
+                    <button class="btn-${c.isBlocked ? 'success' : 'danger'} btn-sm" onclick="toggleCustomerBlock('${c._id}')">
+                        ${c.isBlocked ? '🔓 إلغاء الحظر' : '🔒 حظر'}
+                    </button>
+                    <button class="btn-primary btn-sm" onclick="adminEditCustomer('${c._id}')"><i class="fas fa-edit"></i></button>
+                    <button class="btn-warning btn-sm" style="background:var(--warning);color:#000;" onclick="adminResetCustomerPassword('${c._id}')"><i class="fas fa-key"></i></button>
+                    <button class="btn-danger btn-sm" onclick="adminDeleteCustomer('${c._id}')"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+        `).join('')}
+    </div>
+
+    <hr>
+    <h3>⭐ التقييمات</h3>
+    <div id="adminReviewsList">
+        ${reviews.map(r => `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:0.2rem 0;border-bottom:1px solid var(--border-color);flex-wrap:wrap;gap:0.3rem;">
+                <span>${r.customerName || 'عميل'} → ${r.salonId?.name || 'صالون'} (${'★'.repeat(r.rating)})</span>
+                <button class="btn-danger btn-sm" onclick="adminDeleteReview('${r._id}')"><i class="fas fa-trash"></i></button>
+            </div>
+        `).join('')}
+    </div>
+
+    <hr>
+    <h3>📅 الحجوزات</h3>
+    <div class="filter-section">
+        <input type="date" id="filterDate" onchange="filterAppointments()">
+        <select id="filterStatus" onchange="filterAppointments()">
+            <option value="">جميع الحالات</option>
+            <option value="pending">معلقة</option>
+            <option value="confirmed">مؤكدة</option>
+            <option value="completed">مكتملة</option>
+            <option value="cancelled">ملغية</option>
+        </select>
+        <button class="btn-primary btn-sm" onclick="filterAppointments()">فلتر</button>
+        <button class="btn-outline btn-sm" onclick="resetFilters()">إعادة تعيين</button>
+    </div>
+    <div id="adminAppointmentsList"></div>
 `;
-            <div class="stats-grid">
-                <div class="stat-card"><div class="number">${stats.totalSalons}</div><div class="label">إجمالي الصالونات</div></div>
-                <div class="stat-card"><div class="number">${stats.activeSalons || 0}</div><div class="label">صالونات نشطة</div></div>
-                <div class="stat-card"><div class="number">${stats.totalCustomers}</div><div class="label">إجمالي العملاء</div></div>
-                <div class="stat-card"><div class="number">${stats.totalAppointments}</div><div class="label">إجمالي الحجوزات</div></div>
-                <div class="stat-card"><div class="number">${stats.pendingAppointments || 0}</div><div class="label">حجوزات معلقة</div></div>
-                <div class="stat-card"><div class="number">${stats.completedAppointments || 0}</div><div class="label">حجوزات مكتملة</div></div>
-                <div class="stat-card"><div class="number">${stats.totalReviews}</div><div class="label">إجمالي التقييمات</div></div>
-                <div class="stat-card"><div class="number">${stats.totalRevenue.toLocaleString()} دج</div><div class="label">إجمالي الإيرادات</div></div>
-            </div>
-
-            <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;">
-                <button class="btn-gold btn-sm" onclick="openModal('broadcastModal')">
-                    <i class="fas fa-bullhorn"></i> إرسال إشعار للجميع
-                </button>
-                <button class="btn-primary btn-sm" onclick="loadAllAppointments()">
-                    <i class="fas fa-calendar-alt"></i> عرض كل الحجوزات
-                </button>
-                <button class="btn-outline btn-sm" onclick="loadAdminDashboard()">
-                    <i class="fas fa-sync"></i> تحديث
-                </button>
-            </div>
-
-            <hr>
-            <h3>📋 الصالونات</h3>
-            <div id="adminSalonsList">
-                ${salons.map(s => `
-                    <div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-bottom:1px solid var(--border-color);flex-wrap:wrap;gap:0.3rem;">
-                        <span>${s.name} (${s.city}) - ⭐ ${s.rating || 0} (${s.totalReviews || 0} تقييم)</span>
-                        <div style="display:flex;gap:0.3rem;flex-wrap:wrap;">
-                            <button class="btn-${s.isActive !== false ? 'success' : 'danger'} btn-sm" onclick="toggleSalonStatus('${s._id}')">
-                                ${s.isActive !== false ? '✅ مفعل' : '❌ معطل'}
-                            </button>
-                            <button class="btn-primary btn-sm" onclick="adminEditSalon('${s._id}')"><i class="fas fa-edit"></i></button>
-                            <button class="btn-danger btn-sm" onclick="adminDeleteSalon('${s._id}')"><i class="fas fa-trash"></i></button>
-                            <button class="btn-warning btn-sm" style="background:var(--warning);color:#000;" onclick="adminDeleteAllReviews('${s._id}')"><i class="fas fa-star"></i></button>
-                        </div>
-                    </div>
-                `).join('')}
-            </div>
-
-            <hr>
-            <h3>👤 العملاء</h3>
-            <div id="adminCustomersList">
-                ${customers.map(c => `
-                    <div style="display:flex;justify-content:space-between;align-items:center;padding:0.2rem 0;border-bottom:1px solid var(--border-color);flex-wrap:wrap;gap:0.3rem;">
-                        <span>${c.name} (${c.email}) ${c.isBlocked ? '🔒' : ''}</span>
-                        <div style="display:flex;gap:0.3rem;flex-wrap:wrap;">
-                            <button class="btn-${c.isBlocked ? 'success' : 'danger'} btn-sm" onclick="toggleCustomerBlock('${c._id}')">
-                                ${c.isBlocked ? '🔓 إلغاء الحظر' : '🔒 حظر'}
-                            </button>
-                            <button class="btn-primary btn-sm" onclick="adminEditCustomer('${c._id}')"><i class="fas fa-edit"></i></button>
-                            <button class="btn-warning btn-sm" style="background:var(--warning);color:#000;" onclick="adminResetCustomerPassword('${c._id}')"><i class="fas fa-key"></i></button>
-                            <button class="btn-danger btn-sm" onclick="adminDeleteCustomer('${c._id}')"><i class="fas fa-trash"></i></button>
-                        </div>
-                    </div>
-                `).join('')}
-            </div>
-
-            <hr>
-            <h3>⭐ التقييمات</h3>
-            <div id="adminReviewsList">
-                ${reviews.map(r => `
-                    <div style="display:flex;justify-content:space-between;align-items:center;padding:0.2rem 0;border-bottom:1px solid var(--border-color);flex-wrap:wrap;gap:0.3rem;">
-                        <span>${r.customerName || 'عميل'} → ${r.salonId?.name || 'صالون'} (${'★'.repeat(r.rating)})</span>
-                        <button class="btn-danger btn-sm" onclick="adminDeleteReview('${r._id}')"><i class="fas fa-trash"></i></button>
-                    </div>
-                `).join('')}
-            </div>
-
-            <hr>
-            <h3>📅 الحجوزات</h3>
-            <div class="filter-section">
-                <input type="date" id="filterDate" onchange="filterAppointments()">
-                <select id="filterStatus" onchange="filterAppointments()">
-                    <option value="">جميع الحالات</option>
-                    <option value="pending">معلقة</option>
-                    <option value="confirmed">مؤكدة</option>
-                    <option value="completed">مكتملة</option>
-                    <option value="cancelled">ملغية</option>
-                </select>
-                <button class="btn-primary btn-sm" onclick="filterAppointments()">فلتر</button>
-                <button class="btn-outline btn-sm" onclick="resetFilters()">إعادة تعيين</button>
-            </div>
-            <div id="adminAppointmentsList"></div>
-        `;
-
         await loadAppointmentsForAdmin();
 
     } catch (error) {
