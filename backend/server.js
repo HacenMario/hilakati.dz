@@ -687,41 +687,104 @@ app.delete('/api/admin/salons/:id/reviews', adminAuthMiddleware, async (req, res
 // ============================================================
 // الصالونات العامة
 // ============================================================
-app.get('/api/salons', async (req, res) => {
-    const salons = await Salon.find().select('-password');
-    res.json(salons);
+app.get('/api/salons/:id/logo', async (req, res) => {
+    try {
+        const salon = await Salon.findById(req.params.id).select('logo');
+        if (!salon || !salon.logo) {
+            return res.status(404).json({ message: 'Logo غير موجود' });
+        }
+        
+        const base64Data = salon.logo.replace(/^data:image\/\w+;base64,/, '');
+        const imgBuffer = Buffer.from(base64Data, 'base64');
+        
+        res.set('Content-Type', 'image/png');
+        res.send(imgBuffer);
+    } catch (error) {
+        console.error('❌ خطأ في جلب اللوغو:', error);
+        res.status(500).json({ message: error.message });
+    }
 });
 
+// ✅ جلب كل الصالونات (بدون صور)
+app.get('/api/salons', async (req, res) => {
+    try {
+        const salons = await Salon.find().select('-password -logo -gallery');
+        res.json(salons);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// ✅ جلب صالون واحد (بدون صورة)
 app.get('/api/salons/:id', async (req, res) => {
-    const salon = await Salon.findById(req.params.id).select('-password');
-    if (!salon) return res.status(404).json({ message: 'صالون غير موجود' });
-    res.json(salon);
+    try {
+        const salon = await Salon.findById(req.params.id).select('-password -logo -gallery');
+        if (!salon) return res.status(404).json({ message: 'صالون غير موجود' });
+        res.json(salon);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 });
 
 app.put('/api/salons/:id/services', authMiddleware, async (req, res) => {
-    const salon = await Salon.findByIdAndUpdate(req.params.id, { services: req.body.services }, { new: true });
-    res.json(salon);
+    try {
+        const salon = await Salon.findByIdAndUpdate(
+            req.params.id, 
+            { services: req.body.services }, 
+            { new: true }
+        );
+        res.json(salon);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 });
 
 app.put('/api/salons/:id/staff', authMiddleware, async (req, res) => {
-    const salon = await Salon.findByIdAndUpdate(req.params.id, { staff: req.body.staff }, { new: true });
-    res.json(salon);
+    try {
+        const salon = await Salon.findByIdAndUpdate(
+            req.params.id, 
+            { staff: req.body.staff }, 
+            { new: true }
+        );
+        res.json(salon);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 });
 
 app.put('/api/salons/:id/hours', authMiddleware, async (req, res) => {
-    const salon = await Salon.findByIdAndUpdate(req.params.id, { hours: req.body.hours }, { new: true });
-    res.json(salon);
+    try {
+        const salon = await Salon.findByIdAndUpdate(
+            req.params.id, 
+            { hours: req.body.hours }, 
+            { new: true }
+        );
+        res.json(salon);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 });
 
 app.put('/api/salons/:id/settings', authMiddleware, async (req, res) => {
-    const updateData = req.body;
-    const salon = await Salon.findByIdAndUpdate(req.params.id, updateData, { new: true });
-    res.json(salon);
+    try {
+        const salon = await Salon.findByIdAndUpdate(
+            req.params.id, 
+            req.body, 
+            { new: true }
+        );
+        res.json(salon);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 });
 
 app.delete('/api/salons/me', authMiddleware, async (req, res) => {
-    await Salon.findByIdAndDelete(req.userId);
-    res.json({ message: 'تم حذف الصالون' });
+    try {
+        await Salon.findByIdAndDelete(req.userId);
+        res.json({ message: 'تم حذف الصالون' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 });
 
 // ============================================================
