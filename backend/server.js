@@ -1422,6 +1422,30 @@ app.get('/api/notifications/customer', customerAuthMiddleware, async (req, res) 
         res.status(500).json([]);
     }
 });
+// ============================================================
+// مسح جميع الإشعارات
+// ============================================================
+app.delete('/api/notifications/clear', async (req, res) => {
+    try {
+        const { userId, userType } = req.body;
+        console.log('🗑️ طلب مسح الإشعارات:', { userId, userType });
+        
+        if (!userId || !userType) {
+            return res.status(400).json({ message: 'بيانات غير مكتملة' });
+        }
+        
+        const result = await Notification.deleteMany({ userId, userType });
+        console.log(`✅ تم مسح ${result.deletedCount} إشعار`);
+        
+        res.json({ 
+            message: `✅ تم مسح ${result.deletedCount} إشعار`,
+            count: result.deletedCount
+        });
+    } catch (error) {
+        console.error('❌ خطأ في clear notifications:', error);
+        res.status(500).json({ message: 'فشل مسح الإشعارات' });
+    }
+});
 
 // ✅ جلب إشعارات Admin
 app.get('/api/notifications/admin', adminAuthMiddleware, async (req, res) => {
