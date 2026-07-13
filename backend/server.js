@@ -991,9 +991,6 @@ if (!dayHours || dayHours === 'مغلق' || dayHours === 'closed') {
     });
 }
 
-// ✅ تحليل وقت الفتح والإغلاق
-const [openTime, closeTime] = dayHours.split('-').map(t => t.trim());
-
 // تحويل الأوقات إلى دقائق
 const [openHour, openMinute] = openTime.split(':').map(Number);
 const [closeHour, closeMinute] = closeTime.split(':').map(Number);
