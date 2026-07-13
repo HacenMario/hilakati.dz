@@ -22,9 +22,14 @@ const SalonSchema = new mongoose.Schema({
   salonType: { type: String, enum: ['male', 'female', 'children', 'mixed'], default: 'mixed' },
   isMobile: { type: Boolean, default: false },
   gallery: [String],
-  isActive: { type: Boolean, default: true },           // <-- تم إضافة الحقل هنا
-  resetPasswordToken: { type: String, default: null },  // <-- لإعادة تعيين كلمة المرور
-  resetPasswordExpires: { type: Number, default: null } // <-- صلاحية التوكن
+  isActive: { type: Boolean, default: false },           // <-- تم إضافة الحقل هنا
+  status: {
+    type: String,
+    enum: ['pending_approval', 'active', 'rejected'],
+    default: 'pending_approval'
+  },
+  resetPasswordToken: { type: String, default: null },
+  resetPasswordExpires: { type: Number, default: null }
 }, { timestamps: true });
 
 // ============================================================
