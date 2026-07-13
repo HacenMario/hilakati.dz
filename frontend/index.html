@@ -2060,12 +2060,11 @@ function navigateTo(page) {
     const target = document.getElementById(`page-${page}`);
     if (!target) { showToast('❌ الصفحة غير موجودة'); return; }
     target.classList.remove('hidden');
-    
     document.querySelectorAll('.nav-links a').forEach(l => l.classList.remove('active'));
     const navLink = document.querySelector(`.nav-links a[data-page="${page}"]`);
     if (navLink) navLink.classList.add('active');
     
-    // ✅ إضافة معالجة الصفحات الجديدة
+    // تحديث الصفحات الخاصة
     if (page === 'dashboard') { 
         if (!localStorage.getItem('token')) { 
             showToast('❌ يرجى تسجيل الدخول كصالون'); 
@@ -2091,7 +2090,7 @@ function navigateTo(page) {
         loadCustomerDashboard(); 
     }
 }
-
+    
 // ===== Password Change Handlers =====
 document.getElementById('customerChangePasswordForm').addEventListener('submit', async (e) => {
     e.preventDefault();
