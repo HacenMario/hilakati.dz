@@ -1394,32 +1394,65 @@ app.get('/', (req, res) => {
 // مسارات الإشعارات
 // ============================================================
 
-// ✅ جلب إشعارات الصالون
+// ✅ جلب إشعارات الصالون (مع Pagination)
 app.get('/api/notifications/salon', authMiddleware, async (req, res) => {
     try {
-        console.log('📡 جلب إشعارات للصالون:', req.userId);
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = parseInt(req.query.skip) || 0;
+        
         const notifications = await Notification.find({ 
             userId: req.userId, 
             userType: 'salon' 
-        }).sort({ createdAt: -1 }).limit(50);
-        console.log('📦 عدد الإشعارات:', notifications.length);
-        res.json(notifications);
+        })
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .skip(skip);
+        
+        const total = await Notification.countDocuments({ 
+            userId: req.userId, 
+            userType: 'salon' 
+        });
+
+        console.log(`📦 إشعارات الصالون: ${notifications.length} من ${total}`);
+        res.json({ 
+            notifications, 
+            total,
+            hasMore: (skip + limit) < total 
+        });
     } catch (error) {
         console.error('❌ خطأ في جلب إشعارات الصالون:', error);
-        res.status(500).json([]);
+        res.status(500).json({ notifications: [], total: 0, hasMore: false });
     }
 });
 
-// ✅ جلب إشعارات العميل
+// ✅ جلب إشعارات العميل (مع Pagination)
 app.get('/api/notifications/customer', customerAuthMiddleware, async (req, res) => {
     try {
+        const limit = parseInt(req.query.limit) || 10; // ✅ 10 إشعارات افتراضياً
+        const skip = parseInt(req.query.skip) || 0;
+        
         const notifications = await Notification.find({ 
             userId: req.customerId, 
             userType: 'customer' 
-        }).sort({ createdAt: -1 }).limit(50);
-        res.json(notifications);
+        })
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .skip(skip);
+        
+        const total = await Notification.countDocuments({ 
+            userId: req.customerId, 
+            userType: 'customer' 
+        });
+
+        console.log(`📦 إشعارات العميل: ${notifications.length} من ${total}`);
+        res.json({ 
+            notifications, 
+            total,
+            hasMore: (skip + limit) < total 
+        });
     } catch (error) {
-        res.status(500).json([]);
+        console.error('❌ خطأ في جلب إشعارات العميل:', error);
+        res.status(500).json({ notifications: [], total: 0, hasMore: false });
     }
 });
 // ============================================================
