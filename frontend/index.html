@@ -4051,9 +4051,9 @@ document.getElementById('contactForm')?.addEventListener('submit', function(e) {
 // ===== إرسال رسالة الاتصال =====
 async function sendContactMessage(e) {
     e.preventDefault();
-    const name = document.getElementById('contactName').value.trim();
-    const email = document.getElementById('contactEmail').value.trim();
-    const message = document.getElementById('contactMessage').value.trim();
+    const name = document.getElementById('contactName')?.value?.trim();
+    const email = document.getElementById('contactEmail')?.value?.trim();
+    const message = document.getElementById('contactMessage')?.value?.trim();
 
     if (!name || !email || !message) {
         showToast('❌ الرجاء ملء جميع الحقول', 'error');
@@ -4066,6 +4066,13 @@ async function sendContactMessage(e) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, email, message })
         });
+        
+        // ✅ تحقق من الاستجابة
+        if (!res.ok) {
+            const text = await res.text();
+            console.error('❌ استجابة خادم غير متوقعة:', text);
+            throw new Error(`خطأ في الخادم: ${res.status}`);
+        }
         
         const data = await res.json();
         
