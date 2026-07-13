@@ -2562,15 +2562,16 @@ async function showSalonDetails(id) {
         // ============================================================
         // عرض المحتوى الكامل
         // ============================================================
-        let logoHtml = '';
+let logoHtml = '';
 try {
-    const logoResponse = await fetch(`${API_BASE}/salon/${id}/logo`);
+    // ✅ استخدم '/salons/' بدلاً من '/salon/'
+    const logoResponse = await fetch(`${API_BASE}/salons/${id}/logo`);
     if (logoResponse.ok) {
         const blob = await logoResponse.blob();
         const url = URL.createObjectURL(blob);
         logoHtml = `<img src="${url}" style="width:90px;height:90px;border-radius:50%;object-fit:cover;border:2px solid var(--gold);margin-bottom:0.3rem;">`;
     } else {
-        // ✅ إذا لم يوجد لوغو، استخدم الحرف الأول
+        // ❌ إذا لم يوجد لوغو، استخدم الحرف الأول
         const firstLetter = salon.name?.charAt(0)?.toUpperCase() || '?';
         const getColorFromName = (str) => {
             let hash = 0;
@@ -2584,7 +2585,7 @@ try {
         logoHtml = `<div style="width:90px;height:90px;border-radius:50%;background:${bgColor};display:flex;align-items:center;justify-content:center;color:#fff;font-size:36px;font-weight:bold;font-family:'Tajawal',sans-serif;text-transform:uppercase;border:2px solid var(--gold);margin:0 auto 0.3rem;">${firstLetter}</div>`;
     }
 } catch {
-    // ✅ في حال فشل جلب اللوغو، استخدم الحرف الأول
+    // ❌ في حال فشل جلب اللوغو، استخدم الحرف الأول
     const firstLetter = salon.name?.charAt(0)?.toUpperCase() || '?';
     const getColorFromName = (str) => {
         let hash = 0;
