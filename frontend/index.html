@@ -2799,7 +2799,7 @@ function createSalonCard(salon) {
         </div>
     `;
 }
-// ===== تطبيق الفلاتر والترتيب =====
+// ===== تطبيق الفلاتر =====
 function applyFilters() {
     const query = document.getElementById('searchSalon')?.value?.toLowerCase()?.trim() || '';
     const city = document.getElementById('filterCity')?.value || '';
@@ -2808,6 +2808,7 @@ function applyFilters() {
 
     console.log('🔍 الترتيب المختار:', sort);
 
+    // ===== التصفية الأساسية =====
     let result = allSalons.filter(salon => {
         const matchName = salon.name.toLowerCase().includes(query);
         const matchCity = city ? salon.city === city : true;
@@ -2815,23 +2816,51 @@ function applyFilters() {
         return matchName && matchCity && matchType;
     });
 
-    console.log(`📊 عدد النتائج قبل الترتيب: ${result.length}`);
+    console.log(`📊 عدد النتائج قبل التصفية: ${result.length}`);
 
-    // ===== الترتيب =====
+    // ===== التصفية حسب الخيار المختار =====
     if (sort === 'rating') {
-        console.log('⭐ الترتيب حسب الأعلى تقييماً');
-        result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        // ✅ الأعلى تقييماً: عرض الصالونات ذات أعلى تقييم فقط
+        console.log('⭐ تصفية: الأعلى تقييماً');
+        if (result.length === 0) {
+            currentPage = 1;
+            renderAllSalons(result);
+            return;
+        }
+        // حساب أعلى تقييم
+        const maxRating = Math.max(...result.map(s => s.rating || 0));
+        result = result.filter(s => (s.rating || 0) === maxRating);
+        console.log(`📊 أعلى تقييم: ${maxRating}، عدد الصالونات: ${result.length}`);
     } 
     else if (sort === 'price') {
-        console.log('💰 الترتيب حسب الأقل سعراً');
-        result.sort((a, b) => {
-            const minA = a.services?.length ? Math.min(...a.services.map(s => s.price || 0)) : Infinity;
-            const minB = b.services?.length ? Math.min(...b.services.map(s => s.price || 0)) : Infinity;
-            return minA - minB;
+        // ✅ الأقل سعراً: عرض الصالونات ذات أقل سعر خدمة فقط
+        console.log('💰 تصفية: الأقل سعراً');
+        if (result.length === 0) {
+            currentPage = 1;
+            renderAllSalons(result);
+            return;
+        }
+        // حساب أقل سعر خدمة لكل صالون
+        const minPrices = result.map(s => {
+            if (s.services?.length) {
+                return Math.min(...s.services.map(service => service.price || 0));
+            }
+            return Infinity;
         });
+        const globalMin = Math.min(...minPrices);
+        // إذا كان أقل سعر لا نهائي (يعني لا توجد خدمات)، نعرض الكل
+        if (globalMin === Infinity) {
+            console.log('⚠️ لا توجد خدمات، عرض الكل');
+            currentPage = 1;
+            renderAllSalons(result);
+            return;
+        }
+        result = result.filter((s, index) => minPrices[index] === globalMin);
+        console.log(`📊 أقل سعر: ${globalMin}، عدد الصالونات: ${result.length}`);
     } 
     else if (sort === 'distance') {
-        console.log('📍 الترتيب حسب الأقرب (ضمن 10 كم)');
+        // ✅ الأقرب ضمن 10 كم
+        console.log('📍 تصفية: الأقرب (ضمن 10 كم)');
         const salonsWithDistance = result.filter(s => s.distance !== undefined && s.distance !== null);
         if (salonsWithDistance.length === 0) {
             showToast('📍 اضغط على "القريبة" لتحديد موقعك أولاً', 'info');
@@ -2846,16 +2875,16 @@ function applyFilters() {
             renderAllSalons([]);
             return;
         }
+        // ترتيب تصاعدي (الأقرب أولاً)
         nearbySalons.sort((a, b) => a.distance - b.distance);
         result = nearbySalons;
     }
 
     // ===== عرض النتائج =====
     currentPage = 1;
-    console.log(`📊 عدد النتائج بعد الترتيب: ${result.length}`);
+    console.log(`📊 عدد النتائج النهائي: ${result.length}`);
     renderAllSalons(result);
 }
-
 // ===== مستمعات الأحداث =====
 document.getElementById('searchSalon')?.addEventListener('input', applyFilters);
 document.getElementById('filterCity')?.addEventListener('change', applyFilters);
