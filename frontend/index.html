@@ -4144,25 +4144,25 @@ function sendContactMessage(e) {
     // قراءة القيم مع التحقق من وجود العناصر
     const nameInput = document.getElementById('contactName');
     const emailInput = document.getElementById('contactEmail');
+    const phoneInput = document.getElementById('contactPhone'); // ✅ جديد
     const messageInput = document.getElementById('contactMessage');
 
     // ✅ التحقق من وجود العناصر
-    if (!nameInput || !emailInput || !messageInput) {
+    if (!nameInput || !emailInput || !phoneInput || !messageInput) {
         showToast('❌ حدث خطأ في النموذج، حاول تحديث الصفحة', 'error');
-        console.error('❌ أحد العناصر غير موجود:', { nameInput, emailInput, messageInput });
+        console.error('❌ أحد العناصر غير موجود');
         return;
     }
 
     const name = nameInput.value.trim();
     const email = emailInput.value.trim();
+    const phone = phoneInput.value.trim(); // ✅ جديد
     const message = messageInput.value.trim();
 
-    // ✅ طباعة القيم للتصحيح
-    console.log('📝 القيم المقروءة:', { name, email, message });
+    console.log('📝 القيم المقروءة:', { name, email, phone, message });
 
     if (!name || !email || !message) {
-        showToast('❌ الرجاء ملء جميع الحقول', 'error');
-        console.warn('⚠️ حقل فارغ:', { name, email, message });
+        showToast('❌ الرجاء ملء جميع الحقول المطلوبة', 'error');
         return;
     }
 
@@ -4172,16 +4172,18 @@ function sendContactMessage(e) {
     // ✅ إرسال عبر EmailJS
     emailjs.send(
         'service_206xiaz',                 // Service ID
-        'template_cac0ccs',                // ⚠️ استبدل بـ Template ID
+        'YOUR_TEMPLATE_ID',                // ⚠️ استبدل بـ Template ID
         {
             from_name: name,
             from_email: email,
+            from_phone: phone,             // ✅ جديد
             message: message
         }
     )
     .then(() => {
         showToast('✅ تم إرسال رسالتك! سنتواصل معك قريباً', 'success');
-        document.getElementById('contactFormMain').reset(); // استخدم المعرف الصحيح
+        const form = document.getElementById('contactFormMain');
+        if (form) form.reset();
         navigateTo('home');
     })
     .catch((error) => {
@@ -4189,6 +4191,7 @@ function sendContactMessage(e) {
         showToast('❌ فشل الإرسال، حاول مرة أخرى', 'error');
     });
 }
+
 init();
 </script>
 </body>
