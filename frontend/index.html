@@ -3327,14 +3327,16 @@ async function updateNotificationUI() {
 // 3. تحديد الكل كمقروء (مسار موحد)
 // ============================================================
 async function markAllRead() {
+    // ✅ استخدم نفس منطق جلب التوكن من fetchNotifications
     const token = localStorage.getItem('token') || localStorage.getItem('customerToken');
     if (!token) {
         showToast('❌ يرجى تسجيل الدخول', 'error');
         return;
     }
 
+    console.log('📡 التوكن المستخدم:', token.substring(0, 20) + '...');
+
     try {
-        // ✅ المسار الصحيح (بدون -customer)
         const res = await fetch(`${API_BASE}/notifications/read-all`, {
             method: 'PUT',
             headers: {
@@ -3346,7 +3348,7 @@ async function markAllRead() {
         if (!res.ok) {
             const errorText = await res.text();
             console.error('❌ استجابة الخطأ:', errorText);
-            throw new Error(`الخادم رد بـ ${res.status}`);
+            throw new Error(`الخادم رد بـ ${res.status}: ${errorText}`);
         }
 
         const data = await res.json();
