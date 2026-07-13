@@ -4180,7 +4180,7 @@ document.getElementById('contactForm')?.addEventListener('submit', function(e) {
 async function sendContactMessage(e) {
     e.preventDefault();
     
-    // ✅ قراءة القيم مع التحقق من وجود العناصر
+    // قراءة القيم مع التحقق من وجود العناصر
     const nameInput = document.getElementById('contactName');
     const emailInput = document.getElementById('contactEmail');
     const messageInput = document.getElementById('contactMessage');
@@ -4200,6 +4200,7 @@ async function sendContactMessage(e) {
     }
 
     try {
+        // محاولة إرسال إلى الخادم
         const response = await fetch('/api/contact', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -4207,9 +4208,7 @@ async function sendContactMessage(e) {
         });
 
         if (!response.ok) {
-            const errorText = await response.text();
-            console.error('❌ استجابة الخادم:', errorText);
-            throw new Error(`خطأ في الخادم: ${response.status}`);
+            throw new Error('فشل الإرسال');
         }
 
         const data = await response.json();
@@ -4221,6 +4220,7 @@ async function sendContactMessage(e) {
         showToast('❌ فشل الإرسال، حاول مرة أخرى', 'error');
     }
 }
+
 init();
 </script>
 </body>
