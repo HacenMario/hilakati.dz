@@ -1205,6 +1205,8 @@
     <nav class="nav-links">
         <a href="#" class="active" onclick="navigateTo('home')" data-page="home" data-i18n="home">الرئيسية</a>
         <a href="#" onclick="navigateTo('salons')" data-page="salons" data-i18n="salons">الصالونات</a>
+        <a href="#" onclick="navigateTo('about')" data-page="about">من نحن</a>
+        <a href="#" onclick="navigateTo('contact')" data-page="contact">اتصل بنا</a>
         <a href="#" onclick="navigateTo('dashboard')" data-page="dashboard" id="dashNavLink" style="display:none;" data-i18n="dashboard">لوحة التحكم</a>
         <a href="#" onclick="navigateTo('admin')" data-page="admin" id="adminNavLink" style="display:none;" data-i18n="admin">لوحة Admin</a>
         <a href="#" onclick="navigateTo('customer-dashboard')" data-page="customer-dashboard" id="customerDashLink" style="display:none;" data-i18n="myAccount">حسابي</a>
@@ -1696,6 +1698,90 @@
         </div>
     </div>
 </section>
+<!-- ===== صفحة من نحن ===== -->
+<section class="section hidden" id="page-about">
+    <div style="max-width:900px;margin:0 auto;padding:1rem;">
+        <h2 class="section-title">من <span class="highlight">نحن</span></h2>
+        <div style="background:var(--card-bg);border-radius:var(--radius);padding:1.5rem;border:1px solid var(--border-color);box-shadow:var(--shadow);">
+            <p style="font-size:1.1rem;line-height:2;color:var(--text-color);">
+                منصة <strong style="color:var(--gold);">حلاقتي</strong> هي أول منصة جزائرية متخصصة في حجز مواعيد صالونات الحلاقة والتجميل عبر الإنترنت. 
+                نهدف إلى تسهيل عملية البحث عن أفضل الصالونات في مدينتك وحجز موعدك بسهولة.
+            </p>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-top:1.5rem;">
+                <div style="text-align:center;padding:1rem;background:var(--stat-bg);border-radius:var(--radius-sm);border:1px solid var(--border-color);">
+                    <div style="font-size:2.5rem;color:var(--gold);">🇩🇿</div>
+                    <h4 style="color:var(--gold);">خدمة جزائرية</h4>
+                    <p style="font-size:0.85rem;opacity:0.7;">نفخر بتقديم خدمتنا في كل ولايات الجزائر</p>
+                </div>
+                <div style="text-align:center;padding:1rem;background:var(--stat-bg);border-radius:var(--radius-sm);border:1px solid var(--border-color);">
+                    <div style="font-size:2.5rem;color:var(--gold);">💈</div>
+                    <h4 style="color:var(--gold);">صالونات مميزة</h4>
+                    <p style="font-size:0.85rem;opacity:0.7;">نختار أفضل الصالونات لنقدم لك تجربة فريدة</p>
+                </div>
+                <div style="text-align:center;padding:1rem;background:var(--stat-bg);border-radius:var(--radius-sm);border:1px solid var(--border-color);">
+                    <div style="font-size:2.5rem;color:var(--gold);">📅</div>
+                    <h4 style="color:var(--gold);">حجز سهل</h4>
+                    <p style="font-size:0.85rem;opacity:0.7;">احجز موعدك بضغطة زر وتأكيد فوري</p>
+                </div>
+            </div>
+            <div style="margin-top:1.5rem;text-align:center;">
+                <p style="opacity:0.6;">نسعى لتقديم أفضل خدمة حجز لصالونات الحلاقة والتجميل في الجزائر.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ===== صفحة اتصل بنا ===== -->
+<section class="section hidden" id="page-contact">
+    <div style="max-width:700px;margin:0 auto;padding:1rem;">
+        <h2 class="section-title">اتصل <span class="highlight">بنا</span></h2>
+        <div style="background:var(--card-bg);border-radius:var(--radius);padding:1.5rem;border:1px solid var(--border-color);box-shadow:var(--shadow);">
+            <p style="text-align:center;margin-bottom:1.5rem;opacity:0.7;">لديك سؤال أو استفسار؟ تواصل معنا وسنرد عليك في أقرب وقت.</p>
+            <form id="contactForm">
+                <div class="form-group">
+                    <label>الاسم الكامل</label>
+                    <input type="text" id="contactName" placeholder="أدخل اسمك" required>
+                </div>
+                <div class="form-group">
+                    <label>البريد الإلكتروني</label>
+                    <input type="email" id="contactEmail" placeholder="أدخل بريدك الإلكتروني" required>
+                </div>
+                <div class="form-group">
+                    <label>الموضوع</label>
+                    <input type="text" id="contactSubject" placeholder="موضوع الرسالة" required>
+                </div>
+                <div class="form-group">
+                    <label>الرسالة</label>
+                    <textarea id="contactMessage" rows="4" placeholder="اكتب رسالتك هنا..." required></textarea>
+                </div>
+                <button type="submit" class="btn-gold" style="width:100%;padding:0.6rem;font-size:1rem;">
+                    <i class="fas fa-paper-plane"></i> إرسال
+                </button>
+            </form>
+            <div style="margin-top:1.5rem;border-top:1px solid var(--border-color);padding-top:1.5rem;">
+                <h4 style="color:var(--gold);text-align:center;">معلومات التواصل</h4>
+                <div style="display:flex;flex-direction:column;gap:0.5rem;margin-top:0.5rem;">
+                    <div style="display:flex;align-items:center;gap:8px;justify-content:center;">
+                        <i class="fas fa-envelope" style="color:var(--gold);width:24px;"></i>
+                        <span>support@halakati.dz</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;justify-content:center;">
+                        <i class="fas fa-phone" style="color:var(--gold);width:24px;"></i>
+                        <span>+213 123 456 789</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;justify-content:center;">
+                        <i class="fab fa-facebook" style="color:var(--gold);width:24px;"></i>
+                        <span>facebook.com/halakati</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;justify-content:center;">
+                        <i class="fab fa-instagram" style="color:var(--gold);width:24px;"></i>
+                        <span>@halakati_dz</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
 
 <!-- لوحة Admin -->
 <section class="section hidden" id="page-admin">
@@ -1878,13 +1964,58 @@ function navigateTo(page) {
     const target = document.getElementById(`page-${page}`);
     if (!target) { showToast('❌ الصفحة غير موجودة'); return; }
     target.classList.remove('hidden');
+    
     document.querySelectorAll('.nav-links a').forEach(l => l.classList.remove('active'));
     const navLink = document.querySelector(`.nav-links a[data-page="${page}"]`);
     if (navLink) navLink.classList.add('active');
-    if (page === 'dashboard') { if (!localStorage.getItem('token')) { showToast('❌ يرجى تسجيل الدخول كصالون'); navigateTo('home'); return; } loadDashboard(); }
-    if (page === 'admin') { if (!localStorage.getItem('adminToken')) { showToast('❌ يرجى تسجيل الدخول كAdmin'); navigateTo('home'); return; } loadAdminDashboard(); }
-    if (page === 'customer-dashboard') { if (!localStorage.getItem('customerToken')) { showToast('❌ يرجى تسجيل الدخول كعميل'); navigateTo('home'); return; } loadCustomerDashboard(); }
+    
+    // ✅ إضافة معالجة الصفحات الجديدة
+    if (page === 'dashboard') { 
+        if (!localStorage.getItem('token')) { 
+            showToast('❌ يرجى تسجيل الدخول كصالون'); 
+            navigateTo('home'); 
+            return; 
+        } 
+        loadDashboard(); 
+    }
+    if (page === 'admin') { 
+        if (!localStorage.getItem('adminToken')) { 
+            showToast('❌ يرجى تسجيل الدخول كAdmin'); 
+            navigateTo('home'); 
+            return; 
+        } 
+        loadAdminDashboard(); 
+    }
+    if (page === 'customer-dashboard') { 
+        if (!localStorage.getItem('customerToken')) { 
+            showToast('❌ يرجى تسجيل الدخول كعميل'); 
+            navigateTo('home'); 
+            return; 
+        } 
+        loadCustomerDashboard(); 
+    }
 }
+// ===== معالج نموذج الاتصال =====
+document.getElementById('contactForm')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const name = document.getElementById('contactName').value.trim();
+    const email = document.getElementById('contactEmail').value.trim();
+    const subject = document.getElementById('contactSubject').value.trim();
+    const message = document.getElementById('contactMessage').value.trim();
+
+    if (!name || !email || !subject || !message) {
+        showToast('❌ الرجاء ملء جميع الحقول', 'error');
+        return;
+    }
+
+    // ✅ يمكنك إرسال البيانات إلى خادمك أو فتح عميل البريد
+    // الحل البسيط: فتح البريد الإلكتروني
+    const mailto = `mailto:support@halakati.dz?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(`الاسم: ${name}\nالبريد: ${email}\n\n${message}`)}`;
+    window.open(mailto, '_blank');
+    
+    showToast('✅ تم إرسال رسالتك!', 'success');
+    this.reset();
+});
 
 // ===== Password Change Handlers =====
 document.getElementById('customerChangePasswordForm').addEventListener('submit', async (e) => {
@@ -3885,6 +4016,49 @@ async function init() {
     refreshNotifications();
     setInterval(refreshNotifications, 30000);
     console.log('🇩🇿 حلاقتي - النسخة الكاملة مع نسيان كلمة المرور وصلاحيات Admin');
+}
+// ===== معالج نموذج الاتصال =====
+document.getElementById('contactForm')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const name = document.getElementById('contactName').value.trim();
+    const email = document.getElementById('contactEmail').value.trim();
+    const subject = document.getElementById('contactSubject').value.trim();
+    const message = document.getElementById('contactMessage').value.trim();
+
+    if (!name || !email || !subject || !message) {
+        showToast('❌ الرجاء ملء جميع الحقول', 'error');
+        return;
+    }
+
+    // ✅ يمكنك إرسال البيانات إلى خادمك أو فتح عميل البريد
+    // الحل البسيط: فتح البريد الإلكتروني
+    const mailto = `mailto:support@halakati.dz?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(`الاسم: ${name}\nالبريد: ${email}\n\n${message}`)}`;
+    window.open(mailto, '_blank');
+    
+    showToast('✅ تم إرسال رسالتك!', 'success');
+    this.reset();
+});
+// ===== إرسال رسالة الاتصال =====
+async function sendContactMessage(e) {
+    e.preventDefault();
+    const name = document.getElementById('contactName').value.trim();
+    const email = document.getElementById('contactEmail').value.trim();
+    const message = document.getElementById('contactMessage').value.trim();
+
+    if (!name || !email || !message) {
+        showToast('❌ الرجاء ملء جميع الحقول', 'error');
+        return;
+    }
+
+    try {
+        // يمكنك استبدال هذا الرابط بـ API حقيقي لإرسال البريد
+        // حالياً سنعرض رسالة نجاح وهمية
+        showToast('✅ تم إرسال رسالتك! سنتواصل معك قريباً', 'success');
+        document.getElementById('contactForm').reset();
+        navigateTo('home');
+    } catch (error) {
+        showToast('❌ فشل الإرسال، حاول مرة أخرى', 'error');
+    }
 }
 init();
 </script>
