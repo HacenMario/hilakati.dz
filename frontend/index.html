@@ -3386,12 +3386,14 @@ async function markAllRead() {
         return;
     }
 
-    // تحديد المسار المناسب حسب نوع المستخدم
     const isCustomer = !!localStorage.getItem('customerToken');
     const endpoint = isCustomer ? '/api/notifications/read-all-customer' : '/api/notifications/read-all';
+    const fullUrl = API_BASE + endpoint.replace('/api', ''); // ✅ تأكد من المسار الصحيح
+
+    console.log('📡 إرسال طلب إلى:', fullUrl);
 
     try {
-        const res = await fetch(endpoint, {
+        const res = await fetch(fullUrl, {
             method: 'PUT',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -3399,19 +3401,21 @@ async function markAllRead() {
             }
         });
 
-        const data = await res.json();
+        console.log('📊 حالة الاستجابة:', res.status);
 
-        if (res.ok) {
-            showToast(`✅ ${data.message}`, 'success');
-            await updateNotificationUI(); // تحديث القائمة
-            // إغلاق القائمة المنسدلة
-            document.getElementById('notifDropdown').style.display = 'none';
-        } else {
-            showToast(`❌ ${data.message || 'فشل التحديث'}`, 'error');
+        if (!res.ok) {
+            const errorText = await res.text();
+            console.error('❌ استجابة الخطأ:', errorText);
+            throw new Error(`الخادم رد بـ ${res.status}: ${errorText}`);
         }
+
+        const data = await res.json();
+        showToast(`✅ ${data.message || 'تم التحديث'}`, 'success');
+        await updateNotificationUI();
+        document.getElementById('notifDropdown').style.display = 'none';
     } catch (error) {
         console.error('❌ فشل تحديث الإشعارات:', error);
-        showToast('❌ فشل الاتصال بالخادم', 'error');
+        showToast(`❌ ${error.message || 'فشل الاتصال بالخادم'}`, 'error');
     }
 }
 
