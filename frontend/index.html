@@ -3228,37 +3228,26 @@ document.getElementById('reviewForm').addEventListener('submit', async (e) => {
 });
 
 // ============================================================
-// نظام الإشعارات المتكامل - النسخة المحسنة
+// نظام الإشعارات المتكامل - النسخة المبسطة
 // ============================================================
 
 // ============================================================
-// 1. جلب الإشعارات من الخادم (مع Pagination)
+// 1. جلب الإشعارات من الخادم
 // ============================================================
-let notificationPage = 0;
-const NOTIFICATIONS_PER_PAGE = 10;
-let hasMoreNotifications = true;
-let allNotifications = [];
-
-async function fetchNotifications(reset = true) {
-    if (reset) {
-        notificationPage = 0;
-        allNotifications = [];
-        hasMoreNotifications = true;
-    }
-
+async function fetchNotifications() {
     const token = localStorage.getItem('token');
     const customerToken = localStorage.getItem('customerToken');
     const adminToken = localStorage.getItem('adminToken');
     let url = '', headers = {};
 
     if (token) {
-        url = `${API_BASE}/notifications/salon?limit=${NOTIFICATIONS_PER_PAGE}&skip=${notificationPage * NOTIFICATIONS_PER_PAGE}`;
+        url = `${API_BASE}/notifications/salon`;
         headers = { 'Authorization': `Bearer ${token}` };
     } else if (customerToken) {
-        url = `${API_BASE}/notifications/customer?limit=${NOTIFICATIONS_PER_PAGE}&skip=${notificationPage * NOTIFICATIONS_PER_PAGE}`;
+        url = `${API_BASE}/notifications/customer`;
         headers = { 'Authorization': `Bearer ${customerToken}` };
     } else if (adminToken) {
-        url = `${API_BASE}/notifications/admin?limit=${NOTIFICATIONS_PER_PAGE}&skip=${notificationPage * NOTIFICATIONS_PER_PAGE}`;
+        url = `${API_BASE}/notifications/admin`;
         headers = { 'Authorization': `Bearer ${adminToken}` };
     } else {
         return [];
@@ -3272,53 +3261,27 @@ async function fetchNotifications(reset = true) {
         }
         const data = await res.json();
         
-        console.log('📦 البيانات الخام من الخادم:', data);
-
-        // ✅ التعامل مع جميع التنسيقات الممكنة
-        let notifications = [];
-        
+        // ✅ التأكد من أن البيانات مصفوفة
         if (Array.isArray(data)) {
-            // التنسيق 1: مصفوفة مباشرة
-            notifications = data;
-        } else if (data && typeof data === 'object') {
-            // التنسيق 2: كائن يحتوي على notifications
-            if (Array.isArray(data.notifications)) {
-                notifications = data.notifications;
-            } else {
-                // التنسيق 3: كائن مصفوفة غير قياسي - حاول تحويله
-                notifications = Object.values(data).filter(item => Array.isArray(item))[0] || [];
-            }
-        }
-        
-        // ✅ التأكد من أن النتيجة مصفوفة
-        if (!Array.isArray(notifications)) {
-            console.warn('⚠️ البيانات ليست مصفوفة، استخدام مصفوفة فارغة');
-            notifications = [];
-        }
-        
-        if (reset) {
-            allNotifications = notifications;
+            return data;
+        } else if (data && typeof data === 'object' && Array.isArray(data.notifications)) {
+            return data.notifications;
         } else {
-            allNotifications = [...allNotifications, ...notifications];
+            console.warn('⚠️ بيانات غير متوقعة:', data);
+            return [];
         }
-        
-        // ✅ تحديد وجود المزيد من الإشعارات
-        hasMoreNotifications = notifications.length === NOTIFICATIONS_PER_PAGE;
-        notificationPage++;
-        
-        console.log(`📦 الإشعارات المستلمة: ${notifications.length}, الإجمالي: ${allNotifications.length}, hasMore: ${hasMoreNotifications}`);
-        return allNotifications;
     } catch (error) {
         console.error('❌ فشل في جلب الإشعارات:', error);
         return [];
     }
 }
+
 // ============================================================
-// 2. تحديث واجهة الإشعارات (البادج والقائمة)
+// 2. تحديث واجهة الإشعارات
 // ============================================================
 let notificationTimeout = null;
 
-async function updateNotificationUI(reset = true) {
+async function updateNotificationUI() {
     if (notificationTimeout) {
         clearTimeout(notificationTimeout);
         notificationTimeout = null;
@@ -3326,39 +3289,42 @@ async function updateNotificationUI(reset = true) {
 
     notificationTimeout = setTimeout(async () => {
         try {
-            const notifications = await fetchNotifications(reset);
+            const notifications = await fetchNotifications();
             
-            // ✅ التأكد من أن notifications مصفوفة
-            const notificationArray = Array.isArray(notifications) ? notifications : [];
-            console.log('📦 الإشعارات المستلمة (بعد التأكد):', notificationArray.length);
-
-            // ✅ تحديث البادج (العدد غير المقروء)
-            const unread = notificationArray.filter(n => n && typeof n === 'object' && !n.read).length;
-            const badge = document.getElementById('notifBadge');
-            if (badge) {
-                badge.style.display = unread > 0 ? 'inline-block' : 'none';
-                badge.textContent = unread > 99 ? '99+' : unread;
-            }
-
-            // ✅ تحديث القائمة
+            // ✅ التأكد من أنها مصفوفة
             const list = document.getElementById('notifList');
+            const badge = document.getElementById('notifBadge');
+            
             if (!list) {
                 console.error('❌ #notifList غير موجود');
                 notificationTimeout = null;
                 return;
             }
 
-            if (!notificationArray || notificationArray.length === 0) {
+            // ✅ التأكد من أن notifications مصفوفة
+            const notificationArray = Array.isArray(notifications) ? notifications : [];
+            console.log('📦 الإشعارات المستلمة:', notificationArray.length);
+
+            // ✅ تحديث البادج
+            const unread = notificationArray.filter(n => n && !n.read).length;
+            if (badge) {
+                badge.style.display = unread > 0 ? 'inline-block' : 'none';
+                badge.textContent = unread > 99 ? '99+' : unread;
+            }
+
+            // ✅ عرض القائمة
+            if (notificationArray.length === 0) {
                 list.innerHTML = '<div class="notif-empty" style="padding:1rem;text-align:center;color:#888;">📭 لا توجد إشعارات</div>';
                 notificationTimeout = null;
                 return;
             }
 
-            // ✅ عرض الإشعارات
             let html = '';
             notificationArray.slice(0, 20).forEach(n => {
+                if (!n) return;
+                
                 let time = 'تاريخ غير معروف';
-                if (n && n.createdAt) {
+                if (n.createdAt) {
                     try {
                         const date = new Date(n.createdAt);
                         if (!isNaN(date.getTime())) {
@@ -3367,26 +3333,15 @@ async function updateNotificationUI(reset = true) {
                     } catch (e) {}
                 }
 
-                const isUnread = n && !n.read;
+                const isUnread = !n.read;
                 html += `
                     <div class="notif-item ${isUnread ? 'unread' : ''}" style="padding:0.5rem 0.8rem;border-bottom:1px solid var(--border-color);${isUnread ? 'background:rgba(245,176,66,0.05);border-right:3px solid var(--gold);cursor:pointer;' : ''}" onclick="markAllRead()">
-                        <div style="font-weight:600;color:var(--gold);font-size:0.85rem;">${n?.title || 'بدون عنوان'}</div>
-                        <div style="color:var(--text-color);opacity:0.8;font-size:0.8rem;">${n?.message || 'بدون محتوى'}</div>
+                        <div style="font-weight:600;color:var(--gold);font-size:0.85rem;">${n.title || 'بدون عنوان'}</div>
+                        <div style="color:var(--text-color);opacity:0.8;font-size:0.8rem;">${n.message || 'بدون محتوى'}</div>
                         <div style="font-size:0.65rem;color:#888;">${time}</div>
                     </div>
                 `;
             });
-
-            // ✅ إضافة زر "تحميل المزيد" إذا كان هناك المزيد
-            if (hasMoreNotifications && notificationArray.length > 0) {
-                html += `
-                    <div style="text-align:center;padding:0.5rem;">
-                        <button class="btn-outline btn-sm" onclick="loadMoreNotifications()" style="width:100%;padding:0.3rem;font-size:0.75rem;">
-                            📥 تحميل المزيد
-                        </button>
-                    </div>
-                `;
-            }
 
             list.innerHTML = html;
             console.log('✅ تم تحديث القائمة بـ', Math.min(notificationArray.length, 20), 'إشعارات');
@@ -3397,20 +3352,9 @@ async function updateNotificationUI(reset = true) {
         notificationTimeout = null;
     }, 300);
 }
-// ============================================================
-// 2.1 تحميل المزيد من الإشعارات
-// ============================================================
-async function loadMoreNotifications() {
-    if (!hasMoreNotifications) {
-        showToast('📭 لا توجد إشعارات إضافية', 'info');
-        return;
-    }
-    await updateNotificationUI(false);
-}
-
 
 // ============================================================
-// 3.1 تحديد الكل كمقروء (مسار موحد)
+// 3. تحديد الكل كمقروء
 // ============================================================
 async function markAllRead() {
     const token = localStorage.getItem('token') || localStorage.getItem('customerToken');
@@ -3418,8 +3362,6 @@ async function markAllRead() {
         showToast('❌ يرجى تسجيل الدخول', 'error');
         return;
     }
-
-    console.log('📡 التوكن المستخدم:', token.substring(0, 20) + '...');
 
     try {
         const res = await fetch(`${API_BASE}/notifications/read-all`, {
@@ -3433,7 +3375,7 @@ async function markAllRead() {
         if (!res.ok) {
             const errorText = await res.text();
             console.error('❌ استجابة الخطأ:', errorText);
-            throw new Error(`الخادم رد بـ ${res.status}: ${errorText}`);
+            throw new Error(`الخادم رد بـ ${res.status}`);
         }
 
         const data = await res.json();
@@ -3487,7 +3429,7 @@ async function clearAllNotifications() {
 }
 
 // ============================================================
-// 5. تبديل إظهار/إخفاء القائمة
+// 5. تبديل إظهار القائمة
 // ============================================================
 async function toggleNotifications() {
     console.log('🔄 تم النقر على الجرس');
@@ -3503,8 +3445,7 @@ async function toggleNotifications() {
     } else {
         dropdown.style.display = 'block';
         console.log('🔼 إظهار القائمة');
-        // ✅ إعادة تعيين الصفحة عند فتح القائمة
-        await updateNotificationUI(true);
+        await updateNotificationUI();
         console.log('✅ تم تحديث الإشعارات');
     }
 }
@@ -3539,7 +3480,6 @@ document.addEventListener('click', function(e) {
         dropdown.style.display = 'none';
     }
 });
-
 // ===== Booking =====
 let bookingSalonId = null;
 async function openBooking(salonId) {
