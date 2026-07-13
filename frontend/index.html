@@ -1767,25 +1767,39 @@
                 <div style="font-weight:700;margin:0.2rem 0 0.1rem;">إنستغرام</div>
                 <a href="https://instagram.com/halakati.dz" target="_blank" style="color:var(--text-color);opacity:0.7;font-size:0.85rem;">@halakati.dz</a>
 
-   <form id="contactFormMain" onsubmit="sendContactMessage(event)">             
-    <div class="form-group">
-        <label>الاسم الكامل</label>
-        <input type="text" id="contactName" required placeholder="أدخل اسمك">
-    </div>
-    <div class="form-group">
-        <label>البريد الإلكتروني</label>
-        <input type="email" id="contactEmail" required placeholder="example@email.com">
-    </div>
-    <div class="form-group">
-        <label>الرسالة</label>
-        <textarea id="contactMessage" rows="5" required placeholder="اكتب رسالتك هنا..."></textarea>
-    </div>
-    <button type="submit" class="btn-gold" style="width:100%;padding:0.6rem;">
-        <i class="fas fa-paper-plane"></i> إرسال
-    </button>
-</form>
-            </div>
+        <!-- ===== فاصل بصري ===== -->
+        <hr style="border-color:var(--border-color);margin:1rem 0;">
+
+        <!-- ===== نموذج إرسال رسالة مباشرة (قسم منفصل) ===== -->
+        <div style="background:var(--card-bg);padding:1.5rem;border-radius:var(--radius);border:1px solid var(--border-color);margin-top:0.5rem;">
+            <h3 style="color:var(--gold);margin-bottom:0.5rem;text-align:center;">
+                <i class="fas fa-paper-plane"></i> أرسل رسالة مباشرة
+            </h3>
+            <p style="text-align:center;color:var(--text-color);opacity:0.5;font-size:0.9rem;margin-bottom:1rem;">
+                سنرد عليك في أقرب وقت
+            </p>
+
+            <form id="contactFormMain" onsubmit="sendContactMessage(event)">
+                <div class="form-group">
+                    <label>الاسم الكامل</label>
+                    <input type="text" id="contactName" required placeholder="أدخل اسمك">
+                </div>
+                <div class="form-group">
+                    <label>البريد الإلكتروني</label>
+                    <input type="email" id="contactEmail" required placeholder="example@email.com">
+                </div>
+                <div class="form-group">
+                    <label>الرسالة</label>
+                    <textarea id="contactMessage" rows="5" required placeholder="اكتب رسالتك هنا..."></textarea>
+                </div>
+                <button type="submit" class="btn-gold" style="width:100%;padding:0.6rem;">
+                    <i class="fas fa-paper-plane"></i> إرسال
+                </button>
+            </form>
         </div>
+    </div>
+</section>
+
 
 <!-- لوحة Admin -->
 <section class="section hidden" id="page-admin">
