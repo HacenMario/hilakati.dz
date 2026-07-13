@@ -3363,7 +3363,7 @@ async function markAllRead() {
 }
 
 // ============================================================
-// 4. مسح جميع الإشعارات
+// مسح جميع الإشعارات
 // ============================================================
 async function clearAllNotifications() {
     if (!confirm('⚠️ هل أنت متأكد من مسح جميع الإشعارات؟')) return;
@@ -3385,17 +3385,21 @@ async function clearAllNotifications() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userId, userType })
         });
-        if (res.ok) {
-            showToast('🗑️ تم مسح الإشعارات', 'info');
-            await updateNotificationUI();
-        } else {
-            showToast('❌ فشل مسح الإشعارات', 'error');
+
+        if (!res.ok) {
+            const errorText = await res.text();
+            console.error('❌ استجابة الخطأ:', errorText);
+            throw new Error(`الخادم رد بـ ${res.status}`);
         }
-    } catch {
-        showToast('❌ فشل الاتصال', 'error');
+
+        const data = await res.json();
+        showToast(`✅ ${data.message}`, 'success');
+        await updateNotificationUI();
+    } catch (error) {
+        console.error('❌ فشل مسح الإشعارات:', error);
+        showToast('❌ فشل مسح الإشعارات', 'error');
     }
 }
-
 // ============================================================
 // 5. تبديل إظهار/إخفاء القائمة
 // ============================================================
