@@ -2800,19 +2800,24 @@ function createSalonCard(salon) {
     `;
 }
 // ===== Filters & Nearby =====
+// ===== تطبيق الفلاتر =====
 function applyFilters() {
-    const query = document.getElementById('searchSalon').value.toLowerCase().trim();
-    const city = document.getElementById('filterCity').value;
-    const service = document.getElementById('filterService').value;
-    const type = document.getElementById('filterSalonType').value;
+    const query = document.getElementById('searchSalon')?.value?.toLowerCase()?.trim() || '';
+    const city = document.getElementById('filterCity')?.value || '';
+    const type = document.getElementById('filterSalonType')?.value || '';
     const sort = document.getElementById('filterSort')?.value || 'rating';
 
-    // ===== التصفية =====
+    // ✅ الفلتر المحذوف: إذا كان العنصر غير موجود، تجاهله
+    const serviceElement = document.getElementById('filterService');
+    const service = serviceElement ? serviceElement.value : '';
+
     let result = allSalons.filter(salon => {
         const matchName = salon.name.toLowerCase().includes(query);
         const matchCity = city ? salon.city === city : true;
         let matchService = true;
-        if (service) matchService = (salon.services || []).some(s => s.name === service);
+        if (service) {
+            matchService = (salon.services || []).some(s => s.name === service);
+        }
         const matchType = type ? salon.salonType === type : true;
         return matchName && matchCity && matchService && matchType;
     });
@@ -2830,7 +2835,6 @@ function applyFilters() {
         result.sort((a, b) => (a.distance || 999) - (b.distance || 999));
     }
 
-    // ===== عرض النتائج =====
     currentPage = 1;
     renderAllSalons(result);
 }
