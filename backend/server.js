@@ -1393,6 +1393,52 @@ app.get('/', (req, res) => {
 // ============================================================
 // مسارات الإشعارات
 // ============================================================
+// تحديد جميع إشعارات المستخدم كمقروءة (مسار موحد)
+// ============================================================
+app.put('/api/notifications/read-all', authMiddleware, async (req, res) => {
+    try {
+        const result = await Notification.updateMany(
+            { 
+                userId: req.userId, 
+                read: false 
+            },
+            { 
+                read: true 
+            }
+        );
+        res.json({ 
+            message: `✅ تم تحديد ${result.modifiedCount} إشعار كمقروء`,
+            count: result.modifiedCount
+        });
+    } catch (error) {
+        console.error('❌ فشل تحديث الإشعارات:', error);
+        res.status(500).json({ message: '❌ فشل تحديث الإشعارات' });
+    }
+});
+
+// ✅ نسخة للعميل (إذا كان يستخدم customerAuthMiddleware)
+app.put('/api/notifications/read-all-customer', customerAuthMiddleware, async (req, res) => {
+    try {
+        const result = await Notification.updateMany(
+            { 
+                userId: req.customerId, 
+                read: false 
+            },
+            { 
+                read: true 
+            }
+        );
+        res.json({ 
+            message: `✅ تم تحديد ${result.modifiedCount} إشعار كمقروء`,
+            count: result.modifiedCount
+        });
+    } catch (error) {
+        console.error('❌ فشل تحديث إشعارات العميل:', error);
+        res.status(500).json({ message: '❌ فشل تحديث الإشعارات' });
+    }
+});
+// ============================================================
+
 app.get('/api/notifications/salon', authMiddleware, async (req, res) => {
     try {
         console.log('📡 جلب إشعارات للصالون:', req.userId);
