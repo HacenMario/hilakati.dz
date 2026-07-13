@@ -133,28 +133,82 @@ app.post('/api/auth/register', async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        const salon = new Salon({ name, city, address, email, phone, password: hashedPassword, desc, logo, salonType, isMobile, lat, lng });
+        // ✅ إنشاء الصالون بحالة "pending_approval" وغير مفعل
+        const salon = new Salon({
+            name,
+            city,
+            address,
+            email,
+            phone,
+            password: hashedPassword,
+            desc,
+            logo,
+            salonType,
+            isMobile,
+            lat,
+            lng,
+            status: 'pending_approval', // ✅ الحالة الجديدة
+            isActive: false             // ✅ غير مفعل حتى الموافقة
+        });
         await salon.save();
 
-        const token = jwt.sign({ id: salon._id }, process.env.JWT_SECRET || 'salon_secret_key', { expiresIn: '7d' });
-        res.status(201).json({ token, salonId: salon._id, name: salon.name });
+        // ============================================================
+        // إرسال إشعار إلى Admin (بريد + قاعدة بيانات + Socket.io)
+        // ============================================================
+        try {
+            // 1. حفظ إشعار في قاعدة البيانات
+            const notification = new Notification({
+                userId: 'admin', // معرف ثابت للمدير
+                userType: 'admin',
+                title: '📌 طلب صالون جديد',
+                message: `صالون "${name}" ينتظر الموافقة. البريد: ${email}`,
+                read: false,
+                createdAt: new Date()
+            });
+            await notification.save();
+
+            // 2. إرسال إشعار فوري عبر Socket.io (إذا كان Admin متصلاً)
+            const io = req.app.get('io');
+            if (io) {
+                io.to('admin-room').emit('new-notification', {
+                    title: '📌 طلب صالون جديد',
+                    message: `صالون "${name}" ينتظر الموافقة`
+                });
+            }
+
+            // 3. إرسال بريد إلكتروني إلى Admin
+            const mailOptions = {
+                from: process.env.EMAIL_USER,
+                to: 'stevenhacen@gmail.com', // بريد Admin
+                subject: `📌 طلب صالون جديد: ${name}`,
+                html: `
+                    <h3>طلب صالون جديد ينتظر الموافقة</h3>
+                    <p><strong>الاسم:</strong> ${name}</p>
+                    <p><strong>البريد:</strong> ${email}</p>
+                    <p><strong>الهاتف:</strong> ${phone}</p>
+                    <p><strong>المدينة:</strong> ${city}</p>
+                    <p><strong>العنوان:</strong> ${address}</p>
+                    <p>قم بتسجيل الدخول إلى لوحة Admin للموافقة أو الرفض.</p>
+                `
+            };
+            await transporter.sendMail(mailOptions);
+            console.log('📧 تم إرسال بريد إلى Admin');
+
+        } catch (notifError) {
+            console.error('❌ فشل إرسال الإشعار:', notifError);
+            // لا نمنع التسجيل إذا فشل الإشعار، فقط نسجل الخطأ
+        }
+
+        // ✅ لا نعيد توكن، بل نرسل رسالة تفيد بمراجعة الطلب
+        res.status(201).json({
+            message: '✅ تم تسجيل الصالون بنجاح! سيتم مراجعته من قبل الإدارة قريباً.',
+            salonId: salon._id,
+            status: 'pending_approval'
+        });
+
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'فشل التسجيل' });
-    }
-});
-
-app.post('/api/auth/login', async (req, res) => {
-    const { email, password } = req.body;
-    try {
-        const salon = await Salon.findOne({ email });
-        if (!salon) return res.status(400).json({ message: 'بيانات الدخول غير صحيحة' });
-        const valid = await bcrypt.compare(password, salon.password);
-        if (!valid) return res.status(400).json({ message: 'بيانات الدخول غير صحيحة' });
-        const token = jwt.sign({ id: salon._id }, process.env.JWT_SECRET || 'salon_secret_key', { expiresIn: '7d' });
-        res.json({ token, salonId: salon._id, name: salon.name });
-    } catch (err) {
-        res.status(500).json({ message: 'فشل تسجيل الدخول' });
     }
 });
 
@@ -311,6 +365,67 @@ app.delete('/api/admin/salons/:id/reviews', adminAuthMiddleware, async (req, res
     } catch (error) {
         console.error('❌ خطأ في حذف تقييمات الصالون:', error);
         res.status(500).json({ message: '❌ فشل في حذف التقييمات' });
+    }
+});
+// ============================================================
+// Admin: جلب الصالونات المعلقة
+// ============================================================
+app.get('/api/admin/pending-salons', adminAuthMiddleware, async (req, res) => {
+    try {
+        const salons = await Salon.find({ status: 'pending_approval' }).select('-password');
+        res.json(salons);
+    } catch (error) {
+        console.error('❌ فشل جلب الصالونات المعلقة:', error);
+        res.status(500).json({ message: 'فشل جلب الصالونات المعلقة' });
+    }
+});
+
+// ============================================================
+// Admin: الموافقة على صالون (تفعيله)
+// ============================================================
+app.put('/api/admin/approve-salon/:id', adminAuthMiddleware, async (req, res) => {
+    try {
+        const salon = await Salon.findById(req.params.id);
+        if (!salon) return res.status(404).json({ message: 'صالون غير موجود' });
+
+        // ✅ تحديث الحالة إلى active
+        salon.status = 'active';
+        salon.isActive = true;
+        await salon.save();
+
+        // إشعار لصاحب الصالون (إذا كان مسجلاً)
+        try {
+            const notification = new Notification({
+                userId: salon._id,
+                userType: 'salon',
+                title: '✅ تم تفعيل صالونك',
+                message: `تم قبول طلب تسجيل صالون "${salon.name}". يمكنك الآن البدء في استقبال الحجوزات!`,
+                read: false
+            });
+            await notification.save();
+        } catch (e) {}
+
+        res.json({ message: '✅ تم تفعيل الصالون بنجاح' });
+    } catch (error) {
+        console.error('❌ فشل التفعيل:', error);
+        res.status(500).json({ message: 'فشل التفعيل' });
+    }
+});
+
+// ============================================================
+// Admin: رفض صالون (حذفه)
+// ============================================================
+app.delete('/api/admin/reject-salon/:id', adminAuthMiddleware, async (req, res) => {
+    try {
+        const salon = await Salon.findById(req.params.id);
+        if (!salon) return res.status(404).json({ message: 'صالون غير موجود' });
+
+        // ✅ حذف الصالون
+        await salon.deleteOne();
+        res.json({ message: '✅ تم رفض وحذف الصالون' });
+    } catch (error) {
+        console.error('❌ فشل الحذف:', error);
+        res.status(500).json({ message: 'فشل الحذف' });
     }
 });
 
@@ -710,11 +825,11 @@ app.get('/api/salons/:id/logo', async (req, res) => {
     }
 });
 
-// ✅ جلب كل الصالونات (فقط النشطة)
+// ✅ جلب الصالونات النشطة فقط (status = 'active')
 app.get('/api/salons', async (req, res) => {
     try {
-        // ✅ استبعاد الصالونات المعطلة (isActive = false)
-        const salons = await Salon.find({ isActive: { $ne: false } }).select('-password -logo -gallery');
+        const salons = await Salon.find({ status: 'active', isActive: true })
+            .select('-password -logo -gallery');
         res.json(salons);
     } catch (error) {
         console.error('❌ فشل جلب الصالونات:', error);
@@ -725,13 +840,14 @@ app.get('/api/salons', async (req, res) => {
 // ✅ جلب صالون واحد (فقط إذا كان نشطاً)
 app.get('/api/salons/:id', async (req, res) => {
     try {
-        const salon = await Salon.findOne({ 
-            _id: req.params.id, 
-            isActive: { $ne: false } 
+        const salon = await Salon.findOne({
+            _id: req.params.id,
+            status: 'active',
+            isActive: true
         }).select('-password -logo -gallery');
-        
+
         if (!salon) {
-            return res.status(404).json({ message: 'الصالون غير موجود أو معطل' });
+            return res.status(404).json({ message: 'الصالون غير موجود أو غير مفعل' });
         }
         res.json(salon);
     } catch (error) {
