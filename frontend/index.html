@@ -3084,6 +3084,12 @@ async function showSalonDetails(id) {
         const salon = await salonRes.json();
         const reviews = await reviewsRes.json();
         const content = document.getElementById('salonDetailsContent');
+// ✅ زر الخريطة التفاعلية - تعريف واحد فقط
+const mapButton = salon.lat && salon.lng ? `
+    <button class="btn-primary btn-sm" onclick="openInteractiveMap('${salon._id}', '${salon.name}', ${salon.lat}, ${salon.lng})">
+        <i class="fas fa-map"></i> عرض على الخريطة
+    </button>
+` : '';
         
         // ===== ساعات العمل =====
         const hoursHtml = Object.entries(salon.hours || {}).map(([day, hours]) => 
