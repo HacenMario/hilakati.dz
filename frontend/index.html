@@ -3227,9 +3227,8 @@ document.getElementById('reviewForm').addEventListener('submit', async (e) => {
     } catch { showToast('❌ فشل الاتصال'); }
 });
 
-// ===== Notifications =====
 // ============================================================
-// نظام الإشعارات المتكامل
+// نظام الإشعارات المتكامل - النسخة المحسنة
 // ============================================================
 
 // ============================================================
@@ -3271,63 +3270,75 @@ async function fetchNotifications() {
 // ============================================================
 // 2. تحديث واجهة الإشعارات (البادج والقائمة)
 // ============================================================
+let notificationTimeout = null;
+
 async function updateNotificationUI() {
-    try {
-        const notifications = await fetchNotifications();
-        console.log('📦 الإشعارات المستلمة:', notifications.length);
+    // ✅ منع الطلبات المتكررة (Debounce)
+    if (notificationTimeout) {
+        clearTimeout(notificationTimeout);
+        notificationTimeout = null;
+    }
 
-        const unread = notifications.filter(n => !n.read).length;
-        const badge = document.getElementById('notifBadge');
-        if (badge) {
-            badge.style.display = unread > 0 ? 'inline-block' : 'none';
-            badge.textContent = unread > 99 ? '99+' : unread;
-        }
+    notificationTimeout = setTimeout(async () => {
+        try {
+            const notifications = await fetchNotifications();
+            console.log('📦 الإشعارات المستلمة:', notifications.length);
 
-        const list = document.getElementById('notifList');
-        if (!list) {
-            console.error('❌ #notifList غير موجود');
-            return;
-        }
-
-        if (!notifications || notifications.length === 0) {
-            list.innerHTML = '<div class="notif-empty" style="padding:1rem;text-align:center;color:#888;">📭 لا توجد إشعارات</div>';
-            return;
-        }
-
-        let html = '';
-        notifications.slice(0, 20).forEach(n => {
-            let time = 'تاريخ غير معروف';
-            if (n.createdAt) {
-                try {
-                    const date = new Date(n.createdAt);
-                    if (!isNaN(date.getTime())) {
-                        time = date.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' }) + '، ' + date.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
-                    }
-                } catch (e) {}
+            const unread = notifications.filter(n => !n.read).length;
+            const badge = document.getElementById('notifBadge');
+            if (badge) {
+                badge.style.display = unread > 0 ? 'inline-block' : 'none';
+                badge.textContent = unread > 99 ? '99+' : unread;
             }
 
-            const isUnread = !n.read;
-            html += `
-                <div class="notif-item ${isUnread ? 'unread' : ''}" style="padding:0.5rem 0.8rem;border-bottom:1px solid var(--border-color);${isUnread ? 'background:rgba(245,176,66,0.05);border-right:3px solid var(--gold);cursor:pointer;' : ''}" onclick="markAllRead()">
-                    <div style="font-weight:600;color:var(--gold);font-size:0.85rem;">${n.title}</div>
-                    <div style="color:var(--text-color);opacity:0.8;font-size:0.8rem;">${n.message}</div>
-                    <div style="font-size:0.65rem;color:#888;">${time}</div>
-                </div>
-            `;
-        });
-        list.innerHTML = html;
-        console.log('✅ تم تحديث القائمة بـ', notifications.length, 'إشعارات');
+            const list = document.getElementById('notifList');
+            if (!list) {
+                console.error('❌ #notifList غير موجود');
+                return;
+            }
 
-    } catch (error) {
-        console.error('❌ خطأ في updateNotificationUI:', error);
-    }
+            if (!notifications || notifications.length === 0) {
+                list.innerHTML = '<div class="notif-empty" style="padding:1rem;text-align:center;color:#888;">📭 لا توجد إشعارات</div>';
+                notificationTimeout = null;
+                return;
+            }
+
+            // ✅ عرض أول 10 إشعارات فقط (لتخفيف التحميل)
+            let html = '';
+            notifications.slice(0, 10).forEach(n => {
+                let time = 'تاريخ غير معروف';
+                if (n.createdAt) {
+                    try {
+                        const date = new Date(n.createdAt);
+                        if (!isNaN(date.getTime())) {
+                            time = date.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' }) + '، ' + date.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+                        }
+                    } catch (e) {}
+                }
+
+                const isUnread = !n.read;
+                html += `
+                    <div class="notif-item ${isUnread ? 'unread' : ''}" style="padding:0.5rem 0.8rem;border-bottom:1px solid var(--border-color);${isUnread ? 'background:rgba(245,176,66,0.05);border-right:3px solid var(--gold);cursor:pointer;' : ''}" onclick="markAllRead()">
+                        <div style="font-weight:600;color:var(--gold);font-size:0.85rem;">${n.title}</div>
+                        <div style="color:var(--text-color);opacity:0.8;font-size:0.8rem;">${n.message}</div>
+                        <div style="font-size:0.65rem;color:#888;">${time}</div>
+                    </div>
+                `;
+            });
+            list.innerHTML = html;
+            console.log('✅ تم تحديث القائمة بـ', Math.min(notifications.length, 10), 'إشعارات');
+
+        } catch (error) {
+            console.error('❌ خطأ في updateNotificationUI:', error);
+        }
+        notificationTimeout = null;
+    }, 300); // ✅ تأخير 300ms لتجميع الطلبات
 }
 
 // ============================================================
 // 3. تحديد الكل كمقروء (مسار موحد)
 // ============================================================
 async function markAllRead() {
-    // ✅ استخدم نفس منطق جلب التوكن من fetchNotifications
     const token = localStorage.getItem('token') || localStorage.getItem('customerToken');
     if (!token) {
         showToast('❌ يرجى تسجيل الدخول', 'error');
@@ -3363,7 +3374,7 @@ async function markAllRead() {
 }
 
 // ============================================================
-// مسح جميع الإشعارات
+// 4. مسح جميع الإشعارات
 // ============================================================
 async function clearAllNotifications() {
     if (!confirm('⚠️ هل أنت متأكد من مسح جميع الإشعارات؟')) return;
@@ -3400,6 +3411,7 @@ async function clearAllNotifications() {
         showToast('❌ فشل مسح الإشعارات', 'error');
     }
 }
+
 // ============================================================
 // 5. تبديل إظهار/إخفاء القائمة
 // ============================================================
