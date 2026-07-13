@@ -3272,24 +3272,36 @@ async function fetchNotifications(reset = true) {
         }
         const data = await res.json();
         
-        // ✅ التعامل مع الرد (Pagination أو مصفوفة)
-        const notifications = data.notifications || data || [];
+        // ✅ التوافق مع كلا التنسيقين (مصفوفة أو كائن مع notifications)
+        let notifications = [];
+        let hasMore = false;
+        
+        if (Array.isArray(data)) {
+            // ✅ التنسيق القديم: مصفوفة مباشرة
+            notifications = data;
+            hasMore = data.length === NOTIFICATIONS_PER_PAGE;
+        } else if (data && typeof data === 'object') {
+            // ✅ التنسيق الجديد: كائن مع notifications
+            notifications = data.notifications || [];
+            hasMore = data.hasMore !== undefined ? data.hasMore : (notifications.length === NOTIFICATIONS_PER_PAGE);
+        }
+        
         if (reset) {
             allNotifications = notifications;
         } else {
             allNotifications = [...allNotifications, ...notifications];
         }
         
-        hasMoreNotifications = data.hasMore !== undefined ? data.hasMore : (notifications.length === NOTIFICATIONS_PER_PAGE);
+        hasMoreNotifications = hasMore;
         notificationPage++;
         
+        console.log(`📦 الإشعارات المستلمة: ${notifications.length}, الإجمالي: ${allNotifications.length}, hasMore: ${hasMoreNotifications}`);
         return allNotifications;
     } catch (error) {
         console.error('❌ فشل في جلب الإشعارات:', error);
         return [];
     }
 }
-
 // ============================================================
 // 2. تحديث واجهة الإشعارات (البادج والقائمة)
 // ============================================================
@@ -3303,12 +3315,14 @@ async function updateNotificationUI(reset = true) {
 
     notificationTimeout = setTimeout(async () => {
         try {
-            // ✅ جلب الإشعارات (إعادة تعيين الصفحة إذا كان reset = true)
             const notifications = await fetchNotifications(reset);
-            console.log('📦 الإشعارات المستلمة:', notifications.length);
+            
+            // ✅ التأكد من أن notifications مصفوفة
+            const notificationArray = Array.isArray(notifications) ? notifications : [];
+            console.log('📦 الإشعارات المستلمة:', notificationArray.length);
 
             // ✅ تحديث البادج (العدد غير المقروء)
-            const unread = notifications.filter(n => !n.read).length;
+            const unread = notificationArray.filter(n => !n.read).length;
             const badge = document.getElementById('notifBadge');
             if (badge) {
                 badge.style.display = unread > 0 ? 'inline-block' : 'none';
@@ -3323,7 +3337,7 @@ async function updateNotificationUI(reset = true) {
                 return;
             }
 
-            if (!notifications || notifications.length === 0) {
+            if (!notificationArray || notificationArray.length === 0) {
                 list.innerHTML = '<div class="notif-empty" style="padding:1rem;text-align:center;color:#888;">📭 لا توجد إشعارات</div>';
                 notificationTimeout = null;
                 return;
@@ -3331,7 +3345,7 @@ async function updateNotificationUI(reset = true) {
 
             // ✅ عرض الإشعارات
             let html = '';
-            notifications.slice(0, 20).forEach(n => {
+            notificationArray.slice(0, 20).forEach(n => {
                 let time = 'تاريخ غير معروف';
                 if (n.createdAt) {
                     try {
@@ -3353,7 +3367,7 @@ async function updateNotificationUI(reset = true) {
             });
 
             // ✅ إضافة زر "تحميل المزيد" إذا كان هناك المزيد
-            if (hasMoreNotifications && notifications.length > 0) {
+            if (hasMoreNotifications && notificationArray.length > 0) {
                 html += `
                     <div style="text-align:center;padding:0.5rem;">
                         <button class="btn-outline btn-sm" onclick="loadMoreNotifications()" style="width:100%;padding:0.3rem;font-size:0.75rem;">
@@ -3364,7 +3378,7 @@ async function updateNotificationUI(reset = true) {
             }
 
             list.innerHTML = html;
-            console.log('✅ تم تحديث القائمة بـ', Math.min(notifications.length, 20), 'إشعارات');
+            console.log('✅ تم تحديث القائمة بـ', Math.min(notificationArray.length, 20), 'إشعارات');
 
         } catch (error) {
             console.error('❌ خطأ في updateNotificationUI:', error);
