@@ -3229,6 +3229,10 @@ document.getElementById('reviewForm').addEventListener('submit', async (e) => {
 
 // ===== Notifications =====
 // ============================================================
+// نظام الإشعارات المتكامل
+// ============================================================
+
+// ============================================================
 // 1. جلب الإشعارات من الخادم
 // ============================================================
 async function fetchNotifications() {
@@ -3272,7 +3276,6 @@ async function updateNotificationUI() {
         const notifications = await fetchNotifications();
         console.log('📦 الإشعارات المستلمة:', notifications.length);
 
-        // تحديث البادج
         const unread = notifications.filter(n => !n.read).length;
         const badge = document.getElementById('notifBadge');
         if (badge) {
@@ -3280,7 +3283,6 @@ async function updateNotificationUI() {
             badge.textContent = unread > 99 ? '99+' : unread;
         }
 
-        // تحديث القائمة
         const list = document.getElementById('notifList');
         if (!list) {
             console.error('❌ #notifList غير موجود');
@@ -3294,23 +3296,19 @@ async function updateNotificationUI() {
 
         let html = '';
         notifications.slice(0, 20).forEach(n => {
-            // ===== معالجة التاريخ بأمان =====
             let time = 'تاريخ غير معروف';
             if (n.createdAt) {
                 try {
                     const date = new Date(n.createdAt);
                     if (!isNaN(date.getTime())) {
-                        time = date.toLocaleString('ar-DZ');
+                        time = date.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' }) + '، ' + date.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
                     }
                 } catch (e) {}
-            }
-            if (time === 'تاريخ غير معروف' && n.appointmentTime) {
-                time = n.appointmentTime;
             }
 
             const isUnread = !n.read;
             html += `
-                <div class="notif-item ${isUnread ? 'unread' : ''}" style="padding:0.5rem 0.8rem;border-bottom:1px solid var(--border-color);${isUnread ? 'background:rgba(245,176,66,0.05);border-right:3px solid var(--gold);cursor:pointer;' : ''}" onclick="markAsRead('${n._id}')">
+                <div class="notif-item ${isUnread ? 'unread' : ''}" style="padding:0.5rem 0.8rem;border-bottom:1px solid var(--border-color);${isUnread ? 'background:rgba(245,176,66,0.05);border-right:3px solid var(--gold);cursor:pointer;' : ''}" onclick="markAllRead()">
                     <div style="font-weight:600;color:var(--gold);font-size:0.85rem;">${n.title}</div>
                     <div style="color:var(--text-color);opacity:0.8;font-size:0.8rem;">${n.message}</div>
                     <div style="font-size:0.65rem;color:#888;">${time}</div>
@@ -3326,58 +3324,7 @@ async function updateNotificationUI() {
 }
 
 // ============================================================
-// 3. تبديل إظهار/إخفاء القائمة
-// ============================================================
-async function toggleNotifications() {
-    console.log('🔄 تم النقر على الجرس');
-    const dropdown = document.getElementById('notifDropdown');
-    if (!dropdown) {
-        console.error('❌ #notifDropdown غير موجود');
-        return;
-    }
-
-    if (dropdown.style.display === 'block') {
-        dropdown.style.display = 'none';
-        console.log('🔽 إخفاء القائمة');
-    } else {
-        dropdown.style.display = 'block';
-        console.log('🔼 إظهار القائمة');
-        await updateNotificationUI();
-        console.log('✅ تم تحديث الإشعارات');
-    }
-}
-
-// ============================================================
-// 4. تحديد إشعار واحد كمقروء (عند النقر عليه)
-// ============================================================
-// ✅ تحديث إشعار واحد كمقروء
-async function markAsRead(notificationId) {
-    const token = localStorage.getItem('token') || localStorage.getItem('customerToken');
-    if (!token) {
-        showToast('❌ يرجى تسجيل الدخول', 'error');
-        return;
-    }
-    try {
-        const res = await fetch(`${API_BASE}/notifications/${notificationId}/read`, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        if (res.ok) {
-            refreshNotifications();
-        } else {
-            showToast('❌ فشل تحديث الإشعار', 'error');
-        }
-    } catch (error) {
-        console.error('❌ فشل تحديث الإشعار:', error);
-        showToast('❌ فشل الاتصال', 'error');
-    }
-}
-
-// ============================================================
-// 5. تحديد الكل كمقروء
+// 3. تحديد الكل كمقروء (مسار موحد)
 // ============================================================
 async function markAllRead() {
     const token = localStorage.getItem('token') || localStorage.getItem('customerToken');
@@ -3386,14 +3333,8 @@ async function markAllRead() {
         return;
     }
 
-    const isCustomer = !!localStorage.getItem('customerToken');
-    const endpoint = isCustomer ? '/api/notifications/read-all-customer' : '/api/notifications/read-all';
-    const fullUrl = API_BASE + endpoint.replace('/api', ''); // ✅ تأكد من المسار الصحيح
-
-    console.log('📡 إرسال طلب إلى:', fullUrl);
-
     try {
-        const res = await fetch(fullUrl, {
+        const res = await fetch(`${API_BASE}/notifications/read-all`, {
             method: 'PUT',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -3401,32 +3342,25 @@ async function markAllRead() {
             }
         });
 
-        console.log('📊 حالة الاستجابة:', res.status);
-
         if (!res.ok) {
             const errorText = await res.text();
             console.error('❌ استجابة الخطأ:', errorText);
-            throw new Error(`الخادم رد بـ ${res.status}: ${errorText}`);
+            throw new Error(`الخادم رد بـ ${res.status}`);
         }
 
         const data = await res.json();
-        showToast(`✅ ${data.message || 'تم التحديث'}`, 'success');
+        showToast(`✅ ${data.message}`, 'success');
         await updateNotificationUI();
-        document.getElementById('notifDropdown').style.display = 'none';
+        const dropdown = document.getElementById('notifDropdown');
+        if (dropdown) dropdown.style.display = 'none';
     } catch (error) {
         console.error('❌ فشل تحديث الإشعارات:', error);
-        showToast(`❌ ${error.message || 'فشل الاتصال بالخادم'}`, 'error');
+        showToast('❌ فشل تحديث الإشعارات', 'error');
     }
 }
 
-// ✅ عند النقر على إشعار فردي، نحدد الكل كمقروء (تبسيط)
-async function markAsRead(notificationId) {
-    // بدلاً من تحديث إشعار واحد، نحدد الكل كمقروء
-    await markAllRead();
-}
-
 // ============================================================
-// 6. مسح جميع الإشعارات
+// 4. مسح جميع الإشعارات
 // ============================================================
 async function clearAllNotifications() {
     if (!confirm('⚠️ هل أنت متأكد من مسح جميع الإشعارات؟')) return;
@@ -3460,44 +3394,7 @@ async function clearAllNotifications() {
 }
 
 // ============================================================
-// 7. تحديث الإشعارات (دالة مساعدة)
-// ============================================================
-function refreshNotifications() {
-    updateNotificationUI();
-}
-
-// ============================================================
-// 8. ربط حدث النقر على الجرس
-// ============================================================
-document.addEventListener('DOMContentLoaded', function() {
-    const bell = document.getElementById('notifBell');
-    if (bell) {
-        bell.addEventListener('click', toggleNotifications);
-        console.log('✅ تم ربط حدث النقر بالجرس');
-    } else {
-        console.error('❌ عنصر #notifBell غير موجود');
-    }
-});
-
-// ============================================================
-// 9. إغلاق القائمة عند النقر خارجها
-// ============================================================
-document.addEventListener('click', function(e) {
-    const bell = document.getElementById('notifBell');
-    const dropdown = document.getElementById('notifDropdown');
-    if (bell && dropdown && !bell.contains(e.target) && !dropdown.contains(e.target)) {
-        dropdown.style.display = 'none';
-    }
-});
-
-// ============================================================
-// 10. تحديث الإشعارات عند تحميل الصفحة
-// ============================================================
-// تأكد من وجود هذا في دالة init()
-// يمكنك إضافته في نهاية init():
-// await updateNotificationUI();
-// ============================================================
-// تبديل إظهار قائمة الإشعارات (نسخة نظيفة)
+// 5. تبديل إظهار/إخفاء القائمة
 // ============================================================
 async function toggleNotifications() {
     console.log('🔄 تم النقر على الجرس');
@@ -3507,32 +3404,26 @@ async function toggleNotifications() {
         return;
     }
 
-    // استخدام display للتحكم في الظهور
     if (dropdown.style.display === 'block') {
         dropdown.style.display = 'none';
         console.log('🔽 إخفاء القائمة');
     } else {
         dropdown.style.display = 'block';
         console.log('🔼 إظهار القائمة');
-        // تحديث القائمة عند الفتح
         await updateNotificationUI();
         console.log('✅ تم تحديث الإشعارات');
     }
 }
 
 // ============================================================
-// إغلاق القائمة عند النقر خارجها
+// 6. تحديث الإشعارات (دالة مساعدة)
 // ============================================================
-document.addEventListener('click', function(e) {
-    const bell = document.getElementById('notifBell');
-    const dropdown = document.getElementById('notifDropdown');
-    if (bell && dropdown && !bell.contains(e.target) && !dropdown.contains(e.target)) {
-        dropdown.style.display = 'none';
-    }
-});
+function refreshNotifications() {
+    updateNotificationUI();
+}
 
 // ============================================================
-// ربط حدث النقر على الجرس
+// 7. ربط حدث النقر على الجرس
 // ============================================================
 document.addEventListener('DOMContentLoaded', function() {
     const bell = document.getElementById('notifBell');
@@ -3543,9 +3434,17 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error('❌ عنصر #notifBell غير موجود');
     }
 });
-function refreshNotifications() {
-    updateNotificationUI();
-}
+
+// ============================================================
+// 8. إغلاق القائمة عند النقر خارجها
+// ============================================================
+document.addEventListener('click', function(e) {
+    const bell = document.getElementById('notifBell');
+    const dropdown = document.getElementById('notifDropdown');
+    if (bell && dropdown && !bell.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.style.display = 'none';
+    }
+});
 
 // ===== Booking =====
 let bookingSalonId = null;
