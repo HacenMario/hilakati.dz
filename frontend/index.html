@@ -3232,22 +3232,33 @@ document.getElementById('reviewForm').addEventListener('submit', async (e) => {
 // ============================================================
 
 // ============================================================
-// 1. جلب الإشعارات من الخادم
+// 1. جلب الإشعارات من الخادم (مع Pagination)
 // ============================================================
-async function fetchNotifications() {
+let notificationPage = 0;
+const NOTIFICATIONS_PER_PAGE = 10;
+let hasMoreNotifications = true;
+let allNotifications = [];
+
+async function fetchNotifications(reset = true) {
+    if (reset) {
+        notificationPage = 0;
+        allNotifications = [];
+        hasMoreNotifications = true;
+    }
+
     const token = localStorage.getItem('token');
     const customerToken = localStorage.getItem('customerToken');
     const adminToken = localStorage.getItem('adminToken');
     let url = '', headers = {};
 
     if (token) {
-        url = `${API_BASE}/notifications/salon`;
+        url = `${API_BASE}/notifications/salon?limit=${NOTIFICATIONS_PER_PAGE}&skip=${notificationPage * NOTIFICATIONS_PER_PAGE}`;
         headers = { 'Authorization': `Bearer ${token}` };
     } else if (customerToken) {
-        url = `${API_BASE}/notifications/customer`;
+        url = `${API_BASE}/notifications/customer?limit=${NOTIFICATIONS_PER_PAGE}&skip=${notificationPage * NOTIFICATIONS_PER_PAGE}`;
         headers = { 'Authorization': `Bearer ${customerToken}` };
     } else if (adminToken) {
-        url = `${API_BASE}/notifications/admin`;
+        url = `${API_BASE}/notifications/admin?limit=${NOTIFICATIONS_PER_PAGE}&skip=${notificationPage * NOTIFICATIONS_PER_PAGE}`;
         headers = { 'Authorization': `Bearer ${adminToken}` };
     } else {
         return [];
@@ -3260,7 +3271,19 @@ async function fetchNotifications() {
             return [];
         }
         const data = await res.json();
-        return data || [];
+        
+        // ✅ التعامل مع الرد (Pagination أو مصفوفة)
+        const notifications = data.notifications || data || [];
+        if (reset) {
+            allNotifications = notifications;
+        } else {
+            allNotifications = [...allNotifications, ...notifications];
+        }
+        
+        hasMoreNotifications = data.hasMore !== undefined ? data.hasMore : (notifications.length === NOTIFICATIONS_PER_PAGE);
+        notificationPage++;
+        
+        return allNotifications;
     } catch (error) {
         console.error('❌ فشل في جلب الإشعارات:', error);
         return [];
@@ -3272,8 +3295,7 @@ async function fetchNotifications() {
 // ============================================================
 let notificationTimeout = null;
 
-async function updateNotificationUI() {
-    // ✅ منع الطلبات المتكررة (Debounce)
+async function updateNotificationUI(reset = true) {
     if (notificationTimeout) {
         clearTimeout(notificationTimeout);
         notificationTimeout = null;
@@ -3281,9 +3303,11 @@ async function updateNotificationUI() {
 
     notificationTimeout = setTimeout(async () => {
         try {
-            const notifications = await fetchNotifications();
+            // ✅ جلب الإشعارات (إعادة تعيين الصفحة إذا كان reset = true)
+            const notifications = await fetchNotifications(reset);
             console.log('📦 الإشعارات المستلمة:', notifications.length);
 
+            // ✅ تحديث البادج (العدد غير المقروء)
             const unread = notifications.filter(n => !n.read).length;
             const badge = document.getElementById('notifBadge');
             if (badge) {
@@ -3291,9 +3315,11 @@ async function updateNotificationUI() {
                 badge.textContent = unread > 99 ? '99+' : unread;
             }
 
+            // ✅ تحديث القائمة
             const list = document.getElementById('notifList');
             if (!list) {
                 console.error('❌ #notifList غير موجود');
+                notificationTimeout = null;
                 return;
             }
 
@@ -3303,9 +3329,9 @@ async function updateNotificationUI() {
                 return;
             }
 
-            // ✅ عرض أول 10 إشعارات فقط (لتخفيف التحميل)
+            // ✅ عرض الإشعارات
             let html = '';
-            notifications.slice(0, 10).forEach(n => {
+            notifications.slice(0, 20).forEach(n => {
                 let time = 'تاريخ غير معروف';
                 if (n.createdAt) {
                     try {
@@ -3325,18 +3351,42 @@ async function updateNotificationUI() {
                     </div>
                 `;
             });
+
+            // ✅ إضافة زر "تحميل المزيد" إذا كان هناك المزيد
+            if (hasMoreNotifications && notifications.length > 0) {
+                html += `
+                    <div style="text-align:center;padding:0.5rem;">
+                        <button class="btn-outline btn-sm" onclick="loadMoreNotifications()" style="width:100%;padding:0.3rem;font-size:0.75rem;">
+                            📥 تحميل المزيد
+                        </button>
+                    </div>
+                `;
+            }
+
             list.innerHTML = html;
-            console.log('✅ تم تحديث القائمة بـ', Math.min(notifications.length, 10), 'إشعارات');
+            console.log('✅ تم تحديث القائمة بـ', Math.min(notifications.length, 20), 'إشعارات');
 
         } catch (error) {
             console.error('❌ خطأ في updateNotificationUI:', error);
         }
         notificationTimeout = null;
-    }, 300); // ✅ تأخير 300ms لتجميع الطلبات
+    }, 300);
 }
 
 // ============================================================
-// 3. تحديد الكل كمقروء (مسار موحد)
+// 2.1 تحميل المزيد من الإشعارات
+// ============================================================
+async function loadMoreNotifications() {
+    if (!hasMoreNotifications) {
+        showToast('📭 لا توجد إشعارات إضافية', 'info');
+        return;
+    }
+    await updateNotificationUI(false);
+}
+
+
+// ============================================================
+// 3.1 تحديد الكل كمقروء (مسار موحد)
 // ============================================================
 async function markAllRead() {
     const token = localStorage.getItem('token') || localStorage.getItem('customerToken');
@@ -3429,7 +3479,8 @@ async function toggleNotifications() {
     } else {
         dropdown.style.display = 'block';
         console.log('🔼 إظهار القائمة');
-        await updateNotificationUI();
+        // ✅ إعادة تعيين الصفحة عند فتح القائمة
+        await updateNotificationUI(true);
         console.log('✅ تم تحديث الإشعارات');
     }
 }
