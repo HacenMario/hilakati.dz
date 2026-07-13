@@ -3106,18 +3106,6 @@ async function showSalonDetails(id) {
             </div>`
         ).join('') || '<p style="color:var(--text-color);opacity:0.4;">لا توجد تقييمات بعد</p>';
 
-// ✅ الزر: عرض على الخريطة (رابط عادي)
-let mapButton = '';
-if (salon.lat && salon.lng) {
-    const mapUrl = `https://www.google.com/maps/search/?api=1&query=${salon.lat},${salon.lng}`;
-    mapButton = `<a href="${mapUrl}" target="_blank" class="btn-primary btn-sm" style="display:inline-block;text-decoration:none;">
-                    <i class="fas fa-map-marked-alt"></i> عرض على الخريطة
-                 </a>`;
-} else {
-    mapButton = `<span class="btn-outline btn-sm" style="opacity:0.5;cursor:not-allowed;display:inline-block;">
-                    <i class="fas fa-map-marked-alt"></i> لا توجد خريطة
-                 </span>`;
-}
 
 // ✅ الزر: واتساب (رابط عادي)
 let whatsappButton = '';
@@ -3132,6 +3120,13 @@ if (salon.phone) {
                         <i class="fab fa-whatsapp"></i> لا يوجد رقم
                       </span>`;
 }
+// ✅ زر الخريطة التفاعلية
+const mapButton = salon.lat && salon.lng ? `
+    <button class="btn-primary btn-sm" onclick="openInteractiveMap('${salon._id}', '${salon.name}', ${salon.lat}, ${salon.lng})">
+        <i class="fas fa-map"></i> عرض على الخريطة
+    </button>
+` : '';
+
         // ===== جلب اللوغو الحقيقي (مع المسار الصحيح) =====
         let logoHtml = '';
         try {
@@ -3175,6 +3170,7 @@ if (salon.phone) {
         content.innerHTML = `
             <div style="text-align:center;margin-bottom:0.8rem;">
                 ${logoHtml}
+                ${salon.lat && salon.lng ? `<button class="btn-primary btn-sm" onclick="openInteractiveMap('${salon._id}', '${salon.name}', ${salon.lat}, ${salon.lng})"><i class="fas fa-map"></i> عرض على الخريطة</button>` : ''}
                 <h2 style="color:var(--gold);font-size:1.2rem;">${salon.name} ${salon.featured ? '⭐' : ''}</h2>
                 <div style="color:var(--text-color);opacity:0.8;font-size:0.85rem;">${salon.desc || ''}</div>
                 <div style="color:var(--text-color);opacity:0.5;font-size:0.8rem;">${salon.address || salon.city}</div>
