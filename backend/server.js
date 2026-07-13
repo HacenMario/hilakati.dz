@@ -685,13 +685,18 @@ app.delete('/api/admin/salons/:id/reviews', adminAuthMiddleware, async (req, res
 });
 
 // ============================================================
-// الصالونات العامة
+// الصالونات العامة (مع فلترة الصالونات النشطة فقط)
 // ============================================================
+// ✅ جلب اللوغو (فقط إذا كان الصالون نشطاً)
 app.get('/api/salons/:id/logo', async (req, res) => {
     try {
-        const salon = await Salon.findById(req.params.id).select('logo');
+        const salon = await Salon.findOne({ 
+            _id: req.params.id, 
+            isActive: { $ne: false } 
+        }).select('logo');
+        
         if (!salon || !salon.logo) {
-            return res.status(404).json({ message: 'Logo غير موجود' });
+            return res.status(404).json({ message: 'Logo غير موجود أو صالون معطل' });
         }
         
         const base64Data = salon.logo.replace(/^data:image\/\w+;base64,/, '');
@@ -705,23 +710,32 @@ app.get('/api/salons/:id/logo', async (req, res) => {
     }
 });
 
-// ✅ جلب كل الصالونات (بدون صور)
+// ✅ جلب كل الصالونات (فقط النشطة)
 app.get('/api/salons', async (req, res) => {
     try {
-        const salons = await Salon.find().select('-password -logo -gallery');
+        // ✅ استبعاد الصالونات المعطلة (isActive = false)
+        const salons = await Salon.find({ isActive: { $ne: false } }).select('-password -logo -gallery');
         res.json(salons);
     } catch (error) {
+        console.error('❌ فشل جلب الصالونات:', error);
         res.status(500).json({ message: error.message });
     }
 });
 
-// ✅ جلب صالون واحد (بدون صورة)
+// ✅ جلب صالون واحد (فقط إذا كان نشطاً)
 app.get('/api/salons/:id', async (req, res) => {
     try {
-        const salon = await Salon.findById(req.params.id).select('-password -logo -gallery');
-        if (!salon) return res.status(404).json({ message: 'صالون غير موجود' });
+        const salon = await Salon.findOne({ 
+            _id: req.params.id, 
+            isActive: { $ne: false } 
+        }).select('-password -logo -gallery');
+        
+        if (!salon) {
+            return res.status(404).json({ message: 'الصالون غير موجود أو معطل' });
+        }
         res.json(salon);
     } catch (error) {
+        console.error('❌ فشل جلب الصالون:', error);
         res.status(500).json({ message: error.message });
     }
 });
