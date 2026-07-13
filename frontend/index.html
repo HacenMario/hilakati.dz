@@ -2894,11 +2894,11 @@ function createSalonCard(salon) {
     return `
         <div class="salon-card" onclick="showSalonDetails('${salon._id}')">
             <div class="cover">
-            <div class="desc">${salon.desc || ''} ${typeIcon} ${mobileLabel}</div>
+            <div class="desc">${typeIcon} ${mobileLabel}</div>
                 ${logoHtml}
                 <span class="rating-badge">⭐ ${salon.rating || 'جديد'}</span>
                 ${salon.lat && salon.lng ? '<span class="gps-badge"><i class="fas fa-map-marker-alt"></i> GPS</span>' : ''}
-                ${minPrice > 0 ? `<span class="price-badge">من ${minPrice} دج</span>` : ''}
+                
                 ${salon.featured ? '<span class="featured-badge">⭐ مميز</span>' : ''}
             </div>
             <div class="body">
