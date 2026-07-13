@@ -4027,7 +4027,35 @@ document.getElementById('hoursForm').addEventListener('submit', async (e) => {
         else { const data = await res.json(); showToast(`❌ ${data.message}`); }
     } catch { showToast('❌ فشل الاتصال'); }
 });
-
+// ===== إكمال الحجز مع تقييم (للعميل) =====
+async function completeAppointmentWithReview(appointmentId, rating, comment) {
+    const token = localStorage.getItem('customerToken');
+    if (!token) {
+        showToast('❌ يرجى تسجيل الدخول', 'error');
+        return;
+    }
+    
+    try {
+        const res = await fetch(`${API_BASE}/appointments/${appointmentId}/complete-with-review`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ rating, comment })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            showToast('✅ تم إكمال الحجز', 'success');
+            loadCustomerDashboard();
+            refreshNotifications();
+        } else {
+            showToast(`❌ ${data.message}`, 'error');
+        }
+    } catch {
+        showToast('❌ فشل الاتصال', 'error');
+    }
+}
 async function deleteSalonAccount() {
     showConfirm('هل أنت متأكد من حذف صالونك بالكامل؟', async () => {
         const token = localStorage.getItem('token');
