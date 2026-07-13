@@ -1283,6 +1283,110 @@ app.put('/api/appointments/:id/complete-with-review', customerAuthMiddleware, as
         res.status(500).json({ message: '❌ فشل إكمال الحجز مع التقييم' });
     }
 });
+// ============================================================
+// التقييمات
+// ============================================================
+
+// ✅ جلب تقييمات صالون معين
+app.get('/api/reviews/salon/:salonId', async (req, res) => {
+    try {
+        const reviews = await Review.find({ salonId: req.params.salonId })
+            .sort({ createdAt: -1 });
+        res.json(reviews);
+    } catch (error) {
+        console.error('❌ فشل جلب تقييمات الصالون:', error);
+        res.status(500).json({ message: '❌ فشل جلب التقييمات' });
+    }
+});
+
+// ✅ جلب تقييم واحد
+app.get('/api/reviews/:id', async (req, res) => {
+    try {
+        const review = await Review.findById(req.params.id);
+        if (!review) {
+            return res.status(404).json({ message: '❌ التقييم غير موجود' });
+        }
+        res.json(review);
+    } catch (error) {
+        console.error('❌ فشل جلب التقييم:', error);
+        res.status(500).json({ message: '❌ فشل جلب التقييم' });
+    }
+});
+
+// ✅ إضافة تقييم جديد
+app.post('/api/reviews', customerAuthMiddleware, async (req, res) => {
+    try {
+        const { salonId, rating, comment } = req.body;
+        
+        const customer = await Customer.findById(req.customerId);
+        if (!customer) {
+            return res.status(404).json({ message: '❌ عميل غير موجود' });
+        }
+
+        const hasBooking = await Appointment.findOne({
+            customerId: req.customerId,
+            salonId: salonId,
+            status: { $in: ['confirmed', 'completed'] }
+        });
+
+        if (!hasBooking) {
+            return res.status(403).json({
+                message: '❌ لا يمكنك تقييم هذا الصالون دون حجز مكتمل أو مؤكد'
+            });
+        }
+
+        const existingReview = await Review.findOne({
+            salonId: salonId,
+            customerId: req.customerId
+        });
+
+        if (existingReview) {
+            return res.status(409).json({
+                message: '❌ لقد قمت بتقييم هذا الصالون مسبقاً'
+            });
+        }
+
+        const review = new Review({
+            salonId,
+            customerId: req.customerId,
+            customerName: customer.name,
+            rating,
+            comment,
+            date: new Date().toISOString().split('T')[0]
+        });
+        await review.save();
+
+        const reviews = await Review.find({ salonId });
+        const avg = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+        await Salon.findByIdAndUpdate(salonId, {
+            rating: Math.round(avg * 10) / 10,
+            totalReviews: reviews.length
+        });
+
+        res.status(201).json({
+            message: '✅ تم إضافة التقييم بنجاح',
+            review: review
+        });
+
+    } catch (err) {
+        console.error('❌ فشل إضافة التقييم:', err);
+        res.status(500).json({ message: '❌ فشل إضافة التقييم' });
+    }
+});
+
+// ✅ حذف تقييم (للمدير)
+app.delete('/api/reviews/:id', adminAuthMiddleware, async (req, res) => {
+    try {
+        const review = await Review.findByIdAndDelete(req.params.id);
+        if (!review) {
+            return res.status(404).json({ message: '❌ التقييم غير موجود' });
+        }
+        res.json({ message: '✅ تم حذف التقييم' });
+    } catch (error) {
+        console.error('❌ فشل حذف التقييم:', error);
+        res.status(500).json({ message: '❌ فشل حذف التقييم' });
+    }
+});
 
 // ============================================================
 // مسار الترحيب
