@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet" />
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <!-- PWA -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#f5b042">
@@ -1736,6 +1737,23 @@
     <div style="max-width:700px;margin:0 auto;padding:1rem;">
         <h2 class="section-title">اتصل <span class="highlight">بنا</span></h2>
         <p class="section-subtitle">تواصل معنا عبر أحد القنوات التالية</p>
+<form id="contactFormMain" onsubmit="sendContactMessage(event)">
+    <div class="form-group">
+        <label>الاسم الكامل</label>
+        <input type="text" id="contactName" required placeholder="أدخل اسمك">
+    </div>
+    <div class="form-group">
+        <label>البريد الإلكتروني</label>
+        <input type="email" id="contactEmail" required placeholder="example@email.com">
+    </div>
+    <div class="form-group">
+        <label>الرسالة</label>
+        <textarea id="contactMessage" rows="5" required placeholder="اكتب رسالتك هنا..."></textarea>
+    </div>
+    <button type="submit" class="btn-gold" style="width:100%;padding:0.6rem;">
+        <i class="fas fa-paper-plane"></i> إرسال
+    </button>
+</form>
 
         <!-- ===== بطاقات التواصل ===== -->
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0.8rem;margin-bottom:1.5rem;">
@@ -1785,6 +1803,10 @@
 </section>
 
 <script>
+// ===== تهيئة EmailJS =====
+(function() {
+    emailjs.init('zYIcaJnLsBBaPgfdi'); // Public Key
+})();
 // ===== المتغيرات الأساسية =====
 const API_BASE = 'https://halakati-project.onrender.com/api';
 const SOCKET_URL = 'https://halakati-project.onrender.com';
@@ -4090,7 +4112,7 @@ async function init() {
     setInterval(refreshNotifications, 30000);
     console.log('🇩🇿 حلاقتي - النسخة الكاملة مع نسيان كلمة المرور وصلاحيات Admin');
 }
-// ===== إرسال رسالة الاتصال (نسخة mailto مع تصحيح) =====
+// ===== إرسال رسالة الاتصال عبر EmailJS =====
 function sendContactMessage(e) {
     e.preventDefault();
     
@@ -4119,23 +4141,29 @@ function sendContactMessage(e) {
         return;
     }
 
-    // ✅ إنشاء رابط mailto
-    const subject = encodeURIComponent('رسالة من موقع حلاقتي');
-    const body = encodeURIComponent(
-        `الاسم: ${name}\n` +
-        `البريد الإلكتروني: ${email}\n\n` +
-        `الرسالة:\n${message}`
-    );
-    
-    const mailtoLink = `mailto:stevenhacen@gmail.com?subject=${subject}&body=${body}`;
-    
-    // فتح البريد الإلكتروني
-    window.open(mailtoLink, '_blank');
-    
-    showToast('✅ تم فتح بريدك! أرسل الرسالة لإتمام الإرسال', 'success');
-    document.getElementById('contactForm').reset();
-}
+    // ✅ إظهار رسالة انتظار
+    showToast('⏳ جاري إرسال رسالتك...', 'info');
 
+    // ✅ إرسال عبر EmailJS
+    emailjs.send(
+        'service_206xiaz',                 // Service ID
+        'template_cac0ccs',                // ⚠️ استبدل بـ Template ID
+        {
+            from_name: name,
+            from_email: email,
+            message: message
+        }
+    )
+    .then(() => {
+        showToast('✅ تم إرسال رسالتك! سنتواصل معك قريباً', 'success');
+        document.getElementById('contactFormMain').reset(); // استخدم المعرف الصحيح
+        navigateTo('home');
+    })
+    .catch((error) => {
+        console.error('❌ فشل الإرسال:', error);
+        showToast('❌ فشل الإرسال، حاول مرة أخرى', 'error');
+    });
+}
 init();
 </script>
 </body>
