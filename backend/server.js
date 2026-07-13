@@ -68,56 +68,6 @@ const transporter = nodemailer.createTransport({
         pass: process.env.EMAIL_PASS
     }
 });
-// ============================================================
-// مسار الاتصال (إرسال الرسائل إلى البريد الإلكتروني)
-// ============================================================
-app.post('/api/contact', async (req, res) => {
-    try {
-        const { name, email, message } = req.body;
-        
-        if (!name || !email || !message) {
-            return res.status(400).json({ message: 'جميع الحقول مطلوبة' });
-        }
-
-        console.log('📩 رسالة جديدة:');
-        console.log('👤 الاسم:', name);
-        console.log('📧 البريد:', email);
-        console.log('📝 الرسالة:', message);
-
-        // ✅ إرسال البريد الإلكتروني (إذا كان لديك إعدادات)
-        // إذا لم يكن لديك، يمكنك حفظها في قاعدة البيانات أو تجاهلها حالياً
-        try {
-            const mailOptions = {
-                from: process.env.EMAIL_USER,
-                to: 'stevenhacen@gmail.com',
-                subject: `📩 رسالة جديدة من ${name} عبر موقع حلاقتي`,
-                html: `
-                    <div dir="rtl" style="font-family: 'Tajawal', sans-serif; padding: 20px; background: #f5f5f5;">
-                        <h2 style="color: #1a1a2e;">📩 رسالة جديدة من موقع حلاقتي</h2>
-                        <div style="background: white; padding: 20px; border-radius: 10px; border-right: 4px solid #f5b042;">
-                            <p><strong>👤 الاسم:</strong> ${name}</p>
-                            <p><strong>📧 البريد الإلكتروني:</strong> ${email}</p>
-                            <p><strong>📝 الرسالة:</strong></p>
-                            <p style="background: #f9f9f9; padding: 15px; border-radius: 8px; white-space: pre-wrap;">${message}</p>
-                        </div>
-                        <p style="color: #888; font-size: 12px; margin-top: 20px;">تم الإرسال من نموذج الاتصال في موقع حلاقتي</p>
-                    </div>
-                `
-            };
-            await transporter.sendMail(mailOptions);
-            console.log('✅ تم إرسال البريد بنجاح');
-        } catch (emailError) {
-            console.error('❌ فشل إرسال البريد:', emailError);
-            // نستمر حتى لو فشل البريد
-        }
-
-        res.json({ message: '✅ تم إرسال رسالتك بنجاح!' });
-        
-    } catch (error) {
-        console.error('❌ فشل إرسال الرسالة:', error);
-        res.status(500).json({ message: '❌ فشل إرسال الرسالة' });
-    }
-});
 
 // ============================================================
 // النماذج
@@ -834,6 +784,57 @@ app.delete('/api/salons/me', authMiddleware, async (req, res) => {
         res.json({ message: 'تم حذف الصالون' });
     } catch (error) {
         res.status(500).json({ message: error.message });
+    }
+});
+
+// ============================================================
+// مسار الاتصال (إرسال الرسائل إلى البريد الإلكتروني)
+// ============================================================
+app.post('/api/contact', async (req, res) => {
+    try {
+        const { name, email, message } = req.body;
+        
+        if (!name || !email || !message) {
+            return res.status(400).json({ message: 'جميع الحقول مطلوبة' });
+        }
+
+        console.log('📩 رسالة جديدة:');
+        console.log('👤 الاسم:', name);
+        console.log('📧 البريد:', email);
+        console.log('📝 الرسالة:', message);
+
+        // ✅ إرسال البريد الإلكتروني (إذا كان لديك إعدادات)
+        // إذا لم يكن لديك، يمكنك حفظها في قاعدة البيانات أو تجاهلها حالياً
+        try {
+            const mailOptions = {
+                from: process.env.EMAIL_USER,
+                to: 'stevenhacen@gmail.com',
+                subject: `📩 رسالة جديدة من ${name} عبر موقع حلاقتي`,
+                html: `
+                    <div dir="rtl" style="font-family: 'Tajawal', sans-serif; padding: 20px; background: #f5f5f5;">
+                        <h2 style="color: #1a1a2e;">📩 رسالة جديدة من موقع حلاقتي</h2>
+                        <div style="background: white; padding: 20px; border-radius: 10px; border-right: 4px solid #f5b042;">
+                            <p><strong>👤 الاسم:</strong> ${name}</p>
+                            <p><strong>📧 البريد الإلكتروني:</strong> ${email}</p>
+                            <p><strong>📝 الرسالة:</strong></p>
+                            <p style="background: #f9f9f9; padding: 15px; border-radius: 8px; white-space: pre-wrap;">${message}</p>
+                        </div>
+                        <p style="color: #888; font-size: 12px; margin-top: 20px;">تم الإرسال من نموذج الاتصال في موقع حلاقتي</p>
+                    </div>
+                `
+            };
+            await transporter.sendMail(mailOptions);
+            console.log('✅ تم إرسال البريد بنجاح');
+        } catch (emailError) {
+            console.error('❌ فشل إرسال البريد:', emailError);
+            // نستمر حتى لو فشل البريد
+        }
+
+        res.json({ message: '✅ تم إرسال رسالتك بنجاح!' });
+        
+    } catch (error) {
+        console.error('❌ فشل إرسال الرسالة:', error);
+        res.status(500).json({ message: '❌ فشل إرسال الرسالة' });
     }
 });
 
