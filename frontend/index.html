@@ -3272,18 +3272,28 @@ async function fetchNotifications(reset = true) {
         }
         const data = await res.json();
         
-        // ✅ التوافق مع كلا التنسيقين (مصفوفة أو كائن مع notifications)
+        console.log('📦 البيانات الخام من الخادم:', data);
+
+        // ✅ التعامل مع جميع التنسيقات الممكنة
         let notifications = [];
-        let hasMore = false;
         
         if (Array.isArray(data)) {
-            // ✅ التنسيق القديم: مصفوفة مباشرة
+            // التنسيق 1: مصفوفة مباشرة
             notifications = data;
-            hasMore = data.length === NOTIFICATIONS_PER_PAGE;
         } else if (data && typeof data === 'object') {
-            // ✅ التنسيق الجديد: كائن مع notifications
-            notifications = data.notifications || [];
-            hasMore = data.hasMore !== undefined ? data.hasMore : (notifications.length === NOTIFICATIONS_PER_PAGE);
+            // التنسيق 2: كائن يحتوي على notifications
+            if (Array.isArray(data.notifications)) {
+                notifications = data.notifications;
+            } else {
+                // التنسيق 3: كائن مصفوفة غير قياسي - حاول تحويله
+                notifications = Object.values(data).filter(item => Array.isArray(item))[0] || [];
+            }
+        }
+        
+        // ✅ التأكد من أن النتيجة مصفوفة
+        if (!Array.isArray(notifications)) {
+            console.warn('⚠️ البيانات ليست مصفوفة، استخدام مصفوفة فارغة');
+            notifications = [];
         }
         
         if (reset) {
@@ -3292,7 +3302,8 @@ async function fetchNotifications(reset = true) {
             allNotifications = [...allNotifications, ...notifications];
         }
         
-        hasMoreNotifications = hasMore;
+        // ✅ تحديد وجود المزيد من الإشعارات
+        hasMoreNotifications = notifications.length === NOTIFICATIONS_PER_PAGE;
         notificationPage++;
         
         console.log(`📦 الإشعارات المستلمة: ${notifications.length}, الإجمالي: ${allNotifications.length}, hasMore: ${hasMoreNotifications}`);
@@ -3319,10 +3330,10 @@ async function updateNotificationUI(reset = true) {
             
             // ✅ التأكد من أن notifications مصفوفة
             const notificationArray = Array.isArray(notifications) ? notifications : [];
-            console.log('📦 الإشعارات المستلمة:', notificationArray.length);
+            console.log('📦 الإشعارات المستلمة (بعد التأكد):', notificationArray.length);
 
             // ✅ تحديث البادج (العدد غير المقروء)
-            const unread = notificationArray.filter(n => !n.read).length;
+            const unread = notificationArray.filter(n => n && typeof n === 'object' && !n.read).length;
             const badge = document.getElementById('notifBadge');
             if (badge) {
                 badge.style.display = unread > 0 ? 'inline-block' : 'none';
@@ -3347,7 +3358,7 @@ async function updateNotificationUI(reset = true) {
             let html = '';
             notificationArray.slice(0, 20).forEach(n => {
                 let time = 'تاريخ غير معروف';
-                if (n.createdAt) {
+                if (n && n.createdAt) {
                     try {
                         const date = new Date(n.createdAt);
                         if (!isNaN(date.getTime())) {
@@ -3356,11 +3367,11 @@ async function updateNotificationUI(reset = true) {
                     } catch (e) {}
                 }
 
-                const isUnread = !n.read;
+                const isUnread = n && !n.read;
                 html += `
                     <div class="notif-item ${isUnread ? 'unread' : ''}" style="padding:0.5rem 0.8rem;border-bottom:1px solid var(--border-color);${isUnread ? 'background:rgba(245,176,66,0.05);border-right:3px solid var(--gold);cursor:pointer;' : ''}" onclick="markAllRead()">
-                        <div style="font-weight:600;color:var(--gold);font-size:0.85rem;">${n.title}</div>
-                        <div style="color:var(--text-color);opacity:0.8;font-size:0.8rem;">${n.message}</div>
+                        <div style="font-weight:600;color:var(--gold);font-size:0.85rem;">${n?.title || 'بدون عنوان'}</div>
+                        <div style="color:var(--text-color);opacity:0.8;font-size:0.8rem;">${n?.message || 'بدون محتوى'}</div>
                         <div style="font-size:0.65rem;color:#888;">${time}</div>
                     </div>
                 `;
@@ -3386,7 +3397,6 @@ async function updateNotificationUI(reset = true) {
         notificationTimeout = null;
     }, 300);
 }
-
 // ============================================================
 // 2.1 تحميل المزيد من الإشعارات
 // ============================================================
