@@ -1280,7 +1280,7 @@
         <span id="userDisplay" style="display:none;color:var(--gold);font-weight:500;font-size:0.7rem;"></span>
         <span id="customerNameDisplay" style="display:none;color:var(--gold);font-weight:500;font-size:0.7rem;"></span>
 
-        <!-- ==== زر الإشعارات ==== -->
+        <!-- ===== زر الإشعارات ===== -->
         <div class="notif-bell" id="notifBell" style="position:relative;display:inline-block;cursor:pointer;margin-left:0.5rem;">
             <i class="fas fa-bell" style="font-size:1.2rem;color:var(--text-color);"></i>
             <span id="notifBadge" style="display:none;position:absolute;top:-8px;right:-8px;background:#e74c3c;color:#fff;border-radius:50%;padding:0.1rem 0.4rem;font-size:0.6rem;font-weight:bold;min-width:18px;text-align:center;z-index:999;">0</span>
@@ -1883,11 +1883,7 @@
 </section>
 
 <script>
-// ============================================================
-// نظام الخريطة التفاعلية
-// ============================================================
-
-// ===== فتح الخريطة التفاعلية =====
+// ===== الخريطة التفاعلية =====
 function openInteractiveMap(salonId, salonName, lat, lng) {
     // إنشاء نافذة منبثقة للخريطة
     const modalHtml = `
@@ -1911,7 +1907,7 @@ function openInteractiveMap(salonId, salonName, lat, lng) {
     // إضافة النافذة للصفحة
     document.body.insertAdjacentHTML('beforeend', modalHtml);
     
-    // تهيئة الخريطة بعد 100ms
+    // تهيئة الخريطة بعد 100ms (لتأكد من ظهور النافذة)
     setTimeout(() => {
         const map = L.map('interactiveMap').setView([lat, lng], 15);
         
@@ -1925,7 +1921,7 @@ function openInteractiveMap(salonId, salonName, lat, lng) {
             .bindPopup(`<b>${salonName}</b><br>📍 ${salon.address || ''}`)
             .openPopup();
             
-        // إضافة علامات للصالونات القريبة
+        // إضافة علامات للصالونات القريبة (إذا كانت محملة)
         const nearby = allSalons.filter(s => s.lat && s.lng && s._id !== salonId);
         nearby.slice(0, 10).forEach(s => {
             const dist = calculateDistance(lat, lng, s.lat, s.lng);
@@ -1944,6 +1940,7 @@ function openInteractiveMap(salonId, salonName, lat, lng) {
             }
         });
         
+        // تحديث حجم الخريطة عند ظهورها
         setTimeout(() => map.invalidateSize(), 200);
     }, 200);
 }
@@ -1962,20 +1959,11 @@ function calculateDistance(lat1, lng1, lat2, lng2) {
 
 // ===== اتجاهات Google Maps =====
 function getDirections(lat, lng) {
-    if (!lat || !lng) {
-        showToast('❌ لا توجد إحداثيات للموقع', 'error');
-        return;
-    }
     window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
 }
 
 // ===== صالونات قريبة =====
 function findNearbySalons(lat, lng) {
-    if (!lat || !lng) {
-        showToast('❌ لا توجد إحداثيات للموقع', 'error');
-        return;
-    }
-    
     const nearby = allSalons
         .filter(s => s.lat && s.lng)
         .map(s => ({ ...s, distance: calculateDistance(lat, lng, s.lat, s.lng) }))
@@ -1988,15 +1976,13 @@ function findNearbySalons(lat, lng) {
     }
     
     showToast(`✅ ${nearby.length} صالون ضمن 10 كم`, 'success');
-    
+    // عرضها في القائمة
     allSalons = allSalons.map(s => {
         const found = nearby.find(n => n._id === s._id);
         return found ? { ...s, distance: found.distance } : s;
     });
     renderAllSalons(nearby);
-    closeModal('mapModal');
 }
-    
 // ===== أيقونات نوع الصالون =====
 function getSalonTypeIcon(type) {
     const icons = {
@@ -3120,6 +3106,18 @@ async function showSalonDetails(id) {
             </div>`
         ).join('') || '<p style="color:var(--text-color);opacity:0.4;">لا توجد تقييمات بعد</p>';
 
+// ✅ الزر: عرض على الخريطة (رابط عادي)
+let mapButton = '';
+if (salon.lat && salon.lng) {
+    const mapUrl = `https://www.google.com/maps/search/?api=1&query=${salon.lat},${salon.lng}`;
+    mapButton = `<a href="${mapUrl}" target="_blank" class="btn-primary btn-sm" style="display:inline-block;text-decoration:none;">
+                    <i class="fas fa-map-marked-alt"></i> عرض على الخريطة
+                 </a>`;
+} else {
+    mapButton = `<span class="btn-outline btn-sm" style="opacity:0.5;cursor:not-allowed;display:inline-block;">
+                    <i class="fas fa-map-marked-alt"></i> لا توجد خريطة
+                 </span>`;
+}
 
 // ✅ الزر: واتساب (رابط عادي)
 let whatsappButton = '';
@@ -3134,13 +3132,6 @@ if (salon.phone) {
                         <i class="fab fa-whatsapp"></i> لا يوجد رقم
                       </span>`;
 }
-// ✅ زر الخريطة التفاعلية
-const mapButton = salon.lat && salon.lng ? `
-    <button class="btn-primary btn-sm" onclick="openInteractiveMap('${salon._id}', '${salon.name}', ${salon.lat}, ${salon.lng})">
-        <i class="fas fa-map"></i> عرض على الخريطة
-    </button>
-` : '';
-
         // ===== جلب اللوغو الحقيقي (مع المسار الصحيح) =====
         let logoHtml = '';
         try {
@@ -3184,7 +3175,6 @@ const mapButton = salon.lat && salon.lng ? `
         content.innerHTML = `
             <div style="text-align:center;margin-bottom:0.8rem;">
                 ${logoHtml}
-                ${salon.lat && salon.lng ? `<button class="btn-primary btn-sm" onclick="openInteractiveMap('${salon._id}', '${salon.name}', ${salon.lat}, ${salon.lng})"><i class="fas fa-map"></i> عرض على الخريطة</button>` : ''}
                 <h2 style="color:var(--gold);font-size:1.2rem;">${salon.name} ${salon.featured ? '⭐' : ''}</h2>
                 <div style="color:var(--text-color);opacity:0.8;font-size:0.85rem;">${salon.desc || ''}</div>
                 <div style="color:var(--text-color);opacity:0.5;font-size:0.8rem;">${salon.address || salon.city}</div>
@@ -3543,7 +3533,7 @@ document.addEventListener('click', function(e) {
         dropdown.style.display = 'none';
     }
 });
-
+    
 // ===== Booking =====
 let bookingSalonId = null;
 async function openBooking(salonId) {
