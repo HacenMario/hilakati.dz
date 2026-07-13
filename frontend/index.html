@@ -2523,33 +2523,32 @@ async function showSalonDetails(id) {
             </div>`
         ).join('') || '<p style="color:var(--text-color);opacity:0.4;">لا توجد تقييمات بعد</p>';
 
-        // ===== زر الخريطة =====
-        let mapButton = '';
-        if (salon.lat && salon.lng) {
-            const mapUrl = `https://www.google.com/maps/search/?api=1&query=${salon.lat},${salon.lng}`;
-            mapButton = `<button class="btn-primary btn-sm" onclick="window.open('${mapUrl}', '_blank')">
-                            <i class="fas fa-map-marked-alt"></i> عرض على الخريطة
-                         </button>`;
-        } else {
-            mapButton = `<button class="btn-outline btn-sm" disabled style="opacity:0.5;cursor:not-allowed;">
-                            <i class="fas fa-map-marked-alt"></i> لا توجد خريطة
-                         </button>`;
-        }
+// ✅ الزر: عرض على الخريطة (رابط عادي)
+let mapButton = '';
+if (salon.lat && salon.lng) {
+    const mapUrl = `https://www.google.com/maps/search/?api=1&query=${salon.lat},${salon.lng}`;
+    mapButton = `<a href="${mapUrl}" target="_blank" class="btn-primary btn-sm" style="display:inline-block;text-decoration:none;">
+                    <i class="fas fa-map-marked-alt"></i> عرض على الخريطة
+                 </a>`;
+} else {
+    mapButton = `<span class="btn-outline btn-sm" style="opacity:0.5;cursor:not-allowed;display:inline-block;">
+                    <i class="fas fa-map-marked-alt"></i> لا توجد خريطة
+                 </span>`;
+}
 
-        // ===== زر واتساب =====
-        let whatsappButton = '';
-        if (salon.phone) {
-            const cleanPhone = cleanPhoneNumber(salon.phone);
-            const whatsappUrl = `https://wa.me/${cleanPhone}`;
-            whatsappButton = `<button class="btn-whatsapp btn-sm" onclick="window.open('${whatsappUrl}', '_blank')">
-                                <i class="fab fa-whatsapp"></i> واتساب
-                              </button>`;
-        } else {
-            whatsappButton = `<button class="btn-outline btn-sm" disabled style="opacity:0.5;cursor:not-allowed;">
-                                <i class="fab fa-whatsapp"></i> لا يوجد رقم
-                              </button>`;
-        }
-
+// ✅ الزر: واتساب (رابط عادي)
+let whatsappButton = '';
+if (salon.phone) {
+    const cleanPhone = cleanPhoneNumber(salon.phone);
+    const whatsappUrl = `https://wa.me/${cleanPhone}`;
+    whatsappButton = `<a href="${whatsappUrl}" target="_blank" class="btn-whatsapp btn-sm" style="display:inline-block;text-decoration:none;">
+                        <i class="fab fa-whatsapp"></i> واتساب
+                      </a>`;
+} else {
+    whatsappButton = `<span class="btn-outline btn-sm" style="opacity:0.5;cursor:not-allowed;display:inline-block;">
+                        <i class="fab fa-whatsapp"></i> لا يوجد رقم
+                      </span>`;
+}
         // ===== جلب اللوغو الحقيقي (مع المسار الصحيح) =====
         let logoHtml = '';
         try {
