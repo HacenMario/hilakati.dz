@@ -1436,16 +1436,38 @@ app.get('/api/notifications/admin', adminAuthMiddleware, async (req, res) => {
 });
 
 // ✅ تحديد جميع إشعارات الصالون كمقروءة
-app.put('/api/notifications/read-all', authMiddleware, async (req, res) => {
+app.put('/api/notifications/read-all', async (req, res) => {
     try {
-        const result = await Notification.updateMany(
-            { 
-                userId: req.userId, 
-                read: false 
-            },
-            { 
-                read: true 
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ message: '❌ غير مصرح' });
+        }
+
+        let userId = null;
+        // ✅ محاولة فك التوكن كـ صالون
+        try {
+            const decoded = jwt.verify(token, process.env.JWT_SECRET || 'salon_secret_key');
+            userId = decoded.id;
+            console.log('✅ تم التعرف على صالون:', userId);
+        } catch (e) {
+            // ✅ محاولة فك التوكن كـ عميل
+            try {
+                const decoded = jwt.verify(token, process.env.JWT_CUSTOMER_SECRET || 'customer_secret_key');
+                userId = decoded.id;
+                console.log('✅ تم التعرف على عميل:', userId);
+            } catch (e2) {
+                console.error('❌ توكن غير صالح:', e2.message);
+                return res.status(401).json({ message: '❌ توكن غير صالح' });
             }
+        }
+
+        if (!userId) {
+            return res.status(401).json({ message: '❌ غير مصرح' });
+        }
+
+        const result = await Notification.updateMany(
+            { userId, read: false },
+            { read: true }
         );
         res.json({ 
             message: `✅ تم تحديد ${result.modifiedCount} إشعار كمقروء`,
