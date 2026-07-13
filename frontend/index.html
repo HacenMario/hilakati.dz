@@ -3106,20 +3106,14 @@ async function showSalonDetails(id) {
             </div>`
         ).join('') || '<p style="color:var(--text-color);opacity:0.4;">لا توجد تقييمات بعد</p>';
 
-// ✅ الزر: عرض على الخريطة (رابط عادي)
-let mapButton = '';
-if (salon.lat && salon.lng) {
-    const mapUrl = `https://www.google.com/maps/search/?api=1&query=${salon.lat},${salon.lng}`;
-    mapButton = `<a href="${mapUrl}" target="_blank" class="btn-primary btn-sm" style="display:inline-block;text-decoration:none;">
-                    <i class="fas fa-map-marked-alt"></i> عرض على الخريطة
-                 </a>`;
-} else {
-    mapButton = `<span class="btn-outline btn-sm" style="opacity:0.5;cursor:not-allowed;display:inline-block;">
-                    <i class="fas fa-map-marked-alt"></i> لا توجد خريطة
-                 </span>`;
-}
+// ✅ زر الخريطة التفاعلية (الجديد)
+const mapButton = salon.lat && salon.lng ? `
+    <button class="btn-primary btn-sm" onclick="openInteractiveMap('${salon._id}', '${salon.name}', ${salon.lat}, ${salon.lng})">
+        <i class="fas fa-map"></i> عرض على الخريطة
+    </button>
+` : '';
 
-// ✅ الزر: واتساب (رابط عادي)
+// ✅ زر واتساب
 let whatsappButton = '';
 if (salon.phone) {
     const cleanPhone = cleanPhoneNumber(salon.phone);
@@ -3132,12 +3126,6 @@ if (salon.phone) {
                         <i class="fab fa-whatsapp"></i> لا يوجد رقم
                       </span>`;
 }
-// ✅ زر الخريطة التفاعلية
-const mapButton = salon.lat && salon.lng ? `
-    <button class="btn-primary btn-sm" onclick="openInteractiveMap('${salon._id}', '${salon.name}', ${salon.lat}, ${salon.lng})">
-        <i class="fas fa-map"></i> عرض على الخريطة
-    </button>
-` : '';
         // ===== جلب اللوغو الحقيقي (مع المسار الصحيح) =====
         let logoHtml = '';
         try {
