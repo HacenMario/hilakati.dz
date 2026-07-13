@@ -3350,26 +3350,29 @@ async function toggleNotifications() {
 // ============================================================
 // 4. تحديد إشعار واحد كمقروء (عند النقر عليه)
 // ============================================================
+// ✅ تحديث إشعار واحد كمقروء
 async function markAsRead(notificationId) {
+    const token = localStorage.getItem('token') || localStorage.getItem('customerToken');
+    if (!token) {
+        showToast('❌ يرجى تسجيل الدخول', 'error');
+        return;
+    }
     try {
-        const token = localStorage.getItem('token');
-        const customerToken = localStorage.getItem('customerToken');
-        const adminToken = localStorage.getItem('adminToken');
-        let headers = {};
-        if (token) headers = { 'Authorization': `Bearer ${token}` };
-        else if (customerToken) headers = { 'Authorization': `Bearer ${customerToken}` };
-        else if (adminToken) headers = { 'Authorization': `Bearer ${adminToken}` };
-        else return;
-
-        const res = await fetch(`${API_BASE}/notifications/${notificationId}/read`, {
-            method: 'PUT',
-            headers: { ...headers, 'Content-Type': 'application/json' }
+        const res = await fetch(`/api/notifications/${notificationId}/read`, {
+            method: 'PUT', // ✅ تأكد من أنها PUT
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
         });
         if (res.ok) {
-            await updateNotificationUI();
+            refreshNotifications();
+        } else {
+            showToast('❌ فشل تحديث الإشعار', 'error');
         }
     } catch (error) {
-        console.error('❌ خطأ في تحديث الإشعار:', error);
+        console.error('❌ فشل تحديث الإشعار:', error);
+        showToast('❌ فشل الاتصال', 'error');
     }
 }
 
