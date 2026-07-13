@@ -3228,48 +3228,71 @@ document.getElementById('reviewForm').addEventListener('submit', async (e) => {
 });
 
 // ============================================================
-// نظام الإشعارات المتكامل - النسخة المبسطة
+// نظام الإشعارات المتكامل - النسخة المستقرة
 // ============================================================
 
 // ============================================================
 // 1. جلب الإشعارات من الخادم
 // ============================================================
 async function fetchNotifications() {
-    const token = localStorage.getItem('token');
-    const customerToken = localStorage.getItem('customerToken');
-    const adminToken = localStorage.getItem('adminToken');
-    let url = '', headers = {};
-
-    if (token) {
-        url = `${API_BASE}/notifications/salon`;
-        headers = { 'Authorization': `Bearer ${token}` };
-    } else if (customerToken) {
-        url = `${API_BASE}/notifications/customer`;
-        headers = { 'Authorization': `Bearer ${customerToken}` };
-    } else if (adminToken) {
-        url = `${API_BASE}/notifications/admin`;
-        headers = { 'Authorization': `Bearer ${adminToken}` };
-    } else {
-        return [];
-    }
-
     try {
+        const token = localStorage.getItem('token');
+        const customerToken = localStorage.getItem('customerToken');
+        const adminToken = localStorage.getItem('adminToken');
+        
+        let url = '';
+        let headers = {};
+
+        if (token) {
+            url = `${API_BASE}/notifications/salon`;
+            headers = { 'Authorization': `Bearer ${token}` };
+        } else if (customerToken) {
+            url = `${API_BASE}/notifications/customer`;
+            headers = { 'Authorization': `Bearer ${customerToken}` };
+        } else if (adminToken) {
+            url = `${API_BASE}/notifications/admin`;
+            headers = { 'Authorization': `Bearer ${adminToken}` };
+        } else {
+            console.log('ℹ️ لا يوجد مستخدم مسجل الدخول');
+            return [];
+        }
+
+        console.log('📡 جلب الإشعارات من:', url);
+        
         const res = await fetch(url, { headers });
+        
         if (!res.ok) {
             console.warn('⚠️ فشل جلب الإشعارات، الحالة:', res.status);
             return [];
         }
-        const data = await res.json();
         
-        // ✅ التأكد من أن البيانات مصفوفة
+        const data = await res.json();
+        console.log('📦 البيانات الخام:', data);
+        
+        // ✅ معالجة البيانات بغض النظر عن تنسيقها
         if (Array.isArray(data)) {
             return data;
-        } else if (data && typeof data === 'object' && Array.isArray(data.notifications)) {
-            return data.notifications;
-        } else {
-            console.warn('⚠️ بيانات غير متوقعة:', data);
-            return [];
+        } else if (data && typeof data === 'object') {
+            // إذا كان الكائن يحتوي على خاصية notifications
+            if (Array.isArray(data.notifications)) {
+                return data.notifications;
+            }
+            // إذا كان الكائن يحتوي على خاصية data (مثل بعض الاستجابات)
+            if (Array.isArray(data.data)) {
+                return data.data;
+            }
+            // إذا كان الكائن يحتوي على قيم مصفوفة
+            for (const key in data) {
+                if (Array.isArray(data[key])) {
+                    return data[key];
+                }
+            }
         }
+        
+        // إذا لم نجد أي مصفوفة، نعيد مصفوفة فارغة
+        console.warn('⚠️ لم نتمكن من العثور على مصفوفة في البيانات، نعيد مصفوفة فارغة');
+        return [];
+        
     } catch (error) {
         console.error('❌ فشل في جلب الإشعارات:', error);
         return [];
@@ -3282,6 +3305,7 @@ async function fetchNotifications() {
 let notificationTimeout = null;
 
 async function updateNotificationUI() {
+    // منع الطلبات المتكررة
     if (notificationTimeout) {
         clearTimeout(notificationTimeout);
         notificationTimeout = null;
@@ -3289,36 +3313,36 @@ async function updateNotificationUI() {
 
     notificationTimeout = setTimeout(async () => {
         try {
+            // ✅ جلب الإشعارات (دائماً ترجع مصفوفة)
             const notifications = await fetchNotifications();
             
             // ✅ التأكد من أنها مصفوفة
-            const list = document.getElementById('notifList');
+            const notificationArray = Array.isArray(notifications) ? notifications : [];
+            console.log('📦 الإشعارات المستلمة:', notificationArray.length);
+
+            // ✅ تحديث البادج
+            const unread = notificationArray.filter(n => n && !n.read).length;
             const badge = document.getElementById('notifBadge');
-            
+            if (badge) {
+                badge.style.display = unread > 0 ? 'inline-block' : 'none';
+                badge.textContent = unread > 99 ? '99+' : unread;
+            }
+
+            // ✅ تحديث القائمة
+            const list = document.getElementById('notifList');
             if (!list) {
                 console.error('❌ #notifList غير موجود');
                 notificationTimeout = null;
                 return;
             }
 
-            // ✅ التأكد من أن notifications مصفوفة
-            const notificationArray = Array.isArray(notifications) ? notifications : [];
-            console.log('📦 الإشعارات المستلمة:', notificationArray.length);
-
-            // ✅ تحديث البادج
-            const unread = notificationArray.filter(n => n && !n.read).length;
-            if (badge) {
-                badge.style.display = unread > 0 ? 'inline-block' : 'none';
-                badge.textContent = unread > 99 ? '99+' : unread;
-            }
-
-            // ✅ عرض القائمة
             if (notificationArray.length === 0) {
                 list.innerHTML = '<div class="notif-empty" style="padding:1rem;text-align:center;color:#888;">📭 لا توجد إشعارات</div>';
                 notificationTimeout = null;
                 return;
             }
 
+            // ✅ عرض الإشعارات
             let html = '';
             notificationArray.slice(0, 20).forEach(n => {
                 if (!n) return;
@@ -3328,14 +3352,26 @@ async function updateNotificationUI() {
                     try {
                         const date = new Date(n.createdAt);
                         if (!isNaN(date.getTime())) {
-                            time = date.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' }) + '، ' + date.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+                            time = date.toLocaleDateString('ar-EG', { 
+                                year: 'numeric', 
+                                month: 'long', 
+                                day: 'numeric' 
+                            }) + '، ' + date.toLocaleTimeString('ar-EG', { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                            });
                         }
-                    } catch (e) {}
+                    } catch (e) {
+                        console.warn('⚠️ تاريخ غير صالح:', n.createdAt);
+                    }
                 }
 
                 const isUnread = !n.read;
                 html += `
-                    <div class="notif-item ${isUnread ? 'unread' : ''}" style="padding:0.5rem 0.8rem;border-bottom:1px solid var(--border-color);${isUnread ? 'background:rgba(245,176,66,0.05);border-right:3px solid var(--gold);cursor:pointer;' : ''}" onclick="markAllRead()">
+                    <div class="notif-item ${isUnread ? 'unread' : ''}" 
+                         style="padding:0.5rem 0.8rem;border-bottom:1px solid var(--border-color);
+                                ${isUnread ? 'background:rgba(245,176,66,0.05);border-right:3px solid var(--gold);cursor:pointer;' : ''}" 
+                         onclick="markAllRead()">
                         <div style="font-weight:600;color:var(--gold);font-size:0.85rem;">${n.title || 'بدون عنوان'}</div>
                         <div style="color:var(--text-color);opacity:0.8;font-size:0.8rem;">${n.message || 'بدون محتوى'}</div>
                         <div style="font-size:0.65rem;color:#888;">${time}</div>
@@ -3381,6 +3417,7 @@ async function markAllRead() {
         const data = await res.json();
         showToast(`✅ ${data.message}`, 'success');
         await updateNotificationUI();
+        
         const dropdown = document.getElementById('notifDropdown');
         if (dropdown) dropdown.style.display = 'none';
     } catch (error) {
@@ -3463,6 +3500,8 @@ function refreshNotifications() {
 document.addEventListener('DOMContentLoaded', function() {
     const bell = document.getElementById('notifBell');
     if (bell) {
+        // إزالة المستمعين القديمين لتجنب التكرار
+        bell.removeEventListener('click', toggleNotifications);
         bell.addEventListener('click', toggleNotifications);
         console.log('✅ تم ربط حدث النقر بالجرس');
     } else {
@@ -3480,6 +3519,7 @@ document.addEventListener('click', function(e) {
         dropdown.style.display = 'none';
     }
 });
+    
 // ===== Booking =====
 let bookingSalonId = null;
 async function openBooking(salonId) {
