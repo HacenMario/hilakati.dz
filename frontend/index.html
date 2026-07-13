@@ -3132,6 +3132,12 @@ if (salon.phone) {
                         <i class="fab fa-whatsapp"></i> لا يوجد رقم
                       </span>`;
 }
+// ✅ زر الخريطة التفاعلية
+const mapButton = salon.lat && salon.lng ? `
+    <button class="btn-primary btn-sm" onclick="openInteractiveMap('${salon._id}', '${salon.name}', ${salon.lat}, ${salon.lng})">
+        <i class="fas fa-map"></i> عرض على الخريطة
+    </button>
+` : '';
         // ===== جلب اللوغو الحقيقي (مع المسار الصحيح) =====
         let logoHtml = '';
         try {
