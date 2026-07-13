@@ -3075,87 +3075,18 @@ function updateAllDistances(userLat, userLng) {
     });
 }
 // ===== Salon Details & Reviews =====
-async function showSalonDetails(id) {
-    try {
-        const [salonRes, reviewsRes] = await Promise.all([
-            fetch(`${API_BASE}/salons/${id}`),
-            fetch(`${API_BASE}/reviews/salon/${id}`)
-        ]);
-        const salon = await salonRes.json();
-        const reviews = await reviewsRes.json();
-        const content = document.getElementById('salonDetailsContent');
-// ✅ زر الخريطة التفاعلية - تعريف واحد فقط
-const mapButton = salon.lat && salon.lng ? `
-    <button class="btn-primary btn-sm" onclick="openInteractiveMap('${salon._id}', '${salon.name}', ${salon.lat}, ${salon.lng})">
-        <i class="fas fa-map"></i> عرض على الخريطة
-    </button>
-` : '';
+
+        // ============================================================
+        // ✅ تعريف الأزرار (قبل استخدامها في الـ HTML)
+        // ============================================================
         
-        // ===== ساعات العمل =====
-        const hoursHtml = Object.entries(salon.hours || {}).map(([day, hours]) => 
-            `<div style="display:flex;justify-content:space-between;padding:0.15rem 0;border-bottom:1px solid var(--border-color);">
-                <span>${day}</span><span>${hours}</span>
-            </div>`
-        ).join('');
-
-        // ===== معرض الصور =====
-        const galleryHtml = (salon.gallery || []).map(url => 
-            `<img src="${url}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border-color);">`
-        ).join('');
-
-        // ===== التقييمات =====
-        const reviewsHtml = reviews.map(r => 
-            `<div class="review-item">
-                <div class="review-header"><span>${r.customerName}</span><span>${'★'.repeat(r.rating)}</span></div>
-                <div class="review-comment">${r.comment}</div>
-                <div class="review-date">${r.date}</div>
-            </div>`
-        ).join('') || '<p style="color:var(--text-color);opacity:0.4;">لا توجد تقييمات بعد</p>';
-
-        // ===== جلب اللوغو =====
-        let logoHtml = '';
-        try {
-            const logoResponse = await fetch(`${API_BASE}/salons/${id}/logo`);
-            if (logoResponse.ok) {
-                const blob = await logoResponse.blob();
-                const url = URL.createObjectURL(blob);
-                logoHtml = `<img src="${url}" style="width:90px;height:90px;border-radius:50%;object-fit:cover;border:2px solid var(--gold);margin-bottom:0.3rem;">`;
-            } else {
-                const firstLetter = salon.name?.charAt(0)?.toUpperCase() || '?';
-                const getColorFromName = (str) => {
-                    let hash = 0;
-                    for (let i = 0; i < str.length; i++) {
-                        hash = str.charCodeAt(i) + ((hash << 5) - hash);
-                    }
-                    const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9', '#F8C471', '#82E0AA', '#F1948A', '#85929E', '#73C6B6', '#E59866'];
-                    return colors[Math.abs(hash) % colors.length];
-                };
-                const bgColor = getColorFromName(salon.name || '');
-                logoHtml = `<div style="width:90px;height:90px;border-radius:50%;background:${bgColor};display:flex;align-items:center;justify-content:center;color:#fff;font-size:36px;font-weight:bold;font-family:'Tajawal',sans-serif;text-transform:uppercase;border:2px solid var(--gold);margin:0 auto 0.3rem;">${firstLetter}</div>`;
-            }
-        } catch (error) {
-            const firstLetter = salon.name?.charAt(0)?.toUpperCase() || '?';
-            const getColorFromName = (str) => {
-                let hash = 0;
-                for (let i = 0; i < str.length; i++) {
-                    hash = str.charCodeAt(i) + ((hash << 5) - hash);
-                }
-                const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9', '#F8C471', '#82E0AA', '#F1948A', '#85929E', '#73C6B6', '#E59866'];
-                return colors[Math.abs(hash) % colors.length];
-            };
-            const bgColor = getColorFromName(salon.name || '');
-            logoHtml = `<div style="width:90px;height:90px;border-radius:50%;background:${bgColor};display:flex;align-items:center;justify-content:center;color:#fff;font-size:36px;font-weight:bold;font-family:'Tajawal',sans-serif;text-transform:uppercase;border:2px solid var(--gold);margin:0 auto 0.3rem;">${firstLetter}</div>`;
-        }
-
-        // ============================================================
-        // ✅ تعريف الأزرار (مرة واحدة فقط)
-        // ============================================================
-                // ✅ زر الخريطة التفاعلية
+        // ✅ زر الخريطة التفاعلية
         const mapButton = salon.lat && salon.lng ? `
             <button class="btn-primary btn-sm" onclick="openInteractiveMap('${salon._id}', '${salon.name}', ${salon.lat}, ${salon.lng})">
                 <i class="fas fa-map"></i> عرض على الخريطة
             </button>
         ` : '';
+
         // ✅ زر واتساب
         let whatsappButton = '';
         if (salon.phone) {
