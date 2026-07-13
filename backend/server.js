@@ -68,6 +68,55 @@ const transporter = nodemailer.createTransport({
         pass: process.env.EMAIL_PASS
     }
 });
+// ============================================================
+// مسار الاتصال (إرسال الرسائل إلى البريد الإلكتروني)
+// ============================================================
+app.post('/api/contact', async (req, res) => {
+    try {
+        const { name, email, message } = req.body;
+        
+        if (!name || !email || !message) {
+            return res.status(400).json({ message: 'جميع الحقول مطلوبة' });
+        }
+
+        // إعداد البريد
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: 'stevenhacen@gmail.com', // ✅ استبدل ببريدك الإلكتروني
+            subject: `📩 رسالة جديدة من ${name} عبر موقع حلاقتي`,
+            html: `
+                <div dir="rtl" style="font-family: 'Tajawal', sans-serif; padding: 20px; background: #f5f5f5;">
+                    <h2 style="color: #1a1a2e;">📩 رسالة جديدة من موقع حلاقتي</h2>
+                    <div style="background: white; padding: 20px; border-radius: 10px; border-right: 4px solid #f5b042;">
+                        <p><strong>👤 الاسم:</strong> ${name}</p>
+                        <p><strong>📧 البريد الإلكتروني:</strong> ${email}</p>
+                        <p><strong>📝 الرسالة:</strong></p>
+                        <p style="background: #f9f9f9; padding: 15px; border-radius: 8px; white-space: pre-wrap;">${message}</p>
+                    </div>
+                    <p style="color: #888; font-size: 12px; margin-top: 20px;">تم الإرسال من نموذج الاتصال في موقع حلاقتي</p>
+                </div>
+            `
+        };
+
+        // إرسال البريد
+        await transporter.sendMail(mailOptions);
+        
+        // ✅ إرسال إشعار فوري عبر Socket.io (اختياري)
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('new-notification', {
+                title: '📩 رسالة جديدة',
+                message: `من ${name}: ${message.substring(0, 50)}...`
+            });
+        }
+
+        res.json({ message: '✅ تم إرسال رسالتك بنجاح!' });
+        
+    } catch (error) {
+        console.error('❌ فشل إرسال البريد:', error);
+        res.status(500).json({ message: '❌ فشل إرسال الرسالة' });
+    }
+});
 
 // ============================================================
 // النماذج
