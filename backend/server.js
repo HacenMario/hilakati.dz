@@ -1442,13 +1442,22 @@ app.get('/api/notifications/admin', adminAuthMiddleware, async (req, res) => {
 // تحديد إشعار واحد كمقروء
 app.put('/api/notifications/:id/read', authMiddleware, async (req, res) => {
     try {
-        const notification = await Notification.findOne({ _id: req.params.id, userId: req.userId });
-        if (!notification) return res.status(404).json({ message: 'الإشعار غير موجود' });
+        const notification = await Notification.findById(req.params.id);
+        if (!notification) {
+            return res.status(404).json({ message: 'الإشعار غير موجود' });
+        }
+        
+        // ✅ التحقق من أن المستخدم هو صاحب الإشعار
+        if (notification.userId.toString() !== req.userId) {
+            return res.status(403).json({ message: '❌ غير مصرح لك بتحديث هذا الإشعار' });
+        }
+        
         notification.read = true;
         await notification.save();
         res.json({ message: '✅ تم التحديث' });
     } catch (error) {
-        res.status(500).json({ message: 'فشل التحديث' });
+        console.error('❌ فشل تحديث الإشعار:', error);
+        res.status(500).json({ message: 'فشل تحديث الإشعار' });
     }
 });
 
