@@ -1195,11 +1195,11 @@
             .salon-card .body h3 { font-size: 0.95rem; }
             .back-to-top { bottom: 16px; left: 16px; width: 34px; height: 34px; }
         }
-        @media (max-width: 480px) {
-            #page-contact form > div:first-child {
-                grid-template-columns: 1fr !important;
-            }
-        }
+@media (max-width: 480px) {
+    #page-contact form > div:first-child {
+        grid-template-columns: 1fr !important;
+    }
+}
     </style>
 </head>
 <body>
@@ -1784,30 +1784,34 @@
         سنرد عليك في أقرب وقت
     </p>
 
-    <form id="contactFormMain" onsubmit="sendContactMessage(event)">
-        <!-- صف: الاسم + البريد (جنباً إلى جنب) -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;">
-            <div class="form-group" style="margin-bottom:0.4rem;">
-                <label style="font-size:0.8rem;">الاسم الكامل</label>
-                <input type="text" id="contactName" required placeholder="أدخل اسمك" style="padding:0.4rem 0.6rem;font-size:0.85rem;">
-            </div>
-            <div class="form-group" style="margin-bottom:0.4rem;">
-                <label style="font-size:0.8rem;">البريد الإلكتروني</label>
-                <input type="email" id="contactEmail" required placeholder="example@email.com" style="padding:0.4rem 0.6rem;font-size:0.85rem;">
-            </div>
+<form id="contactFormMain" onsubmit="sendContactMessage(event)">
+    <!-- صف: الاسم + البريد + الهاتف (ثلاثة أعمدة) -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.5rem;">
+        <div class="form-group" style="margin-bottom:0.3rem;">
+            <label style="font-size:0.75rem;">الاسم الكامل</label>
+            <input type="text" id="contactName" required placeholder="اسمك" style="padding:0.35rem 0.5rem;font-size:0.8rem;">
         </div>
-
-        <!-- صف: الرسالة (بعرض كامل) -->
-        <div class="form-group" style="margin-bottom:0.4rem;">
-            <label style="font-size:0.8rem;">الرسالة</label>
-            <textarea id="contactMessage" rows="3" required placeholder="اكتب رسالتك هنا..." style="padding:0.4rem 0.6rem;font-size:0.85rem;resize:vertical;"></textarea>
+        <div class="form-group" style="margin-bottom:0.3rem;">
+            <label style="font-size:0.75rem;">البريد الإلكتروني</label>
+            <input type="email" id="contactEmail" required placeholder="example@email.com" style="padding:0.35rem 0.5rem;font-size:0.8rem;">
         </div>
+        <div class="form-group" style="margin-bottom:0.3rem;">
+            <label style="font-size:0.75rem;">رقم الهاتف</label>
+            <input type="tel" id="contactPhone" placeholder="05xx-xx-xx-xx" style="padding:0.35rem 0.5rem;font-size:0.8rem;">
+        </div>
+    </div>
 
-        <!-- زر الإرسال -->
-        <button type="submit" class="btn-gold" style="width:100%;padding:0.4rem;font-size:0.85rem;">
-            <i class="fas fa-paper-plane"></i> إرسال
-        </button>
-    </form>
+    <!-- صف: الرسالة (بعرض كامل) -->
+    <div class="form-group" style="margin-bottom:0.3rem;">
+        <label style="font-size:0.75rem;">الرسالة</label>
+        <textarea id="contactMessage" rows="2" required placeholder="اكتب رسالتك..." style="padding:0.35rem 0.5rem;font-size:0.8rem;resize:vertical;min-height:60px;"></textarea>
+    </div>
+
+    <!-- زر الإرسال -->
+    <button type="submit" class="btn-gold" style="width:100%;padding:0.35rem;font-size:0.8rem;">
+        <i class="fas fa-paper-plane"></i> إرسال
+    </button>
+</form>
 </div>
     </div>
 </section>
