@@ -931,120 +931,99 @@ app.delete('/api/salons/me', authMiddleware, async (req, res) => {
 // ============================================================
 // الحجوزات
 // ============================================================
+
+// جلب الحجوزات (صالون)
 app.get('/api/appointments', authMiddleware, async (req, res) => {
     const appointments = await Appointment.find({ salonId: req.userId });
     res.json(appointments);
 });
 
+// جلب حجوزاتي (عميل)
 app.get('/api/appointments/my', customerAuthMiddleware, async (req, res) => {
     const appointments = await Appointment.find({ customerId: req.customerId }).populate('salonId', 'name');
     res.json(appointments);
 });
 
+// جلب حجوزات برقم الهاتف
 app.get('/api/appointments/client/:phone', async (req, res) => {
     const appointments = await Appointment.find({ clientPhone: req.params.phone }).populate('salonId', 'name');
     res.json(appointments);
 });
 
+// ============================================================
+// إنشاء حجز جديد
+// ============================================================
 app.post('/api/appointments/request', async (req, res) => {
     try {
         const { salonId, customerId, clientName, clientPhone, clientEmail, services, totalPrice, staff, date, time, payment, notes, recurring } = req.body;
 
-        // ============================================================
-        // 1. جلب بيانات الصالون والتحقق من وجوده ونشاطه
-        // ============================================================
+        // 1. التحقق من الصالون
         const salon = await Salon.findById(salonId);
         if (!salon) {
             return res.status(404).json({ message: '❌ الصالون غير موجود' });
         }
-
-        // ✅ منع الحجز في الصالونات المعطلة
         if (salon.isActive === false) {
             return res.status(403).json({ 
                 message: '❌ هذا الصالون معطل حالياً. يرجى اختيار صالون آخر.' 
             });
         }
 
-// ============================================================
-// 2. التحقق من ساعات العمل (مع دعم Map) ومنع الحجز قبل الإغلاق بساعة
-// ============================================================
-const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-const selectedDate = new Date(date);
-const dayIndex = selectedDate.getDay();
-const dayName = dayNames[dayIndex];
+        // 2. التحقق من ساعات العمل
+        const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+        const selectedDate = new Date(date);
+        const dayIndex = selectedDate.getDay();
+        const dayName = dayNames[dayIndex];
 
-// ✅ استرجاع ساعات العمل بأمان (يدعم Map و Object)
-let dayHours = null;
-if (salon.hours) {
-    if (typeof salon.hours.get === 'function') {
-        dayHours = salon.hours.get(dayName);
-    } else {
-        dayHours = salon.hours[dayName];
-    }
-}
+        let dayHours = null;
+        if (salon.hours) {
+            if (typeof salon.hours.get === 'function') {
+                dayHours = salon.hours.get(dayName);
+            } else {
+                dayHours = salon.hours[dayName];
+            }
+        }
 
-console.log(`📅 اليوم: ${dayName}, ساعات العمل: ${dayHours}`);
-
-if (!dayHours || dayHours === 'مغلق' || dayHours === 'closed') {
-    return res.status(400).json({
-        message: `❌ الصالون مغلق يوم ${dayName}`
-    });
-}
-
-// تحويل الأوقات إلى دقائق
-const [openHour, openMinute] = openTime.split(':').map(Number);
-const [closeHour, closeMinute] = closeTime.split(':').map(Number);
-const [hour, minute] = time.split(':').map(Number);
-
-const openMinutes = openHour * 60 + openMinute;
-const closeMinutes = closeHour * 60 + closeMinute;
-const bookingMinutes = hour * 60 + minute;
-
-// ✅ 1. منع الحجز قبل وقت الفتح
-if (bookingMinutes < openMinutes) {
-    return res.status(400).json({
-        message: `❌ وقت الحجز (${time}) قبل فتح الصالون. أوقات العمل من ${openTime} إلى ${closeTime}`
-    });
-}
-
-// ✅ 2. منع الحجز في آخر ساعة قبل الإغلاق
-const lastBookingTime = closeMinutes - 60; // ساعة كاملة قبل الإغلاق
-
-if (bookingMinutes > lastBookingTime) {
-    // تحويل lastBookingTime إلى صيغة ساعة:دقيقة
-    const lastHour = Math.floor(lastBookingTime / 60);
-    const lastMinute = lastBookingTime % 60;
-    const lastTimeStr = `${String(lastHour).padStart(2, '0')}:${String(lastMinute).padStart(2, '0')}`;
-    
-    return res.status(400).json({
-        message: `❌ آخر موعد للحجز هو ${lastTimeStr} (قبل الإغلاق بساعة). أوقات العمل من ${openTime} إلى ${closeTime}`
-    });
-}
-
-        // ============================================================
-        // 3. التحقق من أن الوقت ضمن ساعات العمل
-        // ============================================================
-        const [openTime, closeTime] = dayHours.split('-').map(t => t.trim());
-        
-        if (time < openTime || time > closeTime) {
+        if (!dayHours || dayHours === 'مغلق' || dayHours === 'closed') {
             return res.status(400).json({
-                message: `❌ وقت الحجز (${time}) خارج ساعات العمل (${openTime} - ${closeTime})`
+                message: `❌ الصالون مغلق يوم ${dayName}`
             });
         }
 
-        // ============================================================
-        // 4. التحقق من أن الوقت ليس في الماضي
-        // ============================================================
+        const [openTime, closeTime] = dayHours.split('-').map(t => t.trim());
+        const [openHour, openMinute] = openTime.split(':').map(Number);
+        const [closeHour, closeMinute] = closeTime.split(':').map(Number);
+        const [hour, minute] = time.split(':').map(Number);
+
+        const openMinutes = openHour * 60 + openMinute;
+        const closeMinutes = closeHour * 60 + closeMinute;
+        const bookingMinutes = hour * 60 + minute;
+
+        // منع الحجز قبل الفتح
+        if (bookingMinutes < openMinutes) {
+            return res.status(400).json({
+                message: `❌ وقت الحجز (${time}) قبل فتح الصالون. أوقات العمل من ${openTime} إلى ${closeTime}`
+            });
+        }
+
+        // منع الحجز في آخر ساعة قبل الإغلاق
+        const lastBookingTime = closeMinutes - 60;
+        if (bookingMinutes > lastBookingTime) {
+            const lastHour = Math.floor(lastBookingTime / 60);
+            const lastMinute = lastBookingTime % 60;
+            const lastTimeStr = `${String(lastHour).padStart(2, '0')}:${String(lastMinute).padStart(2, '0')}`;
+            return res.status(400).json({
+                message: `❌ آخر موعد للحجز هو ${lastTimeStr} (قبل الإغلاق بساعة). أوقات العمل من ${openTime} إلى ${closeTime}`
+            });
+        }
+
+        // 3. التحقق من أن الوقت ليس في الماضي
         const now = new Date();
         const today = now.toISOString().split('T')[0];
-
         if (date === today) {
             const [hours, minutes] = time.split(':').map(Number);
             const selectedDateTime = new Date();
             selectedDateTime.setHours(hours, minutes, 0, 0);
-            
             const minBookingTime = new Date(now.getTime() + 30 * 60 * 1000);
-            
             if (selectedDateTime < minBookingTime) {
                 return res.status(400).json({
                     message: `❌ لا يمكن الحجز في وقت مضى. يجب أن يكون الموعد بعد ${minBookingTime.toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'})} على الأقل`
@@ -1052,46 +1031,28 @@ if (bookingMinutes > lastBookingTime) {
             }
         }
 
-        // ============================================================
-        // 5. التحقق من عدم وجود حجز مكرر في نفس الوقت
-        // ============================================================
+        // 4. التحقق من عدم وجود حجز مكرر
         const existingAppointment = await Appointment.findOne({
             salonId,
             date,
             time,
             status: { $in: ['pending', 'confirmed'] }
         });
-
         if (existingAppointment) {
             return res.status(409).json({
                 message: `❌ هذا الموعد محجوز مسبقاً في ${date} الساعة ${time}`
             });
         }
 
-        // ============================================================
-        // 6. إنشاء الحجز
-        // ============================================================
+        // 5. إنشاء الحجز
         const appointment = new Appointment({
-            salonId,
-            customerId,
-            clientName,
-            clientPhone,
-            clientEmail,
-            services,
-            totalPrice,
-            staff,
-            date,
-            time,
-            payment,
-            notes,
-            recurring,
-            status: 'pending'
+            salonId, customerId, clientName, clientPhone, clientEmail,
+            services, totalPrice, staff, date, time, payment, notes,
+            recurring, status: 'pending'
         });
         await appointment.save();
 
-        // ============================================================
-        // 7. إنشاء إشعار للصالون
-        // ============================================================
+        // 6. إشعار للصالون
         try {
             const notification = new Notification({
                 userId: salonId,
@@ -1102,23 +1063,17 @@ if (bookingMinutes > lastBookingTime) {
                 createdAt: new Date()
             });
             await notification.save();
-            console.log(`✅ تم حفظ إشعار للصالون ${salonId}`);
-            
             const io = req.app.get('io');
             if (io) {
                 io.to(`salon-${salonId}`).emit('new-notification', {
                     title: '📅 حجز جديد',
                     message: `حجز من ${clientName} في ${date} الساعة ${time}`
                 });
-                console.log(`📡 تم إرسال إشعار عبر Socket.io للصالون ${salonId}`);
             }
         } catch (notifError) {
             console.error('❌ فشل إنشاء الإشعار:', notifError);
         }
 
-        // ============================================================
-        // 8. إرسال الرد
-        // ============================================================
         res.status(201).json({
             message: '✅ تم إرسال طلب الحجز بنجاح!',
             appointment
@@ -1129,8 +1084,9 @@ if (bookingMinutes > lastBookingTime) {
         res.status(500).json({ message: '❌ فشل إنشاء الحجز' });
     }
 });
+
 // ============================================================
-// تأكيد الحجز مع إشعار
+// تأكيد الحجز
 // ============================================================
 app.put('/api/appointments/:id/confirm', authMiddleware, async (req, res) => {
     try {
@@ -1141,7 +1097,6 @@ app.put('/api/appointments/:id/confirm', authMiddleware, async (req, res) => {
         appointment.status = 'confirmed';
         await appointment.save();
 
-        // ===== إشعار للعميل =====
         if (appointment.customerId) {
             try {
                 const notification = new Notification({
@@ -1149,10 +1104,10 @@ app.put('/api/appointments/:id/confirm', authMiddleware, async (req, res) => {
                     userType: 'customer',
                     title: '✅ تم تأكيد حجزك',
                     message: `تم تأكيد حجزك في ${appointment.date} الساعة ${appointment.time}`,
-                    read: false
+                    read: false,
+                    createdAt: new Date()
                 });
                 await notification.save();
-                console.log(`✅ تم إرسال إشعار تأكيد للعميل ${appointment.customerId}`);
             } catch (err) {
                 console.error('❌ فشل إرسال إشعار التأكيد:', err);
             }
@@ -1166,7 +1121,47 @@ app.put('/api/appointments/:id/confirm', authMiddleware, async (req, res) => {
 });
 
 // ============================================================
-// إكمال الحجز مع إشعار
+// إلغاء الحجز
+// ============================================================
+app.put('/api/appointments/:id/cancel', authMiddleware, async (req, res) => {
+    try {
+        const appointment = await Appointment.findById(req.params.id);
+        if (!appointment) {
+            return res.status(404).json({ message: '❌ الحجز غير موجود' });
+        }
+        
+        if (appointment.salonId.toString() !== req.userId) {
+            return res.status(403).json({ message: '❌ غير مصرح لك بإلغاء هذا الحجز' });
+        }
+        
+        appointment.status = 'cancelled';
+        await appointment.save();
+
+        if (appointment.customerId) {
+            try {
+                const notification = new Notification({
+                    userId: appointment.customerId,
+                    userType: 'customer',
+                    title: '❌ تم إلغاء حجزك',
+                    message: `تم إلغاء حجزك في ${appointment.date} الساعة ${appointment.time}`,
+                    read: false,
+                    createdAt: new Date()
+                });
+                await notification.save();
+            } catch (err) {
+                console.error('❌ فشل إرسال إشعار الإلغاء:', err);
+            }
+        }
+
+        res.json({ message: '✅ تم إلغاء الموعد' });
+    } catch (error) {
+        console.error('❌ خطأ في إلغاء الموعد:', error);
+        res.status(500).json({ message: '❌ فشل إلغاء الموعد' });
+    }
+});
+
+// ============================================================
+// إكمال الحجز
 // ============================================================
 app.put('/api/appointments/:id/complete', authMiddleware, async (req, res) => {
     try {
@@ -1177,7 +1172,6 @@ app.put('/api/appointments/:id/complete', authMiddleware, async (req, res) => {
         appointment.status = 'completed';
         await appointment.save();
 
-        // ===== إشعار للعميل =====
         if (appointment.customerId) {
             try {
                 const notification = new Notification({
@@ -1189,7 +1183,6 @@ app.put('/api/appointments/:id/complete', authMiddleware, async (req, res) => {
                     createdAt: new Date()
                 });
                 await notification.save();
-                console.log(`✅ تم إرسال إشعار إكمال للعميل ${appointment.customerId}`);
             } catch (err) {
                 console.error('❌ فشل إرسال إشعار الإكمال:', err);
             }
@@ -1203,60 +1196,41 @@ app.put('/api/appointments/:id/complete', authMiddleware, async (req, res) => {
 });
 
 // ============================================================
-// إكمال الحجز مع تقييم (دمج الخطوتين)
+// إكمال الحجز مع تقييم
 // ============================================================
 app.put('/api/appointments/:id/complete-with-review', customerAuthMiddleware, async (req, res) => {
     try {
         const { rating, comment } = req.body;
         const appointmentId = req.params.id;
         
-        // ============================================================
-        // 1. التحقق من وجود الحجز
-        // ============================================================
         const appointment = await Appointment.findById(appointmentId);
         if (!appointment) {
             return res.status(404).json({ message: '❌ الحجز غير موجود' });
         }
 
-        // ============================================================
-        // 2. التحقق من أن العميل يملك هذا الحجز
-        // ============================================================
         if (appointment.customerId.toString() !== req.customerId) {
             return res.status(403).json({ message: '❌ هذا الحجز ليس لك' });
         }
 
-        // ============================================================
-        // 3. التحقق من أن الحجز مؤكد أو مكتمل
-        // ============================================================
         if (!['confirmed', 'completed'].includes(appointment.status)) {
             return res.status(400).json({ 
                 message: '❌ لا يمكن تقييم حجز غير مؤكد أو مكتمل' 
             });
         }
 
-        // ============================================================
-        // 4. التحقق من أن العميل لم يقم بتقييم هذا الصالون مسبقاً
-        // ============================================================
         const existingReview = await Review.findOne({
             salonId: appointment.salonId,
             customerId: req.customerId
         });
-
         if (existingReview) {
             return res.status(409).json({
                 message: '❌ لقد قمت بتقييم هذا الصالون مسبقاً'
             });
         }
 
-        // ============================================================
-        // 5. إكمال الحجز
-        // ============================================================
         appointment.status = 'completed';
         await appointment.save();
 
-        // ============================================================
-        // 6. إضافة التقييم (إذا تم إرسال تقييم)
-        // ============================================================
         let review = null;
         if (rating && rating > 0) {
             const customer = await Customer.findById(req.customerId);
@@ -1270,7 +1244,6 @@ app.put('/api/appointments/:id/complete-with-review', customerAuthMiddleware, as
             });
             await review.save();
 
-            // تحديث متوسط التقييمات
             const reviews = await Review.find({ salonId: appointment.salonId });
             const avg = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
             await Salon.findByIdAndUpdate(appointment.salonId, {
@@ -1279,11 +1252,7 @@ app.put('/api/appointments/:id/complete-with-review', customerAuthMiddleware, as
             });
         }
 
-        // ============================================================
-        // 7. إشعار للصالون
-        // ============================================================
         try {
-            const salon = await Salon.findById(appointment.salonId);
             const notification = new Notification({
                 userId: appointment.salonId,
                 userType: 'salon',
@@ -1296,51 +1265,7 @@ app.put('/api/appointments/:id/complete-with-review', customerAuthMiddleware, as
         } catch (notifError) {
             console.error('❌ فشل إرسال الإشعار:', notifError);
         }
-// ============================================================
-// إلغاء الحجز مع إشعار
-// ============================================================
-app.put('/api/appointments/:id/cancel', authMiddleware, async (req, res) => {
-    try {
-        const appointment = await Appointment.findById(req.params.id);
-        if (!appointment) {
-            return res.status(404).json({ message: '❌ الحجز غير موجود' });
-        }
-        
-        // ✅ التحقق من أن الصالون يملك هذا الحجز
-        if (appointment.salonId.toString() !== req.userId) {
-            return res.status(403).json({ message: '❌ غير مصرح لك بإلغاء هذا الحجز' });
-        }
-        
-        appointment.status = 'cancelled';
-        await appointment.save();
 
-        // ===== إشعار للعميل =====
-        if (appointment.customerId) {
-            try {
-                const notification = new Notification({
-                    userId: appointment.customerId,
-                    userType: 'customer',
-                    title: '❌ تم إلغاء حجزك',
-                    message: `تم إلغاء حجزك في ${appointment.date} الساعة ${appointment.time}`,
-                    read: false,
-                    createdAt: new Date()
-                });
-                await notification.save();
-                console.log(`✅ تم إرسال إشعار إلغاء للعميل ${appointment.customerId}`);
-            } catch (err) {
-                console.error('❌ فشل إرسال إشعار الإلغاء:', err);
-            }
-        }
-
-        res.json({ message: '✅ تم إلغاء الموعد' });
-    } catch (error) {
-        console.error('❌ خطأ في إلغاء الموعد:', error);
-        res.status(500).json({ message: '❌ فشل إلغاء الموعد' });
-    }
-});
-        // ============================================================
-        // 8. إرسال الرد
-        // ============================================================
         res.status(200).json({
             message: review ? '✅ تم إكمال الحجز وإضافة التقييم' : '✅ تم إكمال الحجز',
             appointment,
@@ -1352,6 +1277,7 @@ app.put('/api/appointments/:id/cancel', authMiddleware, async (req, res) => {
         res.status(500).json({ message: '❌ فشل إكمال الحجز مع التقييم' });
     }
 });
+
 // ============================================================
 // التقييمات
 // ============================================================
