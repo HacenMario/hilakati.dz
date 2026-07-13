@@ -966,21 +966,36 @@ app.post('/api/appointments/request', async (req, res) => {
         }
 
         // ============================================================
-        // 2. التحقق من ساعات العمل
+        // 2. التحقق من ساعات العمل (مع دعم Map)
         // ============================================================
         const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
         const selectedDate = new Date(date);
         const dayIndex = selectedDate.getDay();
         const dayName = dayNames[dayIndex];
-        
-        const dayHours = salon.hours ? salon.hours[dayName] : null;
-        
+
+        // ✅ استرجاع ساعات العمل بأمان (يدعم Map و Object)
+        let dayHours = null;
+        if (salon.hours) {
+            if (typeof salon.hours.get === 'function') {
+                // إذا كان Map
+                dayHours = salon.hours.get(dayName);
+            } else {
+                // إذا كان Object عادي
+                dayHours = salon.hours[dayName];
+            }
+        }
+
+        console.log(`📅 اليوم: ${dayName}, ساعات العمل: ${dayHours}`);
+
         if (!dayHours || dayHours === 'مغلق' || dayHours === 'closed') {
             return res.status(400).json({
                 message: `❌ الصالون مغلق يوم ${dayName}`
             });
         }
 
+        // ============================================================
+        // 3. التحقق من أن الوقت ضمن ساعات العمل
+        // ============================================================
         const [openTime, closeTime] = dayHours.split('-').map(t => t.trim());
         
         if (time < openTime || time > closeTime) {
@@ -990,7 +1005,7 @@ app.post('/api/appointments/request', async (req, res) => {
         }
 
         // ============================================================
-        // 3. التحقق من أن الوقت ليس في الماضي
+        // 4. التحقق من أن الوقت ليس في الماضي
         // ============================================================
         const now = new Date();
         const today = now.toISOString().split('T')[0];
@@ -1010,7 +1025,7 @@ app.post('/api/appointments/request', async (req, res) => {
         }
 
         // ============================================================
-        // 4. التحقق من عدم وجود حجز مكرر في نفس الوقت
+        // 5. التحقق من عدم وجود حجز مكرر في نفس الوقت
         // ============================================================
         const existingAppointment = await Appointment.findOne({
             salonId,
@@ -1026,16 +1041,29 @@ app.post('/api/appointments/request', async (req, res) => {
         }
 
         // ============================================================
-        // 5. إنشاء الحجز
+        // 6. إنشاء الحجز
         // ============================================================
         const appointment = new Appointment({
-            salonId, customerId, clientName, clientPhone, clientEmail,
-            services, totalPrice, staff, date, time, payment, notes,
-            recurring, status: 'pending'
+            salonId,
+            customerId,
+            clientName,
+            clientPhone,
+            clientEmail,
+            services,
+            totalPrice,
+            staff,
+            date,
+            time,
+            payment,
+            notes,
+            recurring,
+            status: 'pending'
         });
         await appointment.save();
 
-        // ===== إنشاء إشعار للصالون =====
+        // ============================================================
+        // 7. إنشاء إشعار للصالون
+        // ============================================================
         try {
             const notification = new Notification({
                 userId: salonId,
@@ -1060,6 +1088,9 @@ app.post('/api/appointments/request', async (req, res) => {
             console.error('❌ فشل إنشاء الإشعار:', notifError);
         }
 
+        // ============================================================
+        // 8. إرسال الرد
+        // ============================================================
         res.status(201).json({
             message: '✅ تم إرسال طلب الحجز بنجاح!',
             appointment
