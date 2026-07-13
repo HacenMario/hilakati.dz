@@ -965,33 +965,64 @@ app.post('/api/appointments/request', async (req, res) => {
             });
         }
 
-        // ============================================================
-        // 2. التحقق من ساعات العمل (مع دعم Map)
-        // ============================================================
-        const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-        const selectedDate = new Date(date);
-        const dayIndex = selectedDate.getDay();
-        const dayName = dayNames[dayIndex];
+// ============================================================
+// 2. التحقق من ساعات العمل (مع دعم Map) ومنع الحجز قبل الإغلاق بساعة
+// ============================================================
+const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+const selectedDate = new Date(date);
+const dayIndex = selectedDate.getDay();
+const dayName = dayNames[dayIndex];
 
-        // ✅ استرجاع ساعات العمل بأمان (يدعم Map و Object)
-        let dayHours = null;
-        if (salon.hours) {
-            if (typeof salon.hours.get === 'function') {
-                // إذا كان Map
-                dayHours = salon.hours.get(dayName);
-            } else {
-                // إذا كان Object عادي
-                dayHours = salon.hours[dayName];
-            }
-        }
+// ✅ استرجاع ساعات العمل بأمان (يدعم Map و Object)
+let dayHours = null;
+if (salon.hours) {
+    if (typeof salon.hours.get === 'function') {
+        dayHours = salon.hours.get(dayName);
+    } else {
+        dayHours = salon.hours[dayName];
+    }
+}
 
-        console.log(`📅 اليوم: ${dayName}, ساعات العمل: ${dayHours}`);
+console.log(`📅 اليوم: ${dayName}, ساعات العمل: ${dayHours}`);
 
-        if (!dayHours || dayHours === 'مغلق' || dayHours === 'closed') {
-            return res.status(400).json({
-                message: `❌ الصالون مغلق يوم ${dayName}`
-            });
-        }
+if (!dayHours || dayHours === 'مغلق' || dayHours === 'closed') {
+    return res.status(400).json({
+        message: `❌ الصالون مغلق يوم ${dayName}`
+    });
+}
+
+// ✅ تحليل وقت الفتح والإغلاق
+const [openTime, closeTime] = dayHours.split('-').map(t => t.trim());
+
+// تحويل الأوقات إلى دقائق
+const [openHour, openMinute] = openTime.split(':').map(Number);
+const [closeHour, closeMinute] = closeTime.split(':').map(Number);
+const [hour, minute] = time.split(':').map(Number);
+
+const openMinutes = openHour * 60 + openMinute;
+const closeMinutes = closeHour * 60 + closeMinute;
+const bookingMinutes = hour * 60 + minute;
+
+// ✅ 1. منع الحجز قبل وقت الفتح
+if (bookingMinutes < openMinutes) {
+    return res.status(400).json({
+        message: `❌ وقت الحجز (${time}) قبل فتح الصالون. أوقات العمل من ${openTime} إلى ${closeTime}`
+    });
+}
+
+// ✅ 2. منع الحجز في آخر ساعة قبل الإغلاق
+const lastBookingTime = closeMinutes - 60; // ساعة كاملة قبل الإغلاق
+
+if (bookingMinutes > lastBookingTime) {
+    // تحويل lastBookingTime إلى صيغة ساعة:دقيقة
+    const lastHour = Math.floor(lastBookingTime / 60);
+    const lastMinute = lastBookingTime % 60;
+    const lastTimeStr = `${String(lastHour).padStart(2, '0')}:${String(lastMinute).padStart(2, '0')}`;
+    
+    return res.status(400).json({
+        message: `❌ آخر موعد للحجز هو ${lastTimeStr} (قبل الإغلاق بساعة). أوقات العمل من ${openTime} إلى ${closeTime}`
+    });
+}
 
         // ============================================================
         // 3. التحقق من أن الوقت ضمن ساعات العمل
