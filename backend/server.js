@@ -1296,7 +1296,7 @@ app.put('/api/appointments/:id/complete-with-review', customerAuthMiddleware, as
         } catch (notifError) {
             console.error('❌ فشل إرسال الإشعار:', notifError);
         }
-        // ============================================================
+// ============================================================
 // إلغاء الحجز مع إشعار
 // ============================================================
 app.put('/api/appointments/:id/cancel', authMiddleware, async (req, res) => {
@@ -1305,6 +1305,12 @@ app.put('/api/appointments/:id/cancel', authMiddleware, async (req, res) => {
         if (!appointment) {
             return res.status(404).json({ message: '❌ الحجز غير موجود' });
         }
+        
+        // ✅ التحقق من أن الصالون يملك هذا الحجز
+        if (appointment.salonId.toString() !== req.userId) {
+            return res.status(403).json({ message: '❌ غير مصرح لك بإلغاء هذا الحجز' });
+        }
+        
         appointment.status = 'cancelled';
         await appointment.save();
 
@@ -1332,7 +1338,6 @@ app.put('/api/appointments/:id/cancel', authMiddleware, async (req, res) => {
         res.status(500).json({ message: '❌ فشل إلغاء الموعد' });
     }
 });
-
         // ============================================================
         // 8. إرسال الرد
         // ============================================================
