@@ -1206,21 +1206,32 @@
     min-width: 0;
 }
 
-/* ✅ تكبير حجم الحقول */
+/* ✅ تحسين حجم الحقول وإظهار النص بالكامل */
 #page-contact .contact-form-row input,
 #page-contact .contact-form-row textarea,
 #page-contact form textarea {
     width: 100% !important;
-    padding: 0.7rem 0.8rem !important;  /* ✅ زيادة padding */
-    font-size: 1rem !important;          /* ✅ زيادة حجم الخط */
+    padding: 0.7rem 0.8rem !important;
+    font-size: 1rem !important;
+    line-height: 1.6 !important;        /* ✅ تباعد الأسطر */
+    min-height: 50px !important;        /* ✅ ارتفاع كافٍ */
     border-radius: 8px !important;
     border: 1px solid var(--border-color);
     background: var(--input-bg);
     color: var(--text-color);
     box-sizing: border-box;
     transition: border-color 0.3s ease;
+    overflow: visible !important;       /* ✅ عدم قص النص */
 }
 
+/* ✅ حقل الرسالة بارتفاع أكبر */
+#page-contact form textarea {
+    min-height: 120px !important;
+    resize: vertical;
+    line-height: 1.8 !important;
+}
+
+/* ✅ تحسين مظهر الحقول عند التركيز */
 #page-contact .contact-form-row input:focus,
 #page-contact .contact-form-row textarea:focus,
 #page-contact form textarea:focus {
@@ -1229,13 +1240,7 @@
     box-shadow: 0 0 0 3px rgba(245, 176, 66, 0.15);
 }
 
-/* ✅ تكبير حقل الرسالة */
-#page-contact form textarea {
-    min-height: 100px !important;  /* ✅ زيادة ارتفاع حقل الرسالة */
-    resize: vertical;
-}
-
-/* ===== للشاشات المتوسطة (تابلت) ===== */
+/* ✅ تحسين حجم الخط على الشاشات الصغيرة */
 @media (max-width: 768px) {
     #page-contact .contact-form-row {
         grid-template-columns: 1fr 1fr;
@@ -1243,7 +1248,6 @@
     }
 }
 
-/* ===== للشاشات الصغيرة (هواتف) ===== */
 @media (max-width: 480px) {
     #page-contact .contact-form-row {
         grid-template-columns: 1fr;
@@ -1255,7 +1259,11 @@
     #page-contact form textarea {
         padding: 0.6rem 0.7rem !important;
         font-size: 0.95rem !important;
-        min-height: 80px !important;
+        min-height: 45px !important;
+    }
+    
+    #page-contact form textarea {
+        min-height: 100px !important;
     }
 }
     </style>
