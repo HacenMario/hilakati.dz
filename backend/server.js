@@ -810,11 +810,18 @@ app.post('/api/appointments/request', async (req, res) => {
         const { salonId, customerId, clientName, clientPhone, clientEmail, services, totalPrice, staff, date, time, payment, notes, recurring } = req.body;
 
         // ============================================================
-        // 1. جلب بيانات الصالون
+        // 1. جلب بيانات الصالون والتحقق من وجوده ونشاطه
         // ============================================================
         const salon = await Salon.findById(salonId);
         if (!salon) {
             return res.status(404).json({ message: '❌ الصالون غير موجود' });
+        }
+
+        // ✅ منع الحجز في الصالونات المعطلة
+        if (salon.isActive === false) {
+            return res.status(403).json({ 
+                message: '❌ هذا الصالون معطل حالياً. يرجى اختيار صالون آخر.' 
+            });
         }
 
         // ============================================================
@@ -825,7 +832,7 @@ app.post('/api/appointments/request', async (req, res) => {
         const dayIndex = selectedDate.getDay();
         const dayName = dayNames[dayIndex];
         
-        const dayHours = salon.hours ? salon.hours.get(dayName) : null;
+        const dayHours = salon.hours ? salon.hours[dayName] : null;
         
         if (!dayHours || dayHours === 'مغلق' || dayHours === 'closed') {
             return res.status(400).json({
@@ -852,7 +859,6 @@ app.post('/api/appointments/request', async (req, res) => {
             const selectedDateTime = new Date();
             selectedDateTime.setHours(hours, minutes, 0, 0);
             
-            // السماح بفارق 30 دقيقة على الأقل للحجز
             const minBookingTime = new Date(now.getTime() + 30 * 60 * 1000);
             
             if (selectedDateTime < minBookingTime) {
