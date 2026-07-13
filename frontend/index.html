@@ -3232,7 +3232,7 @@ document.getElementById('reviewForm').addEventListener('submit', async (e) => {
 // ============================================================
 
 // ============================================================
-// 1. جلب الإشعارات من الخادم
+// 1. جلب الإشعارات من الخادم (نسخة آمنة تمامًا)
 // ============================================================
 async function fetchNotifications() {
     try {
@@ -3254,7 +3254,7 @@ async function fetchNotifications() {
             headers = { 'Authorization': `Bearer ${adminToken}` };
         } else {
             console.log('ℹ️ لا يوجد مستخدم مسجل الدخول');
-            return [];
+            return []; // ✅ دائماً مصفوفة
         }
 
         console.log('📡 جلب الإشعارات من:', url);
@@ -3263,7 +3263,7 @@ async function fetchNotifications() {
         
         if (!res.ok) {
             console.warn('⚠️ فشل جلب الإشعارات، الحالة:', res.status);
-            return [];
+            return []; // ✅ دائماً مصفوفة
         }
         
         const data = await res.json();
@@ -3277,6 +3277,7 @@ async function fetchNotifications() {
         } else if (Array.isArray(data)) {
             result = data;
         } else if (typeof data === 'object') {
+            // البحث عن مصفوفة في الكائن
             if (Array.isArray(data.notifications)) {
                 result = data.notifications;
             } else if (Array.isArray(data.data)) {
@@ -3284,10 +3285,12 @@ async function fetchNotifications() {
             } else if (Array.isArray(data.items)) {
                 result = data.items;
             } else {
+                // محاولة العثور على أي مصفوفة في الكائن
                 const found = Object.values(data).find(val => Array.isArray(val));
                 if (found) {
                     result = found;
                 } else {
+                    // إذا لم نجد، نحول الكائن إلى مصفوفة (إذا كان يحتوي على مفاتيح رقمية)
                     const keys = Object.keys(data);
                     if (keys.length > 0 && keys.every(k => !isNaN(k))) {
                         result = Object.values(data);
@@ -3300,6 +3303,7 @@ async function fetchNotifications() {
             result = [];
         }
         
+        // ✅ التأكد النهائي من أن النتيجة مصفوفة
         if (!Array.isArray(result)) {
             console.warn('⚠️ النتيجة ليست مصفوفة، نعيد مصفوفة فارغة');
             result = [];
@@ -3310,10 +3314,9 @@ async function fetchNotifications() {
         
     } catch (error) {
         console.error('❌ فشل في جلب الإشعارات:', error);
-        return [];
+        return []; // ✅ دائماً مصفوفة
     }
 }
-
 // ============================================================
 // 2. تحديث واجهة الإشعارات
 // ============================================================
@@ -3327,7 +3330,10 @@ async function updateNotificationUI() {
 
     notificationTimeout = setTimeout(async () => {
         try {
+            // ✅ fetchNotifications دائماً ترجع مصفوفة
             const notifications = await fetchNotifications();
+            
+            // ✅ تأكيد إضافي أنها مصفوفة
             const notificationArray = Array.isArray(notifications) ? notifications : [];
             console.log('📦 الإشعارات المستلمة (نهائي):', notificationArray.length);
 
@@ -3353,6 +3359,7 @@ async function updateNotificationUI() {
                 return;
             }
 
+            // ✅ عرض الإشعارات
             let html = '';
             notificationArray.slice(0, 20).forEach(n => {
                 if (!n) return;
@@ -3362,7 +3369,14 @@ async function updateNotificationUI() {
                     try {
                         const date = new Date(n.createdAt);
                         if (!isNaN(date.getTime())) {
-                            time = date.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' }) + '، ' + date.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+                            time = date.toLocaleDateString('ar-EG', { 
+                                year: 'numeric', 
+                                month: 'long', 
+                                day: 'numeric' 
+                            }) + '، ' + date.toLocaleTimeString('ar-EG', { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                            });
                         }
                     } catch (e) {}
                 }
@@ -3389,7 +3403,6 @@ async function updateNotificationUI() {
         notificationTimeout = null;
     }, 300);
 }
-
 // ============================================================
 // 3. تحديد الكل كمقروء
 // ============================================================
@@ -3501,6 +3514,7 @@ function refreshNotifications() {
 document.addEventListener('DOMContentLoaded', function() {
     const bell = document.getElementById('notifBell');
     if (bell) {
+        // إزالة المستمعين القديمين لتجنب التكرار
         bell.removeEventListener('click', toggleNotifications);
         bell.addEventListener('click', toggleNotifications);
         console.log('✅ تم ربط حدث النقر بالجرس');
