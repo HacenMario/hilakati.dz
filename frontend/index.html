@@ -2510,6 +2510,136 @@ async function resetPassword() {
         showToast('❌ فشل الاتصال بالخادم', 'error');
     }
 }
+// حذف صالون بواسطة المدير
+async function adminDeleteSalon(salonId) {
+    if (!confirm('⚠️ هل أنت متأكد من حذف هذا الصالون نهائياً؟')) return;
+    const token = localStorage.getItem('adminToken');
+    try {
+        const res = await fetch(`${API_BASE}/admin/salons/${salonId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            showToast('✅ تم حذف الصالون', 'success');
+            loadAdminDashboard();
+        } else {
+            const data = await res.json();
+            showToast(`❌ ${data.message}`, 'error');
+        }
+    } catch {
+        showToast('❌ فشل الاتصال', 'error');
+    }
+}
+// تعديل صالون بواسطة المدير
+async function adminEditSalon(salonId) {
+    const token = localStorage.getItem('adminToken');
+    try {
+        const res = await fetch(`${API_BASE}/admin/salons/${salonId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const salon = await res.json();
+        
+        const newName = prompt('اسم الصالون الجديد:', salon.name);
+        if (!newName) return;
+        const newCity = prompt('المدينة الجديدة:', salon.city);
+        if (!newCity) return;
+        const newPhone = prompt('رقم الهاتف الجديد:', salon.phone);
+        if (!newPhone) return;
+        
+        const updateRes = await fetch(`${API_BASE}/admin/salons/${salonId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ name: newName, city: newCity, phone: newPhone })
+        });
+        if (updateRes.ok) {
+            showToast('✅ تم تحديث الصالون', 'success');
+            loadAdminDashboard();
+        } else {
+            showToast('❌ فشل التحديث', 'error');
+        }
+    } catch {
+        showToast('❌ فشل الاتصال', 'error');
+    }
+}
+// حذف عميل بواسطة المدير
+async function adminDeleteCustomer(customerId) {
+    if (!confirm('⚠️ هل أنت متأكد من حذف هذا العميل نهائياً؟')) return;
+    const token = localStorage.getItem('adminToken');
+    try {
+        const res = await fetch(`${API_BASE}/admin/customers/${customerId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            showToast('✅ تم حذف العميل', 'success');
+            loadAdminDashboard();
+        } else {
+            const data = await res.json();
+            showToast(`❌ ${data.message}`, 'error');
+        }
+    } catch {
+        showToast('❌ فشل الاتصال', 'error');
+    }
+}
+
+// تعديل عميل بواسطة المدير
+async function adminEditCustomer(customerId) {
+    const token = localStorage.getItem('adminToken');
+    try {
+        const res = await fetch(`${API_BASE}/admin/customers/${customerId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const customer = await res.json();
+        
+        const newName = prompt('الاسم الجديد:', customer.name);
+        if (!newName) return;
+        const newEmail = prompt('البريد الجديد:', customer.email);
+        if (!newEmail) return;
+        const newPhone = prompt('رقم الهاتف الجديد:', customer.phone);
+        if (!newPhone) return;
+        
+        const updateRes = await fetch(`${API_BASE}/admin/customers/${customerId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ name: newName, email: newEmail, phone: newPhone })
+        });
+        if (updateRes.ok) {
+            showToast('✅ تم تحديث العميل', 'success');
+            loadAdminDashboard();
+        } else {
+            showToast('❌ فشل التحديث', 'error');
+        }
+    } catch {
+        showToast('❌ فشل الاتصال', 'error');
+    }
+}
+// حذف تقييم بواسطة المدير
+async function adminDeleteReview(reviewId) {
+    if (!confirm('⚠️ هل أنت متأكد من حذف هذا التقييم؟')) return;
+    const token = localStorage.getItem('adminToken');
+    try {
+        const res = await fetch(`${API_BASE}/admin/reviews/${reviewId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            showToast('✅ تم حذف التقييم', 'success');
+            loadAdminDashboard();
+        } else {
+            const data = await res.json();
+            showToast(`❌ ${data.message}`, 'error');
+        }
+    } catch {
+        showToast('❌ فشل الاتصال', 'error');
+    }
+}
+
 
 // ===== Admin: Change User Password =====
 async function adminResetSalonPassword(salonId) {
