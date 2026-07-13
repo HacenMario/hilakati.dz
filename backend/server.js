@@ -1124,100 +1124,43 @@ app.put('/api/appointments/:id/complete', authMiddleware, async (req, res) => {
                 const notification = new Notification({
                     userId: appointment.customerId,
                     userType: 'customer',
-                    title: '✅ تم إكمال حجزك',
-                    message: `تم إكمال حجزك في ${appointment.date} الساعة ${appointment.time}. شكراً لزيارتنا!`,
-                    read: false
-                });
-                await notification.save();
-                console.log(`✅ تم إرسال إشعار إكمال للعميل ${appointment.customerId}`);
-            } catch (err) {
-                console.error('❌ فشل إرسال إشعار الإكمال:', err);
-            }
-        }
-
-        res.json({ message: '✅ تم إكمال الموعد' });
-    } catch (error) {
-        console.error('❌ خطأ في إكمال الموعد:', error);
-        res.status(500).json({ message: '❌ فشل إكمال الموعد' });
-    }
-});
-
+                    title: '✅ تم إكمال حجزك',// ============================================================
+// إكمال الحجز مع تقييم (دمج الخطوتين)
 // ============================================================
-// إلغاء الحجز مع إشعار
-// ============================================================
-app.put('/api/appointments/:id/cancel', authMiddleware, async (req, res) => {
+app.put('/api/appointments/:id/complete-with-review', customerAuthMiddleware, async (req, res) => {
     try {
-        const appointment = await Appointment.findById(req.params.id);
+        const { rating, comment } = req.body;
+        const appointmentId = req.params.id;
+        
+        // ============================================================
+        // 1. التحقق من وجود الحجز
+        // ============================================================
+        const appointment = await Appointment.findById(appointmentId);
         if (!appointment) {
             return res.status(404).json({ message: '❌ الحجز غير موجود' });
         }
-        appointment.status = 'cancelled';
-        await appointment.save();
 
-        // ===== إشعار للعميل =====
-        if (appointment.customerId) {
-            try {
-                const notification = new Notification({
-                    userId: appointment.customerId,
-                    userType: 'customer',
-                    title: '❌ تم إلغاء حجزك',
-                    message: `تم إلغاء حجزك في ${appointment.date} الساعة ${appointment.time}`,
-                    read: false
-                });
-                await notification.save();
-                console.log(`✅ تم إرسال إشعار إلغاء للعميل ${appointment.customerId}`);
-            } catch (err) {
-                console.error('❌ فشل إرسال إشعار الإلغاء:', err);
-            }
-        }
-
-        res.json({ message: '✅ تم إلغاء الموعد' });
-    } catch (error) {
-        console.error('❌ خطأ في إلغاء الموعد:', error);
-        res.status(500).json({ message: '❌ فشل إلغاء الموعد' });
-    }
-});
-
-// ============================================================
-// التقييمات
-// ============================================================
-app.get('/api/reviews/salon/:salonId', async (req, res) => {
-    const reviews = await Review.find({ salonId: req.params.salonId });
-    res.json(reviews);
-});
-
-app.post('/api/reviews', customerAuthMiddleware, async (req, res) => {
-    try {
-        const { salonId, rating, comment } = req.body;
-        
         // ============================================================
-        // 1. التحقق من وجود العميل
+        // 2. التحقق من أن العميل يملك هذا الحجز
         // ============================================================
-        const customer = await Customer.findById(req.customerId);
-        if (!customer) {
-            return res.status(404).json({ message: '❌ عميل غير موجود' });
+        if (appointment.customerId.toString() !== req.customerId) {
+            return res.status(403).json({ message: '❌ هذا الحجز ليس لك' });
         }
 
         // ============================================================
-        // 2. التحقق من أن العميل لديه حجز مكتمل أو مؤكد في هذا الصالون
+        // 3. التحقق من أن الحجز مؤكد أو مكتمل
         // ============================================================
-        const hasBooking = await Appointment.findOne({
-            customerId: req.customerId,
-            salonId: salonId,
-            status: { $in: ['confirmed', 'completed'] }
-        });
-
-        if (!hasBooking) {
-            return res.status(403).json({
-                message: '❌ لا يمكنك تقييم هذا الصالون دون حجز مكتمل أو مؤكد'
+        if (!['confirmed', 'completed'].includes(appointment.status)) {
+            return res.status(400).json({ 
+                message: '❌ لا يمكن تقييم حجز غير مؤكد أو مكتمل' 
             });
         }
 
         // ============================================================
-        // 3. التحقق من أن العميل لم يقم بتقييم هذا الصالون مسبقاً (اختياري)
+        // 4. التحقق من أن العميل لم يقم بتقييم هذا الصالون مسبقاً (اختياري)
         // ============================================================
         const existingReview = await Review.findOne({
-            salonId: salonId,
+            salonId: appointment.salonId,
             customerId: req.customerId
         });
 
@@ -1228,39 +1171,68 @@ app.post('/api/reviews', customerAuthMiddleware, async (req, res) => {
         }
 
         // ============================================================
-        // 4. إنشاء التقييم الجديد
+        // 5. إكمال الحجز
         // ============================================================
-        const review = new Review({
-            salonId,
-            customerId: req.customerId,
-            customerName: customer.name, // ✅ اسم العميل الحقيقي
-            rating,
-            comment,
-            date: new Date().toISOString().split('T')[0]
-        });
-        await review.save();
+        appointment.status = 'completed';
+        await appointment.save();
 
         // ============================================================
-        // 5. تحديث متوسط التقييمات في الصالون
+        // 6. إضافة التقييم (إذا تم إرسال تقييم)
         // ============================================================
-        const reviews = await Review.find({ salonId });
-        const avg = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
-        await Salon.findByIdAndUpdate(salonId, {
-            rating: Math.round(avg * 10) / 10,
-            totalReviews: reviews.length
-        });
+        let review = null;
+        if (rating && rating > 0) {
+            const customer = await Customer.findById(req.customerId);
+            review = new Review({
+                salonId: appointment.salonId,
+                customerId: req.customerId,
+                customerName: customer.name,
+                rating: Math.min(5, Math.max(1, rating)), // التأكد من أن التقييم بين 1 و 5
+                comment: comment || '',
+                date: new Date().toISOString().split('T')[0]
+            });
+            await review.save();
+
+            // ============================================================
+            // 7. تحديث متوسط التقييمات في الصالون
+            // ============================================================
+            const reviews = await Review.find({ salonId: appointment.salonId });
+            const avg = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+            await Salon.findByIdAndUpdate(appointment.salonId, {
+                rating: Math.round(avg * 10) / 10,
+                totalReviews: reviews.length
+            });
+        }
 
         // ============================================================
-        // 6. إرسال الرد
+        // 8. إشعار للصالون (بإكمال الحجز والتقييم)
         // ============================================================
-        res.status(201).json({
-            message: '✅ تم إضافة التقييم بنجاح',
-            review: review
+        try {
+            const salon = await Salon.findById(appointment.salonId);
+            const notification = new Notification({
+                userId: appointment.salonId,
+                userType: 'salon',
+                title: '✅ تم إكمال حجز',
+                message: `تم إكمال حجز ${appointment.clientName}${review ? ' مع تقييم ⭐' : ''}`,
+                read: false,
+                createdAt: new Date()
+            });
+            await notification.save();
+        } catch (notifError) {
+            console.error('❌ فشل إرسال الإشعار:', notifError);
+        }
+
+        // ============================================================
+        // 9. إرسال الرد
+        // ============================================================
+        res.status(200).json({
+            message: review ? '✅ تم إكمال الحجز وإضافة التقييم' : '✅ تم إكمال الحجز',
+            appointment,
+            review
         });
 
-    } catch (err) {
-        console.error('❌ فشل إضافة التقييم:', err);
-        res.status(500).json({ message: '❌ فشل إضافة التقييم' });
+    } catch (error) {
+        console.error('❌ فشل إكمال الحجز مع التقييم:', error);
+        res.status(500).json({ message: '❌ فشل إكمال الحجز مع التقييم' });
     }
 });
 
