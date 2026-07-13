@@ -1191,12 +1191,27 @@
 #page-contact form {
     max-width: 700px;
     margin: 0 auto;
+    width: 100%;
 }
 
+/* ✅ تأكد من أن الأعمدة تعمل بشكل صحيح */
 #page-contact .contact-form-row {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
     gap: 0.6rem;
+    width: 100%;
+}
+
+/* ✅ تأكد من أن كل حقل يأخذ العرض الكامل للعمود */
+#page-contact .contact-form-row > div {
+    width: 100%;
+    min-width: 0;
+}
+
+#page-contact .contact-form-row input,
+#page-contact .contact-form-row textarea {
+    width: 100% !important;
+    box-sizing: border-box;
 }
 
 /* ===== للشاشات المتوسطة (تابلت) ===== */
