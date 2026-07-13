@@ -3106,37 +3106,15 @@ async function showSalonDetails(id) {
             </div>`
         ).join('') || '<p style="color:var(--text-color);opacity:0.4;">لا توجد تقييمات بعد</p>';
 
-// ✅ زر الخريطة التفاعلية (الجديد)
-const mapButton = salon.lat && salon.lng ? `
-    <button class="btn-primary btn-sm" onclick="openInteractiveMap('${salon._id}', '${salon.name}', ${salon.lat}, ${salon.lng})">
-        <i class="fas fa-map"></i> عرض على الخريطة
-    </button>
-` : '';
-
-// ✅ زر واتساب
-let whatsappButton = '';
-if (salon.phone) {
-    const cleanPhone = cleanPhoneNumber(salon.phone);
-    const whatsappUrl = `https://wa.me/${cleanPhone}`;
-    whatsappButton = `<a href="${whatsappUrl}" target="_blank" class="btn-whatsapp btn-sm" style="display:inline-block;text-decoration:none;">
-                        <i class="fab fa-whatsapp"></i> واتساب
-                      </a>`;
-} else {
-    whatsappButton = `<span class="btn-outline btn-sm" style="opacity:0.5;cursor:not-allowed;display:inline-block;">
-                        <i class="fab fa-whatsapp"></i> لا يوجد رقم
-                      </span>`;
-}
-        // ===== جلب اللوغو الحقيقي (مع المسار الصحيح) =====
+        // ===== جلب اللوغو =====
         let logoHtml = '';
         try {
-            // ✅ المسار الصحيح: /api/salons/:id/logo
             const logoResponse = await fetch(`${API_BASE}/salons/${id}/logo`);
             if (logoResponse.ok) {
                 const blob = await logoResponse.blob();
                 const url = URL.createObjectURL(blob);
                 logoHtml = `<img src="${url}" style="width:90px;height:90px;border-radius:50%;object-fit:cover;border:2px solid var(--gold);margin-bottom:0.3rem;">`;
             } else {
-                // ❌ إذا لم يوجد لوغو، استخدم الحرف الأول
                 const firstLetter = salon.name?.charAt(0)?.toUpperCase() || '?';
                 const getColorFromName = (str) => {
                     let hash = 0;
@@ -3150,8 +3128,6 @@ if (salon.phone) {
                 logoHtml = `<div style="width:90px;height:90px;border-radius:50%;background:${bgColor};display:flex;align-items:center;justify-content:center;color:#fff;font-size:36px;font-weight:bold;font-family:'Tajawal',sans-serif;text-transform:uppercase;border:2px solid var(--gold);margin:0 auto 0.3rem;">${firstLetter}</div>`;
             }
         } catch (error) {
-            console.error('❌ فشل جلب اللوغو:', error);
-            // ❌ في حال فشل جلب اللوغو، استخدم الحرف الأول
             const firstLetter = salon.name?.charAt(0)?.toUpperCase() || '?';
             const getColorFromName = (str) => {
                 let hash = 0;
@@ -3165,7 +3141,34 @@ if (salon.phone) {
             logoHtml = `<div style="width:90px;height:90px;border-radius:50%;background:${bgColor};display:flex;align-items:center;justify-content:center;color:#fff;font-size:36px;font-weight:bold;font-family:'Tajawal',sans-serif;text-transform:uppercase;border:2px solid var(--gold);margin:0 auto 0.3rem;">${firstLetter}</div>`;
         }
 
-        // ===== عرض المحتوى =====
+        // ============================================================
+        // ✅ تعريف الأزرار (مرة واحدة فقط)
+        // ============================================================
+        
+        // ✅ زر الخريطة التفاعلية
+        const mapButton = salon.lat && salon.lng ? `
+            <button class="btn-primary btn-sm" onclick="openInteractiveMap('${salon._id}', '${salon.name}', ${salon.lat}, ${salon.lng})">
+                <i class="fas fa-map"></i> عرض على الخريطة
+            </button>
+        ` : '';
+
+        // ✅ زر واتساب
+        let whatsappButton = '';
+        if (salon.phone) {
+            const cleanPhone = cleanPhoneNumber(salon.phone);
+            const whatsappUrl = `https://wa.me/${cleanPhone}`;
+            whatsappButton = `<a href="${whatsappUrl}" target="_blank" class="btn-whatsapp btn-sm" style="display:inline-block;text-decoration:none;">
+                                <i class="fab fa-whatsapp"></i> واتساب
+                              </a>`;
+        } else {
+            whatsappButton = `<span class="btn-outline btn-sm" style="opacity:0.5;cursor:not-allowed;display:inline-block;">
+                                <i class="fab fa-whatsapp"></i> لا يوجد رقم
+                              </span>`;
+        }
+
+        // ============================================================
+        // عرض المحتوى
+        // ============================================================
         content.innerHTML = `
             <div style="text-align:center;margin-bottom:0.8rem;">
                 ${logoHtml}
