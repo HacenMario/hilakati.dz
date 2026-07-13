@@ -3232,7 +3232,7 @@ document.getElementById('reviewForm').addEventListener('submit', async (e) => {
 // ============================================================
 
 // ============================================================
-// 1. جلب الإشعارات من الخادم
+// 1. جلب الإشعارات من الخادم (نسخة آمنة تمامًا)
 // ============================================================
 async function fetchNotifications() {
     try {
@@ -3254,7 +3254,7 @@ async function fetchNotifications() {
             headers = { 'Authorization': `Bearer ${adminToken}` };
         } else {
             console.log('ℹ️ لا يوجد مستخدم مسجل الدخول');
-            return [];
+            return []; // ✅ دائماً مصفوفة
         }
 
         console.log('📡 جلب الإشعارات من:', url);
@@ -3263,49 +3263,66 @@ async function fetchNotifications() {
         
         if (!res.ok) {
             console.warn('⚠️ فشل جلب الإشعارات، الحالة:', res.status);
-            return [];
+            return []; // ✅ دائماً مصفوفة
         }
         
         const data = await res.json();
         console.log('📦 البيانات الخام:', data);
         
         // ✅ معالجة البيانات بغض النظر عن تنسيقها
-        if (Array.isArray(data)) {
-            return data;
-        } else if (data && typeof data === 'object') {
-            // إذا كان الكائن يحتوي على خاصية notifications
+        let result = [];
+        
+        if (data === null || data === undefined) {
+            result = [];
+        } else if (Array.isArray(data)) {
+            result = data;
+        } else if (typeof data === 'object') {
+            // البحث عن مصفوفة في الكائن
             if (Array.isArray(data.notifications)) {
-                return data.notifications;
-            }
-            // إذا كان الكائن يحتوي على خاصية data (مثل بعض الاستجابات)
-            if (Array.isArray(data.data)) {
-                return data.data;
-            }
-            // إذا كان الكائن يحتوي على قيم مصفوفة
-            for (const key in data) {
-                if (Array.isArray(data[key])) {
-                    return data[key];
+                result = data.notifications;
+            } else if (Array.isArray(data.data)) {
+                result = data.data;
+            } else if (Array.isArray(data.items)) {
+                result = data.items;
+            } else {
+                // محاولة العثور على أي مصفوفة في الكائن
+                const found = Object.values(data).find(val => Array.isArray(val));
+                if (found) {
+                    result = found;
+                } else {
+                    // إذا لم نجد، نحول الكائن إلى مصفوفة (إذا كان يحتوي على مفاتيح رقمية)
+                    const keys = Object.keys(data);
+                    if (keys.length > 0 && keys.every(k => !isNaN(k))) {
+                        result = Object.values(data);
+                    } else {
+                        result = [];
+                    }
                 }
             }
+        } else {
+            result = [];
         }
         
-        // إذا لم نجد أي مصفوفة، نعيد مصفوفة فارغة
-        console.warn('⚠️ لم نتمكن من العثور على مصفوفة في البيانات، نعيد مصفوفة فارغة');
-        return [];
+        // ✅ التأكد النهائي من أن النتيجة مصفوفة
+        if (!Array.isArray(result)) {
+            console.warn('⚠️ النتيجة ليست مصفوفة، نعيد مصفوفة فارغة');
+            result = [];
+        }
+        
+        console.log(`📦 الإشعارات المستلمة (بعد المعالجة): ${result.length}`);
+        return result;
         
     } catch (error) {
         console.error('❌ فشل في جلب الإشعارات:', error);
-        return [];
+        return []; // ✅ دائماً مصفوفة
     }
 }
-
 // ============================================================
-// 2. تحديث واجهة الإشعارات
+// 2. تحديث واجهة الإشعارات (نسخة آمنة)
 // ============================================================
 let notificationTimeout = null;
 
 async function updateNotificationUI() {
-    // منع الطلبات المتكررة
     if (notificationTimeout) {
         clearTimeout(notificationTimeout);
         notificationTimeout = null;
@@ -3313,12 +3330,12 @@ async function updateNotificationUI() {
 
     notificationTimeout = setTimeout(async () => {
         try {
-            // ✅ جلب الإشعارات (دائماً ترجع مصفوفة)
+            // ✅ fetchNotifications دائماً ترجع مصفوفة
             const notifications = await fetchNotifications();
             
-            // ✅ التأكد من أنها مصفوفة
+            // ✅ تأكيد إضافي أنها مصفوفة
             const notificationArray = Array.isArray(notifications) ? notifications : [];
-            console.log('📦 الإشعارات المستلمة:', notificationArray.length);
+            console.log('📦 الإشعارات المستلمة (نهائي):', notificationArray.length);
 
             // ✅ تحديث البادج
             const unread = notificationArray.filter(n => n && !n.read).length;
@@ -3361,9 +3378,7 @@ async function updateNotificationUI() {
                                 minute: '2-digit' 
                             });
                         }
-                    } catch (e) {
-                        console.warn('⚠️ تاريخ غير صالح:', n.createdAt);
-                    }
+                    } catch (e) {}
                 }
 
                 const isUnread = !n.read;
@@ -3388,7 +3403,6 @@ async function updateNotificationUI() {
         notificationTimeout = null;
     }, 300);
 }
-
 // ============================================================
 // 3. تحديد الكل كمقروء
 // ============================================================
