@@ -1393,8 +1393,49 @@ app.get('/', (req, res) => {
 // ============================================================
 // مسارات الإشعارات
 // ============================================================
-// تحديد جميع إشعارات المستخدم كمقروءة (مسار موحد)
-// ============================================================
+
+// ✅ جلب إشعارات الصالون
+app.get('/api/notifications/salon', authMiddleware, async (req, res) => {
+    try {
+        console.log('📡 جلب إشعارات للصالون:', req.userId);
+        const notifications = await Notification.find({ 
+            userId: req.userId, 
+            userType: 'salon' 
+        }).sort({ createdAt: -1 }).limit(50);
+        console.log('📦 عدد الإشعارات:', notifications.length);
+        res.json(notifications);
+    } catch (error) {
+        console.error('❌ خطأ في جلب إشعارات الصالون:', error);
+        res.status(500).json([]);
+    }
+});
+
+// ✅ جلب إشعارات العميل
+app.get('/api/notifications/customer', customerAuthMiddleware, async (req, res) => {
+    try {
+        const notifications = await Notification.find({ 
+            userId: req.customerId, 
+            userType: 'customer' 
+        }).sort({ createdAt: -1 }).limit(50);
+        res.json(notifications);
+    } catch (error) {
+        res.status(500).json([]);
+    }
+});
+
+// ✅ جلب إشعارات Admin
+app.get('/api/notifications/admin', adminAuthMiddleware, async (req, res) => {
+    try {
+        const notifications = await Notification.find({ 
+            userType: 'admin' 
+        }).sort({ createdAt: -1 }).limit(50);
+        res.json(notifications);
+    } catch (error) {
+        res.status(500).json([]);
+    }
+});
+
+// ✅ تحديد جميع إشعارات الصالون كمقروءة
 app.put('/api/notifications/read-all', authMiddleware, async (req, res) => {
     try {
         const result = await Notification.updateMany(
@@ -1416,7 +1457,7 @@ app.put('/api/notifications/read-all', authMiddleware, async (req, res) => {
     }
 });
 
-// ✅ نسخة للعميل (إذا كان يستخدم customerAuthMiddleware)
+// ✅ تحديد جميع إشعارات العميل كمقروءة
 app.put('/api/notifications/read-all-customer', customerAuthMiddleware, async (req, res) => {
     try {
         const result = await Notification.updateMany(
@@ -1437,50 +1478,8 @@ app.put('/api/notifications/read-all-customer', customerAuthMiddleware, async (r
         res.status(500).json({ message: '❌ فشل تحديث الإشعارات' });
     }
 });
-// ============================================================
 
-app.get('/api/notifications/salon', authMiddleware, async (req, res) => {
-    try {
-        console.log('📡 جلب إشعارات للصالون:', req.userId);
-        const notifications = await Notification.find({ 
-            userId: req.userId, 
-            userType: 'salon' 
-        }).sort({ createdAt: -1 }).limit(50);
-        console.log('📦 عدد الإشعارات:', notifications.length);
-        res.json(notifications);
-    } catch (error) {
-        console.error('❌ خطأ في جلب إشعارات الصالون:', error);
-        res.status(500).json([]);
-    }
-});
-
-app.get('/api/notifications/customer', customerAuthMiddleware, async (req, res) => {
-    try {
-        const notifications = await Notification.find({ 
-            userId: req.customerId, 
-            userType: 'customer' 
-        }).sort({ createdAt: -1 }).limit(50);
-        res.json(notifications);
-    } catch (error) {
-        res.status(500).json([]);
-    }
-});
-
-app.get('/api/notifications/admin', adminAuthMiddleware, async (req, res) => {
-    try {
-        const notifications = await Notification.find({ 
-            userType: 'admin' 
-        }).sort({ createdAt: -1 }).limit(50);
-        res.json(notifications);
-    } catch (error) {
-        res.status(500).json([]);
-    }
-});
-// ============================================================
-// مسارات الإشعارات الإضافية
-// ============================================================
-
-// تحديد إشعار واحد كمقروء
+// ✅ تحديد إشعار واحد كمقروء (للصالون)
 app.put('/api/notifications/:id/read', authMiddleware, async (req, res) => {
     try {
         const notification = await Notification.findById(req.params.id);
@@ -1488,7 +1487,6 @@ app.put('/api/notifications/:id/read', authMiddleware, async (req, res) => {
             return res.status(404).json({ message: 'الإشعار غير موجود' });
         }
         
-        // ✅ التحقق من أن المستخدم هو صاحب الإشعار
         if (notification.userId.toString() !== req.userId) {
             return res.status(403).json({ message: '❌ غير مصرح لك بتحديث هذا الإشعار' });
         }
@@ -1502,7 +1500,7 @@ app.put('/api/notifications/:id/read', authMiddleware, async (req, res) => {
     }
 });
 
-// مسح جميع الإشعارات
+// ✅ مسح جميع الإشعارات (للمستخدم)
 app.delete('/api/notifications/clear', async (req, res) => {
     try {
         const { userId, userType } = req.body;
@@ -1517,20 +1515,6 @@ app.delete('/api/notifications/clear', async (req, res) => {
     }
 });
 
-// تحديد الكل كمقروء (موجود مسبقاً، تأكد من وجوده)
-app.put('/api/notifications/read-all', async (req, res) => {
-    try {
-        const { userId, userType } = req.body;
-        if (!userId || !userType) {
-            return res.status(400).json({ message: 'بيانات غير مكتملة' });
-        }
-        await Notification.updateMany({ userId, userType, read: false }, { read: true });
-        res.json({ message: '✅ تم تحديد الكل كمقروء' });
-    } catch (error) {
-        console.error('❌ خطأ في read-all:', error);
-        res.status(500).json({ message: 'فشل تحديث الإشعارات' });
-    }
-});
 // ============================================================
 // إرسال رسالة واتساب
 // ============================================================
