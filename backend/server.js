@@ -1458,60 +1458,37 @@ app.put('/api/notifications/read-all', authMiddleware, async (req, res) => {
 });
 
 // ✅ تحديد جميع إشعارات العميل كمقروءة
-app.put('/api/notifications/read-all-customer', customerAuthMiddleware, async (req, res) => {
+app.put('/api/notifications/read-all', async (req, res) => {
     try {
-        const result = await Notification.updateMany(
-            { 
-                userId: req.customerId, 
-                read: false 
-            },
-            { 
-                read: true 
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) return res.status(401).json({ message: '❌ غير مصرح' });
+
+        let userId = null;
+        // محاولة فك التوكن كـ صالون
+        try {
+            const decoded = jwt.verify(token, process.env.JWT_SECRET || 'salon_secret_key');
+            userId = decoded.id;
+        } catch (e) {
+            // محاولة فك التوكن كـ عميل
+            try {
+                const decoded = jwt.verify(token, process.env.JWT_CUSTOMER_SECRET || 'customer_secret_key');
+                userId = decoded.id;
+            } catch (e2) {
+                return res.status(401).json({ message: '❌ توكن غير صالح' });
             }
+        }
+
+        const result = await Notification.updateMany(
+            { userId, read: false },
+            { read: true }
         );
         res.json({ 
             message: `✅ تم تحديد ${result.modifiedCount} إشعار كمقروء`,
             count: result.modifiedCount
         });
     } catch (error) {
-        console.error('❌ فشل تحديث إشعارات العميل:', error);
+        console.error('❌ فشل تحديث الإشعارات:', error);
         res.status(500).json({ message: '❌ فشل تحديث الإشعارات' });
-    }
-});
-
-// ✅ تحديد إشعار واحد كمقروء (للصالون)
-app.put('/api/notifications/:id/read', authMiddleware, async (req, res) => {
-    try {
-        const notification = await Notification.findById(req.params.id);
-        if (!notification) {
-            return res.status(404).json({ message: 'الإشعار غير موجود' });
-        }
-        
-        if (notification.userId.toString() !== req.userId) {
-            return res.status(403).json({ message: '❌ غير مصرح لك بتحديث هذا الإشعار' });
-        }
-        
-        notification.read = true;
-        await notification.save();
-        res.json({ message: '✅ تم التحديث' });
-    } catch (error) {
-        console.error('❌ فشل تحديث الإشعار:', error);
-        res.status(500).json({ message: 'فشل تحديث الإشعار' });
-    }
-});
-
-// ✅ مسح جميع الإشعارات (للمستخدم)
-app.delete('/api/notifications/clear', async (req, res) => {
-    try {
-        const { userId, userType } = req.body;
-        if (!userId || !userType) {
-            return res.status(400).json({ message: 'بيانات غير مكتملة' });
-        }
-        await Notification.deleteMany({ userId, userType });
-        res.json({ message: '✅ تم مسح الإشعارات' });
-    } catch (error) {
-        console.error('❌ خطأ في clear notifications:', error);
-        res.status(500).json({ message: 'فشل مسح الإشعارات' });
     }
 });
 
