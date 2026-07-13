@@ -2169,6 +2169,49 @@ document.getElementById('adminChangePasswordForm').addEventListener('submit', as
     } catch { showToast('❌ فشل الاتصال'); }
 });
 
+// ===== Admin: الموافقة على صالون =====
+async function approveSalon(salonId) {
+    if (!confirm('✅ هل أنت متأكد من قبول هذا الصالون؟')) return;
+    const token = localStorage.getItem('adminToken');
+    try {
+        const res = await fetch(`${API_BASE}/admin/approve-salon/${salonId}`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (res.ok) {
+            showToast('✅ تم تفعيل الصالون!', 'success');
+            loadAdminDashboard();
+            loadSalons(); // تحديث القائمة العامة
+        } else {
+            showToast(`❌ ${data.message}`, 'error');
+        }
+    } catch {
+        showToast('❌ فشل الاتصال', 'error');
+    }
+}
+
+// ===== Admin: رفض صالون =====
+async function rejectSalon(salonId) {
+    if (!confirm('❌ هل أنت متأكد من رفض هذا الصالون؟ سيتم حذفه نهائياً.')) return;
+    const token = localStorage.getItem('adminToken');
+    try {
+        const res = await fetch(`${API_BASE}/admin/reject-salon/${salonId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (res.ok) {
+            showToast('✅ تم رفض وحذف الصالون', 'success');
+            loadAdminDashboard();
+        } else {
+            showToast(`❌ ${data.message}`, 'error');
+        }
+    } catch {
+        showToast('❌ فشل الاتصال', 'error');
+    }
+}
+
 // ===== Auth =====
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -3823,6 +3866,29 @@ async function loadAdminDashboard() {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const stats = await statsRes.json();
+// ✅ جلب الصالونات المعلقة
+const pendingRes = await fetch(`${API_BASE}/admin/pending-salons`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+});
+const pendingSalons = await pendingRes.json();
+
+// عرض الصالونات المعلقة
+const pendingHtml = pendingSalons.map(s => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-bottom:1px solid var(--border-color);flex-wrap:wrap;gap:0.3rem;">
+        <div>
+            <strong>${s.name}</strong> (${s.city})<br>
+            <span style="font-size:0.8rem;opacity:0.6;">${s.email} - ${s.phone}</span>
+        </div>
+        <div style="display:flex;gap:0.3rem;flex-wrap:wrap;">
+            <button class="btn-success btn-sm" onclick="approveSalon('${s._id}')">
+                ✅ قبول
+            </button>
+            <button class="btn-danger btn-sm" onclick="rejectSalon('${s._id}')">
+                ❌ رفض
+            </button>
+        </div>
+    </div>
+`).join('') || '<p style="color:var(--text-color);opacity:0.4;">لا توجد طلبات معلقة</p>';
 
         const [salonsRes, customersRes, reviewsRes, appointmentsRes] = await Promise.all([
             fetch(`${API_BASE}/admin/salons`, { headers: { 'Authorization': `Bearer ${token}` } }),
@@ -3837,6 +3903,16 @@ async function loadAdminDashboard() {
         const appointments = await appointmentsRes.json();
 
         document.getElementById('adminContent').innerHTML = `
+        adminContent.innerHTML = `
+    <div style="margin-bottom:1.5rem;background:var(--card-bg);padding:1rem;border-radius:var(--radius);border:1px solid var(--border-color);">
+        <h3 style="color:var(--gold);display:flex;justify-content:space-between;align-items:center;">
+            📌 طلبات الموافقة
+            <span style="font-size:0.8rem;background:var(--accent);color:#fff;padding:0.1rem 0.5rem;border-radius:50px;">${pendingSalons.length}</span>
+        </h3>
+        ${pendingHtml}
+    </div>
+    ${adminContent.innerHTML}
+`;
             <div class="stats-grid">
                 <div class="stat-card"><div class="number">${stats.totalSalons}</div><div class="label">إجمالي الصالونات</div></div>
                 <div class="stat-card"><div class="number">${stats.activeSalons || 0}</div><div class="label">صالونات نشطة</div></div>
