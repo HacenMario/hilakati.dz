@@ -121,6 +121,8 @@ function adminAuthMiddleware(req, res, next) {
 // ============================================================
 // مسارات المصادقة (صالون)
 // ============================================================
+
+// ✅ تسجيل صالون جديد (بحالة pending_approval)
 app.post('/api/auth/register', async (req, res) => {
     try {
         const { name, city, address, email, phone, password, desc, logo, salonType, isMobile, lat, lng } = req.body;
@@ -133,32 +135,19 @@ app.post('/api/auth/register', async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // ✅ إنشاء الصالون بحالة "pending_approval" وغير مفعل
         const salon = new Salon({
-            name,
-            city,
-            address,
-            email,
-            phone,
+            name, city, address, email, phone,
             password: hashedPassword,
-            desc,
-            logo,
-            salonType,
-            isMobile,
-            lat,
-            lng,
-            status: 'pending_approval', // ✅ الحالة الجديدة
-            isActive: false             // ✅ غير مفعل حتى الموافقة
+            desc, logo, salonType, isMobile, lat, lng,
+            status: 'pending_approval',
+            isActive: false
         });
         await salon.save();
 
-        // ============================================================
-        // إرسال إشعار إلى Admin (بريد + قاعدة بيانات + Socket.io)
-        // ============================================================
+        // ===== إرسال إشعار إلى Admin =====
         try {
-            // 1. حفظ إشعار في قاعدة البيانات
             const notification = new Notification({
-                userId: 'admin', // معرف ثابت للمدير
+                userId: 'admin',
                 userType: 'admin',
                 title: '📌 طلب صالون جديد',
                 message: `صالون "${name}" ينتظر الموافقة. البريد: ${email}`,
@@ -167,7 +156,6 @@ app.post('/api/auth/register', async (req, res) => {
             });
             await notification.save();
 
-            // 2. إرسال إشعار فوري عبر Socket.io (إذا كان Admin متصلاً)
             const io = req.app.get('io');
             if (io) {
                 io.to('admin-room').emit('new-notification', {
@@ -176,10 +164,9 @@ app.post('/api/auth/register', async (req, res) => {
                 });
             }
 
-            // 3. إرسال بريد إلكتروني إلى Admin
             const mailOptions = {
                 from: process.env.EMAIL_USER,
-                to: 'stevenhacen@gmail.com', // بريد Admin
+                to: 'stevenhacen@gmail.com',
                 subject: `📌 طلب صالون جديد: ${name}`,
                 html: `
                     <h3>طلب صالون جديد ينتظر الموافقة</h3>
@@ -196,10 +183,8 @@ app.post('/api/auth/register', async (req, res) => {
 
         } catch (notifError) {
             console.error('❌ فشل إرسال الإشعار:', notifError);
-            // لا نمنع التسجيل إذا فشل الإشعار، فقط نسجل الخطأ
         }
 
-        // ✅ لا نعيد توكن، بل نرسل رسالة تفيد بمراجعة الطلب
         res.status(201).json({
             message: '✅ تم تسجيل الصالون بنجاح! سيتم مراجعته من قبل الإدارة قريباً.',
             salonId: salon._id,
@@ -212,6 +197,32 @@ app.post('/api/auth/register', async (req, res) => {
     }
 });
 
+// ✅ تسجيل الدخول (صالون) - مع التحقق من الموافقة
+app.post('/api/auth/login', async (req, res) => {
+    const { email, password } = req.body;
+    try {
+        const salon = await Salon.findOne({ email });
+        if (!salon) return res.status(400).json({ message: 'بيانات الدخول غير صحيحة' });
+        
+        // ✅ التحقق من أن الصالون مفعل (تمت الموافقة عليه)
+        if (salon.status !== 'active' || salon.isActive !== true) {
+            return res.status(403).json({ 
+                message: '⏳ حسابك قيد المراجعة. يرجى الانتظار حتى الموافقة عليه من قبل الإدارة.' 
+            });
+        }
+        
+        const valid = await bcrypt.compare(password, salon.password);
+        if (!valid) return res.status(400).json({ message: 'بيانات الدخول غير صحيحة' });
+        
+        const token = jwt.sign({ id: salon._id }, process.env.JWT_SECRET || 'salon_secret_key', { expiresIn: '7d' });
+        res.json({ token, salonId: salon._id, name: salon.name });
+    } catch (err) {
+        console.error('❌ فشل تسجيل الدخول:', err);
+        res.status(500).json({ message: 'فشل تسجيل الدخول' });
+    }
+});
+
+// ✅ تغيير كلمة المرور (صالون)
 app.put('/api/auth/change-password', authMiddleware, async (req, res) => {
     const { oldPassword, newPassword } = req.body;
     try {
