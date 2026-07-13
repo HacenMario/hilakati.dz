@@ -3334,6 +3334,7 @@ async function loadDashboard() {
 
         document.getElementById('reviewsList').innerHTML = reviews.map(r => `<div class="review-item"><div class="review-header"><span>${r.customerName}</span><span>${'★'.repeat(r.rating)}</span></div><div class="review-comment">${r.comment}</div><div class="review-date">${r.date}</div></div>`).join('') || '<p>لا توجد تقييمات</p>';
 
+        // ===== تعبئة حقول الإعدادات =====
         document.getElementById('setSalonName').value = salon.name || '';
         document.getElementById('setSalonCity').value = salon.city || '';
         document.getElementById('setSalonAddress').value = salon.address || '';
@@ -3347,10 +3348,131 @@ async function loadDashboard() {
             document.getElementById('setLng').value = salon.lng;
             document.getElementById('setGpsStatus').textContent = `✅ ${salon.lat.toFixed(4)}, ${salon.lng.toFixed(4)}`;
         }
-        refreshNotifications();
-    } catch { showToast('❌ فشل في تحميل لوحة التحكم'); }
-}
 
+        // ===== ✅ إضافة معالج حدث النموذج (settingsForm) =====
+        // إزالة أي مستمع قديم لتجنب التكرار
+        const settingsForm = document.getElementById('settingsForm');
+        const newForm = settingsForm.cloneNode(true);
+        settingsForm.parentNode.replaceChild(newForm, settingsForm);
+
+        newForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const token = localStorage.getItem('token');
+            const salonId = localStorage.getItem('salonId');
+
+            // دالة مساعدة لقراءة قيمة عنصر بأمان
+            function safeGetValue(id, defaultValue = '') {
+                const el = document.getElementById(id);
+                return el ? el.value.trim() : defaultValue;
+            }
+
+            function safeGetSelectValue(id, defaultValue = 'mixed') {
+                const el = document.getElementById(id);
+                return el ? el.value : defaultValue;
+            }
+
+            // قراءة القيم مع التحقق من وجود العناصر
+            const name = safeGetValue('setSalonName');
+            const city = safeGetValue('setSalonCity');
+            const address = safeGetValue('setSalonAddress');
+            const phone = safeGetValue('setSalonPhone');
+            const desc = safeGetValue('setSalonDesc');
+            const salonType = safeGetSelectValue('setSalonType', 'mixed');
+            const isMobile = safeGetValue('setIsMobile') === 'true';
+
+            // معالجة حقل المعرض (gallery)
+            const galleryEl = document.getElementById('setGallery');
+            const gallery = galleryEl ? galleryEl.value.split(',').map(s => s.trim()).filter(s => s) : [];
+
+            // معالجة إحداثيات GPS
+            const latManual = document.getElementById('setLatManual');
+            const latHidden = document.getElementById('setLat');
+            const lngManual = document.getElementById('setLngManual');
+            const lngHidden = document.getElementById('setLng');
+
+            let lat = null;
+            let lng = null;
+
+            if (latManual && latManual.value) {
+                lat = parseFloat(latManual.value);
+            } else if (latHidden && latHidden.value) {
+                lat = parseFloat(latHidden.value);
+            }
+
+            if (lngManual && lngManual.value) {
+                lng = parseFloat(lngManual.value);
+            } else if (lngHidden && lngHidden.value) {
+                lng = parseFloat(lngHidden.value);
+            }
+
+            // معالجة تحميل الشعار
+            let logo = null;
+            const logoFileInput = document.getElementById('setLogo');
+            if (logoFileInput && logoFileInput.files.length > 0) {
+                const logoFile = logoFileInput.files[0];
+                try {
+                    const reader = new FileReader();
+                    logo = await new Promise((resolve) => {
+                        reader.onload = (e) => resolve(e.target.result);
+                        reader.readAsDataURL(logoFile);
+                    });
+                } catch (error) {
+                    console.error('❌ فشل قراءة ملف الشعار:', error);
+                }
+            }
+
+            // بناء الجسم (body) النهائي
+            const body = {
+                name,
+                city,
+                address,
+                phone,
+                desc,
+                salonType,
+                isMobile,
+                gallery
+            };
+
+            if (lat !== null && lng !== null) {
+                body.lat = lat;
+                body.lng = lng;
+            }
+
+            if (logo) {
+                body.logo = logo;
+            }
+
+            // إرسال الطلب
+            try {
+                const res = await fetch(`${API_BASE}/salons/${salonId}/settings`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(body)
+                });
+
+                if (res.ok) {
+                    showToast('✅ تم الحفظ', 'success');
+                    loadDashboard(); // إعادة تحميل لوحة التحكم
+                } else {
+                    const data = await res.json();
+                    showToast(`❌ ${data.message || 'حدث خطأ'}`, 'error');
+                }
+            } catch (error) {
+                console.error('❌ فشل الاتصال:', error);
+                showToast('❌ فشل الاتصال بالخادم', 'error');
+            }
+        });
+
+        refreshNotifications();
+    } catch (error) {
+        console.error('❌ فشل في تحميل لوحة التحكم:', error);
+        showToast('❌ فشل في تحميل لوحة التحكم');
+    }
+}
+    
 function exportToExcel() {
     const table = document.querySelector('#dashOverview table');
     if (!table) { showToast('❌ لا توجد بيانات'); return; }
@@ -3463,31 +3585,7 @@ document.getElementById('hoursForm').addEventListener('submit', async (e) => {
         else { const data = await res.json(); showToast(`❌ ${data.message}`); }
     } catch { showToast('❌ فشل الاتصال'); }
 });
-document.getElementById('settingsForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const token = localStorage.getItem('token'); const salonId = localStorage.getItem('salonId');
-    const name = document.getElementById('setSalonName').value.trim();
-    const city = document.getElementById('setSalonCity').value.trim();
-    const address = document.getElementById('setSalonAddress').value.trim();
-    const phone = document.getElementById('setSalonPhone').value.trim();
-    const desc = document.getElementById('setSalonDesc').value.trim();
-    const salonType = document.getElementById('setSalonType').value;
-    const isMobile = document.getElementById('setIsMobile').value === 'true';
-    const gallery = document.getElementById('setGallery').value.split(',').map(s => s.trim()).filter(s => s);
-    const lat = parseFloat(document.getElementById('setLatManual').value) || parseFloat(document.getElementById('setLat').value) || null;
-    const lng = parseFloat(document.getElementById('setLngManual').value) || parseFloat(document.getElementById('setLng').value) || null;
-    let logo = null;
-    const logoFile = document.getElementById('setLogo').files[0];
-    if (logoFile) { const reader = new FileReader(); logo = await new Promise(resolve => { reader.onload = e => resolve(e.target.result); reader.readAsDataURL(logoFile); }); }
-    const body = { name, city, address, phone, desc, salonType, isMobile, gallery };
-    if (lat !== null && lng !== null) { body.lat = lat; body.lng = lng; }
-    if (logo) body.logo = logo;
-    try {
-        const res = await fetch(`${API_BASE}/salons/${salonId}/settings`, { method:'PUT', headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`}, body:JSON.stringify(body) });
-        if (res.ok) { showToast('✅ تم الحفظ'); loadDashboard(); }
-        else { const data = await res.json(); showToast(`❌ ${data.message}`); }
-    } catch { showToast('❌ فشل الاتصال'); }
-});
+
 async function deleteSalonAccount() {
     showConfirm('هل أنت متأكد من حذف صالونك بالكامل؟', async () => {
         const token = localStorage.getItem('token');
@@ -3950,11 +4048,21 @@ async function loadCustomerDashboard() {
                 <button class="btn-danger btn-sm" onclick="deleteCustomerAccount()"><i class="fas fa-user-slash"></i> حذف حسابي</button>
             </div>
         `;
-        document.getElementById('customerProfileForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const name = document.getElementById('custProfileName').value.trim();
-            const email = document.getElementById('custProfileEmail').value.trim();
-            const phone = document.getElementById('custProfilePhone').value.trim();
+document.getElementById('customerProfileForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const nameInput = document.getElementById('custProfileName');
+    const emailInput = document.getElementById('custProfileEmail');
+    const phoneInput = document.getElementById('custProfilePhone');
+
+    if (!nameInput || !emailInput || !phoneInput) {
+        showToast('❌ حدث خطأ في النموذج، حاول تحديث الصفحة', 'error');
+        return;
+    }
+
+    const name = nameInput.value.trim();
+    const email = emailInput.value.trim();
+    const phone = phoneInput.value.trim();
             try {
                 const res = await fetch(`${API_BASE}/customer/auth/profile`, { method:'PUT', headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`}, body:JSON.stringify({ name, email, phone }) });
                 if (res.ok) { showToast('✅ تم التحديث'); loadCustomerDashboard(); }
