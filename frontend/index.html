@@ -1194,30 +1194,52 @@
     width: 100%;
 }
 
-/* ✅ تأكد من أن الأعمدة تعمل بشكل صحيح */
 #page-contact .contact-form-row {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
-    gap: 0.6rem;
+    gap: 0.8rem;
     width: 100%;
 }
 
-/* ✅ تأكد من أن كل حقل يأخذ العرض الكامل للعمود */
 #page-contact .contact-form-row > div {
     width: 100%;
     min-width: 0;
 }
 
+/* ✅ تكبير حجم الحقول */
 #page-contact .contact-form-row input,
-#page-contact .contact-form-row textarea {
+#page-contact .contact-form-row textarea,
+#page-contact form textarea {
     width: 100% !important;
+    padding: 0.7rem 0.8rem !important;  /* ✅ زيادة padding */
+    font-size: 1rem !important;          /* ✅ زيادة حجم الخط */
+    border-radius: 8px !important;
+    border: 1px solid var(--border-color);
+    background: var(--input-bg);
+    color: var(--text-color);
     box-sizing: border-box;
+    transition: border-color 0.3s ease;
+}
+
+#page-contact .contact-form-row input:focus,
+#page-contact .contact-form-row textarea:focus,
+#page-contact form textarea:focus {
+    border-color: var(--gold);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(245, 176, 66, 0.15);
+}
+
+/* ✅ تكبير حقل الرسالة */
+#page-contact form textarea {
+    min-height: 100px !important;  /* ✅ زيادة ارتفاع حقل الرسالة */
+    resize: vertical;
 }
 
 /* ===== للشاشات المتوسطة (تابلت) ===== */
 @media (max-width: 768px) {
     #page-contact .contact-form-row {
         grid-template-columns: 1fr 1fr;
+        gap: 0.6rem;
     }
 }
 
@@ -1225,6 +1247,15 @@
 @media (max-width: 480px) {
     #page-contact .contact-form-row {
         grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+    
+    #page-contact .contact-form-row input,
+    #page-contact .contact-form-row textarea,
+    #page-contact form textarea {
+        padding: 0.6rem 0.7rem !important;
+        font-size: 0.95rem !important;
+        min-height: 80px !important;
     }
 }
     </style>
