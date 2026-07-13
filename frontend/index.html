@@ -3334,6 +3334,7 @@ async function markAllRead() {
     }
 
     try {
+        // ✅ استخدم المسار الصحيح (بدون -customer)
         const res = await fetch(`${API_BASE}/notifications/read-all`, {
             method: 'PUT',
             headers: {
@@ -3351,8 +3352,7 @@ async function markAllRead() {
         const data = await res.json();
         showToast(`✅ ${data.message}`, 'success');
         await updateNotificationUI();
-        const dropdown = document.getElementById('notifDropdown');
-        if (dropdown) dropdown.style.display = 'none';
+        document.getElementById('notifDropdown').style.display = 'none';
     } catch (error) {
         console.error('❌ فشل تحديث الإشعارات:', error);
         showToast('❌ فشل تحديث الإشعارات', 'error');
