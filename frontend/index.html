@@ -1883,7 +1883,11 @@
 </section>
 
 <script>
-// ===== الخريطة التفاعلية =====
+// ============================================================
+// نظام الخريطة التفاعلية
+// ============================================================
+
+// ===== فتح الخريطة التفاعلية =====
 function openInteractiveMap(salonId, salonName, lat, lng) {
     // إنشاء نافذة منبثقة للخريطة
     const modalHtml = `
@@ -1907,7 +1911,7 @@ function openInteractiveMap(salonId, salonName, lat, lng) {
     // إضافة النافذة للصفحة
     document.body.insertAdjacentHTML('beforeend', modalHtml);
     
-    // تهيئة الخريطة بعد 100ms (لتأكد من ظهور النافذة)
+    // تهيئة الخريطة بعد 100ms
     setTimeout(() => {
         const map = L.map('interactiveMap').setView([lat, lng], 15);
         
@@ -1921,7 +1925,7 @@ function openInteractiveMap(salonId, salonName, lat, lng) {
             .bindPopup(`<b>${salonName}</b><br>📍 ${salon.address || ''}`)
             .openPopup();
             
-        // إضافة علامات للصالونات القريبة (إذا كانت محملة)
+        // إضافة علامات للصالونات القريبة
         const nearby = allSalons.filter(s => s.lat && s.lng && s._id !== salonId);
         nearby.slice(0, 10).forEach(s => {
             const dist = calculateDistance(lat, lng, s.lat, s.lng);
@@ -1940,7 +1944,6 @@ function openInteractiveMap(salonId, salonName, lat, lng) {
             }
         });
         
-        // تحديث حجم الخريطة عند ظهورها
         setTimeout(() => map.invalidateSize(), 200);
     }, 200);
 }
@@ -1959,11 +1962,20 @@ function calculateDistance(lat1, lng1, lat2, lng2) {
 
 // ===== اتجاهات Google Maps =====
 function getDirections(lat, lng) {
+    if (!lat || !lng) {
+        showToast('❌ لا توجد إحداثيات للموقع', 'error');
+        return;
+    }
     window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
 }
 
 // ===== صالونات قريبة =====
 function findNearbySalons(lat, lng) {
+    if (!lat || !lng) {
+        showToast('❌ لا توجد إحداثيات للموقع', 'error');
+        return;
+    }
+    
     const nearby = allSalons
         .filter(s => s.lat && s.lng)
         .map(s => ({ ...s, distance: calculateDistance(lat, lng, s.lat, s.lng) }))
@@ -1976,13 +1988,15 @@ function findNearbySalons(lat, lng) {
     }
     
     showToast(`✅ ${nearby.length} صالون ضمن 10 كم`, 'success');
-    // عرضها في القائمة
+    
     allSalons = allSalons.map(s => {
         const found = nearby.find(n => n._id === s._id);
         return found ? { ...s, distance: found.distance } : s;
     });
     renderAllSalons(nearby);
+    closeModal('mapModal');
 }
+    
 // ===== أيقونات نوع الصالون =====
 function getSalonTypeIcon(type) {
     const icons = {
