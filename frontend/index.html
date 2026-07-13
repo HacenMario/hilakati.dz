@@ -4061,12 +4061,23 @@ async function sendContactMessage(e) {
     }
 
     try {
-        // يمكنك استبدال هذا الرابط بـ API حقيقي لإرسال البريد
-        // حالياً سنعرض رسالة نجاح وهمية
-        showToast('✅ تم إرسال رسالتك! سنتواصل معك قريباً', 'success');
-        document.getElementById('contactForm').reset();
-        navigateTo('home');
+        const res = await fetch('/api/contact', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, email, message })
+        });
+        
+        const data = await res.json();
+        
+        if (res.ok) {
+            showToast('✅ تم إرسال رسالتك! سنتواصل معك قريباً', 'success');
+            document.getElementById('contactForm').reset();
+            navigateTo('home');
+        } else {
+            showToast(`❌ ${data.message}`, 'error');
+        }
     } catch (error) {
+        console.error('❌ فشل الإرسال:', error);
         showToast('❌ فشل الإرسال، حاول مرة أخرى', 'error');
     }
 }
