@@ -3144,14 +3144,6 @@ async function showSalonDetails(id) {
         // ============================================================
         // ✅ تعريف الأزرار (مرة واحدة فقط)
         // ============================================================
-        
-        // ✅ زر الخريطة التفاعلية
-        const mapButton = salon.lat && salon.lng ? `
-            <button class="btn-primary btn-sm" onclick="openInteractiveMap('${salon._id}', '${salon.name}', ${salon.lat}, ${salon.lng})">
-                <i class="fas fa-map"></i> عرض على الخريطة
-            </button>
-        ` : '';
-
         // ✅ زر واتساب
         let whatsappButton = '';
         if (salon.phone) {
