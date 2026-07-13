@@ -2801,20 +2801,22 @@ function createSalonCard(salon) {
 }
 // ===== Filters & Nearby =====
 // ===== تطبيق الفلاتر =====
+// ===== تطبيق الفلاتر =====
 function applyFilters() {
     const query = document.getElementById('searchSalon')?.value?.toLowerCase()?.trim() || '';
     const city = document.getElementById('filterCity')?.value || '';
     const type = document.getElementById('filterSalonType')?.value || '';
     const sort = document.getElementById('filterSort')?.value || 'rating';
 
-    // ✅ الفلتر المحذوف: إذا كان العنصر غير موجود، تجاهله
-    const service = serviceElement ? serviceElement.value : '';
+    // ✅ التحقق من وجود فلتر الخدمات (إذا كان موجوداً)
+    const serviceSelect = document.getElementById('filterService');
+    const service = serviceSelect ? serviceSelect.value : '';
 
     let result = allSalons.filter(salon => {
         const matchName = salon.name.toLowerCase().includes(query);
         const matchCity = city ? salon.city === city : true;
         let matchService = true;
-        if (service) {
+        if (service && service !== '') {
             matchService = (salon.services || []).some(s => s.name === service);
         }
         const matchType = type ? salon.salonType === type : true;
