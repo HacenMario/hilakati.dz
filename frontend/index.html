@@ -3358,8 +3358,8 @@ async function markAsRead(notificationId) {
         return;
     }
     try {
-        const res = await fetch(`/api/notifications/${notificationId}/read`, {
-            method: 'PUT', // ✅ تأكد من أنها PUT
+        const res = await fetch(`${API_BASE}/notifications/${notificationId}/read`, {
+            method: 'PUT',
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
