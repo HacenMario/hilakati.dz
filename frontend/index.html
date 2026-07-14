@@ -4474,14 +4474,22 @@ async function toggleCustomerBlock(customerId) {
 // دوال الإشعارات الجماعية
 // ============================================================
 
+// ===== إرسال إشعار للجميع (Broadcast) =====
 async function sendBroadcast() {
-    const title = document.getElementById('broadcastTitle').value.trim();
-    const message = document.getElementById('broadcastMessage').value.trim();
+    const title = document.getElementById('broadcastTitle')?.value.trim();
+    const message = document.getElementById('broadcastMessage')?.value.trim();
+    
     if (!title || !message) {
         showToast('❌ الرجاء ملء جميع الحقول', 'error');
         return;
     }
+    
     const token = localStorage.getItem('adminToken');
+    if (!token) {
+        showToast('❌ يرجى تسجيل الدخول كAdmin', 'error');
+        return;
+    }
+    
     try {
         const res = await fetch(`${API_BASE}/admin/broadcast`, {
             method: 'POST',
@@ -4491,17 +4499,20 @@ async function sendBroadcast() {
             },
             body: JSON.stringify({ title, message })
         });
+        
         const data = await res.json();
+        
         if (res.ok) {
             showToast(`✅ ${data.message}`, 'success');
             closeModal('broadcastModal');
             document.getElementById('broadcastTitle').value = '';
             document.getElementById('broadcastMessage').value = '';
         } else {
-            showToast(`❌ ${data.message}`, 'error');
+            showToast(`❌ ${data.message || 'فشل الإرسال'}`, 'error');
         }
-    } catch {
-        showToast('❌ فشل الاتصال', 'error');
+    } catch (error) {
+        console.error('❌ فشل إرسال الإشعار:', error);
+        showToast('❌ فشل الاتصال بالخادم', 'error');
     }
 }
 
