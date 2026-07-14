@@ -1075,7 +1075,7 @@ app.get('/api/appointments/client/:phone', async (req, res) => {
 });
 
 // ============================================================
-// إنشاء حجز جديد
+// إنشاء حجز جديد (مع اسم الصالون في الإشعار)
 // ============================================================
 app.post('/api/appointments/request', async (req, res) => {
     try {
@@ -1176,13 +1176,14 @@ app.post('/api/appointments/request', async (req, res) => {
         });
         await appointment.save();
 
-        // 6. إشعار للصالون
+        // 6. إشعار للصالون (مع اسم الصالون)
         try {
+            const salonName = salon.name || 'الصالون';
             const notification = new Notification({
                 userId: salonId,
                 userType: 'salon',
                 title: '📅 حجز جديد',
-                message: `حجز من ${clientName} في ${date} الساعة ${time}`,
+                message: `حجز من ${clientName} في ${date} الساعة ${time} - صالون ${salonName}`,
                 read: false,
                 createdAt: new Date()
             });
@@ -1191,7 +1192,7 @@ app.post('/api/appointments/request', async (req, res) => {
             if (io) {
                 io.to(`salon-${salonId}`).emit('new-notification', {
                     title: '📅 حجز جديد',
-                    message: `حجز من ${clientName} في ${date} الساعة ${time}`
+                    message: `حجز من ${clientName} في ${date} الساعة ${time} - صالون ${salonName}`
                 });
             }
         } catch (notifError) {
@@ -1210,7 +1211,7 @@ app.post('/api/appointments/request', async (req, res) => {
 });
 
 // ============================================================
-// تأكيد الحجز
+// تأكيد الحجز (مع اسم الصالون في الإشعار)
 // ============================================================
 app.put('/api/appointments/:id/confirm', authMiddleware, async (req, res) => {
     try {
@@ -1221,17 +1222,22 @@ app.put('/api/appointments/:id/confirm', authMiddleware, async (req, res) => {
         appointment.status = 'confirmed';
         await appointment.save();
 
+        // ===== إشعار للعميل بتأكيد الحجز (مع اسم الصالون) =====
         if (appointment.customerId) {
             try {
+                const salon = await Salon.findById(appointment.salonId).select('name');
+                const salonName = salon ? salon.name : 'الصالون';
+                
                 const notification = new Notification({
                     userId: appointment.customerId,
                     userType: 'customer',
                     title: '✅ تم تأكيد حجزك',
-                    message: `تم تأكيد حجزك في ${appointment.date} الساعة ${appointment.time}`,
+                    message: `تم تأكيد حجزك في صالون ${salonName} بتاريخ ${appointment.date} الساعة ${appointment.time}`,
                     read: false,
                     createdAt: new Date()
                 });
                 await notification.save();
+                console.log(`✅ تم إرسال إشعار تأكيد للعميل ${appointment.customerId} - صالون ${salonName}`);
             } catch (err) {
                 console.error('❌ فشل إرسال إشعار التأكيد:', err);
             }
@@ -1245,7 +1251,7 @@ app.put('/api/appointments/:id/confirm', authMiddleware, async (req, res) => {
 });
 
 // ============================================================
-// إلغاء الحجز
+// إلغاء الحجز (مع اسم الصالون في الإشعار)
 // ============================================================
 app.put('/api/appointments/:id/cancel', authMiddleware, async (req, res) => {
     try {
@@ -1261,17 +1267,22 @@ app.put('/api/appointments/:id/cancel', authMiddleware, async (req, res) => {
         appointment.status = 'cancelled';
         await appointment.save();
 
+        // ===== إشعار للعميل بإلغاء الحجز (مع اسم الصالون) =====
         if (appointment.customerId) {
             try {
+                const salon = await Salon.findById(appointment.salonId).select('name');
+                const salonName = salon ? salon.name : 'الصالون';
+                
                 const notification = new Notification({
                     userId: appointment.customerId,
                     userType: 'customer',
                     title: '❌ تم إلغاء حجزك',
-                    message: `تم إلغاء حجزك في ${appointment.date} الساعة ${appointment.time}`,
+                    message: `تم إلغاء حجزك في صالون ${salonName} بتاريخ ${appointment.date} الساعة ${appointment.time}`,
                     read: false,
                     createdAt: new Date()
                 });
                 await notification.save();
+                console.log(`✅ تم إرسال إشعار إلغاء للعميل ${appointment.customerId} - صالون ${salonName}`);
             } catch (err) {
                 console.error('❌ فشل إرسال إشعار الإلغاء:', err);
             }
@@ -1285,7 +1296,7 @@ app.put('/api/appointments/:id/cancel', authMiddleware, async (req, res) => {
 });
 
 // ============================================================
-// إكمال الحجز مع إشعار (يحوي اسم الصالون)
+// إكمال الحجز (مع اسم الصالون في الإشعار)
 // ============================================================
 app.put('/api/appointments/:id/complete', authMiddleware, async (req, res) => {
     try {
@@ -1296,10 +1307,9 @@ app.put('/api/appointments/:id/complete', authMiddleware, async (req, res) => {
         appointment.status = 'completed';
         await appointment.save();
 
-        // ===== إشعار للعميل مع اسم الصالون =====
+        // ===== إشعار للعميل بإكمال الحجز (مع اسم الصالون) =====
         if (appointment.customerId) {
             try {
-                // ✅ جلب اسم الصالون
                 const salon = await Salon.findById(appointment.salonId).select('name');
                 const salonName = salon ? salon.name : 'الصالون';
                 
@@ -1307,12 +1317,12 @@ app.put('/api/appointments/:id/complete', authMiddleware, async (req, res) => {
                     userId: appointment.customerId,
                     userType: 'customer',
                     title: '✅ تم إكمال حجزك',
-                    message: `تم إكمال حجزك في ${appointment.date} الساعة ${appointment.time}. نشكرك على زيارة صالون ${salonName}! 💈`,
+                    message: `تم إكمال حجزك في صالون ${salonName} بتاريخ ${appointment.date} الساعة ${appointment.time}. نشكرك على زيارتنا! 💈`,
                     read: false,
                     createdAt: new Date()
                 });
                 await notification.save();
-                console.log(`✅ تم إرسال إشعار إكمال للعميل ${appointment.customerId} مع اسم صالون ${salonName}`);
+                console.log(`✅ تم إرسال إشعار إكمال للعميل ${appointment.customerId} - صالون ${salonName}`);
             } catch (err) {
                 console.error('❌ فشل إرسال إشعار الإكمال:', err);
             }
@@ -1407,12 +1417,12 @@ app.put('/api/appointments/:id/complete-with-review', customerAuthMiddleware, as
                 userId: appointment.customerId,
                 userType: 'customer',
                 title: '✅ تم إكمال حجزك',
-                message: `تم إكمال حجزك في ${appointment.date} الساعة ${appointment.time}. نشكرك على زيارة صالون ${salonName}! 💈`,
+                message: `تم إكمال حجزك في صالون ${salonName} بتاريخ ${appointment.date} الساعة ${appointment.time}. نشكرك على زيارتنا! 💈`,
                 read: false,
                 createdAt: new Date()
             });
             await customerNotification.save();
-            console.log(`✅ تم إرسال إشعار إكمال للعميل ${appointment.customerId} مع اسم صالون ${salonName}`);
+            console.log(`✅ تم إرسال إشعار إكمال للعميل ${appointment.customerId} - صالون ${salonName}`);
         } catch (notifError) {
             console.error('❌ فشل إرسال إشعار العميل:', notifError);
         }
@@ -1733,16 +1743,6 @@ function sendWhatsApp(phone, message) {
     console.log(`🔗 ${whatsappUrl}`);
     return whatsappUrl;
 }
-
-// في مسار إنشاء الحجز
-app.post('/api/appointments/request', async (req, res) => {
-    // ... الكود الموجود ...
-    // بعد حفظ الحجز
-    const salon = await Salon.findById(salonId);
-    const message = `مرحباً ${clientName}، تم تأكيد حجزك في ${salon.name} بتاريخ ${date} الساعة ${time}. ننتظرك! 💈`;
-    sendWhatsApp(clientPhone, message);
-    // ...
-});
 
 // ============================================================
 // مسار الاتصال (نموذج اتصل بنا)
