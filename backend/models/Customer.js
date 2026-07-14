@@ -6,6 +6,9 @@ const CustomerSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   phone: { type: String, required: true },
   password: { type: String, required: true },
+  googleId: { type: String, default: null },
+  avatar: { type: String, default: '' },
+  isVerified: { type: Boolean, default: false },
   isBlocked: { type: Boolean, default: false },
   resetPasswordToken: { type: String, default: null },
   resetPasswordExpires: { type: Number, default: null }
