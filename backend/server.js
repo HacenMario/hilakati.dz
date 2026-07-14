@@ -867,6 +867,7 @@ app.post('/api/admin/broadcast', adminAuthMiddleware, async (req, res) => {
         if (users.length === 0) {
             return res.status(400).json({ message: 'لا يوجد مستخدمون من هذا النوع' });
         }
+
         // ✅ إنشاء الإشعارات مع createdAt
         const notifications = users.map(user => ({
             userId: user.userId,
@@ -874,13 +875,11 @@ app.post('/api/admin/broadcast', adminAuthMiddleware, async (req, res) => {
             title,
             message,
             read: false,
-            createdAt: new Date() // ✅ تأكد من وجود هذا السطر
+            createdAt: new Date()
         }));
 
         await Notification.insertMany(notifications);
-        // ...
-    }
-});
+
         // ✅ إرسال إشعار فوري عبر Socket.io
         const io = req.app.get('io');
         if (io) {
