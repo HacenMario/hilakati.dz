@@ -845,7 +845,6 @@ app.post('/api/admin/broadcast', adminAuthMiddleware, async (req, res) => {
             return res.status(400).json({ message: 'العنوان والنص مطلوبان' });
         }
 
-        // ✅ تحديد المستخدمين بناءً على النوع المختار
         let users = [];
         let targetUsers = [];
 
@@ -869,14 +868,14 @@ app.post('/api/admin/broadcast', adminAuthMiddleware, async (req, res) => {
             return res.status(400).json({ message: 'لا يوجد مستخدمون من هذا النوع' });
         }
 
-        // ✅ إنشاء الإشعارات مع createdAt
+        // ✅ إنشاء الإشعارات مع createdAt (هذا هو المهم)
         const notifications = users.map(user => ({
             userId: user.userId,
             userType: user.userType,
             title,
             message,
             read: false,
-            createdAt: new Date()
+            createdAt: new Date() // ✅ تأكد من وجود هذا السطر
         }));
 
         await Notification.insertMany(notifications);
@@ -884,14 +883,12 @@ app.post('/api/admin/broadcast', adminAuthMiddleware, async (req, res) => {
         // ✅ إرسال إشعار فوري عبر Socket.io
         const io = req.app.get('io');
         if (io) {
-            // إرسال لكل صالون
             if (userType === 'all' || userType === 'salon') {
                 const salons = await Salon.find().select('_id');
                 salons.forEach(salon => {
                     io.to(`salon-${salon._id}`).emit('new-notification', { title, message });
                 });
             }
-            // إرسال لكل عميل
             if (userType === 'all' || userType === 'customer') {
                 const customers = await Customer.find().select('_id');
                 customers.forEach(customer => {
