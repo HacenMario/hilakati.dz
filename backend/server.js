@@ -867,19 +867,20 @@ app.post('/api/admin/broadcast', adminAuthMiddleware, async (req, res) => {
         if (users.length === 0) {
             return res.status(400).json({ message: 'لا يوجد مستخدمون من هذا النوع' });
         }
-
-        // ✅ إنشاء الإشعارات
+        // ✅ إنشاء الإشعارات مع createdAt
         const notifications = users.map(user => ({
             userId: user.userId,
             userType: user.userType,
             title,
             message,
             read: false,
-            createdAt: new Date()
+            createdAt: new Date() // ✅ تأكد من وجود هذا السطر
         }));
 
         await Notification.insertMany(notifications);
-
+        // ...
+    }
+});
         // ✅ إرسال إشعار فوري عبر Socket.io
         const io = req.app.get('io');
         if (io) {
@@ -915,12 +916,19 @@ app.post('/api/admin/broadcast', adminAuthMiddleware, async (req, res) => {
 // ============================================================
 app.get('/api/fix-notifications', async (req, res) => {
     try {
+        // ✅ تحديث الإشعارات التي ليس لها createdAt
         const result = await Notification.updateMany(
             { createdAt: { $exists: false } },
             { $set: { createdAt: new Date() } }
         );
-        res.json({ message: `✅ تم تحديث ${result.modifiedCount} إشعار` });
+        
+        console.log(`✅ تم تحديث ${result.modifiedCount} إشعار`);
+        res.json({ 
+            message: `✅ تم تحديث ${result.modifiedCount} إشعار`,
+            modifiedCount: result.modifiedCount
+        });
     } catch (error) {
+        console.error('❌ فشل تحديث الإشعارات:', error);
         res.status(500).json({ message: error.message });
     }
 });
