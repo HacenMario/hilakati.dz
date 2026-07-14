@@ -834,65 +834,76 @@ app.get('/api/admin/appointments', adminAuthMiddleware, async (req, res) => {
 });
 
 // ============================================================
-// إرسال إشعار جماعي لجميع الصالونات والعملاء
+// إرسال إشعار جماعي مع اختيار نوع المستخدم
 // ============================================================
 app.post('/api/admin/broadcast', adminAuthMiddleware, async (req, res) => {
     try {
-        const { title, message } = req.body;
+        const { title, message, userType } = req.body;
+        
         if (!title || !message) {
             return res.status(400).json({ message: 'العنوان والنص مطلوبان' });
         }
 
-        // جلب جميع المستخدمين
-        const salons = await Salon.find().select('_id');
-        const customers = await Customer.find().select('_id');
-        
-        // إنشاء إشعارات لكل مستخدم
-        const notifications = [];
-        
-        salons.forEach(salon => {
-            notifications.push({
-                userId: salon._id,
-                userType: 'salon',
-                title,
-                message,
-                read: false,
-                createdAt: new Date() // ✅ إضافة التاريخ
+        // ✅ تحديد المستخدمين بناءً على النوع المختار
+        let users = [];
+        let targetUsers = [];
+
+        if (userType === 'all' || userType === 'salon') {
+            const salons = await Salon.find().select('_id');
+            salons.forEach(salon => {
+                users.push({ userId: salon._id, userType: 'salon' });
             });
-        });
-        
-        customers.forEach(customer => {
-            notifications.push({
-                userId: customer._id,
-                userType: 'customer',
-                title,
-                message,
-                read: false,
-                createdAt: new Date() // ✅ إضافة التاريخ
-            });
-        });
-        
-        // حفظ الإشعارات في قاعدة البيانات
-        if (notifications.length > 0) {
-            await Notification.insertMany(notifications);
+            targetUsers.push('الصالونات');
         }
-        
-        // إرسال إشعار فوري عبر Socket.io
+
+        if (userType === 'all' || userType === 'customer') {
+            const customers = await Customer.find().select('_id');
+            customers.forEach(customer => {
+                users.push({ userId: customer._id, userType: 'customer' });
+            });
+            targetUsers.push('العملاء');
+        }
+
+        if (users.length === 0) {
+            return res.status(400).json({ message: 'لا يوجد مستخدمون من هذا النوع' });
+        }
+
+        // ✅ إنشاء الإشعارات
+        const notifications = users.map(user => ({
+            userId: user.userId,
+            userType: user.userType,
+            title,
+            message,
+            read: false,
+            createdAt: new Date()
+        }));
+
+        await Notification.insertMany(notifications);
+
+        // ✅ إرسال إشعار فوري عبر Socket.io
         const io = req.app.get('io');
         if (io) {
-            salons.forEach(salon => {
-                io.to(`salon-${salon._id}`).emit('new-notification', { title, message });
-            });
-            customers.forEach(customer => {
-                io.to(`customer-${customer._id}`).emit('new-notification', { title, message });
-            });
+            // إرسال لكل صالون
+            if (userType === 'all' || userType === 'salon') {
+                const salons = await Salon.find().select('_id');
+                salons.forEach(salon => {
+                    io.to(`salon-${salon._id}`).emit('new-notification', { title, message });
+                });
+            }
+            // إرسال لكل عميل
+            if (userType === 'all' || userType === 'customer') {
+                const customers = await Customer.find().select('_id');
+                customers.forEach(customer => {
+                    io.to(`customer-${customer._id}`).emit('new-notification', { title, message });
+                });
+            }
         }
-        
+
         res.json({ 
-            message: `✅ تم إرسال الإشعار إلى ${notifications.length} مستخدم`,
+            message: `✅ تم إرسال الإشعار إلى ${notifications.length} مستخدم (${targetUsers.join(' + ')})`,
             count: notifications.length 
         });
-        
+
     } catch (error) {
         console.error('❌ خطأ في broadcast:', error);
         res.status(500).json({ message: 'فشل إرسال الإشعارات' });
