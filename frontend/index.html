@@ -1630,6 +1630,37 @@
         <button class="btn-gold" style="width:100%;" onclick="resetPassword()">تغيير كلمة المرور</button>
     </div>
 </div>
+<!-- ===== ✅ نافذة إرسال إشعار للجميع (Broadcast) ===== -->
+<div class="modal-overlay" id="broadcastModal">
+    <div class="modal-box" style="max-width:500px;">
+        <button class="modal-close" onclick="closeModal('broadcastModal')">&times;</button>
+        <h2 style="color:var(--gold);text-align:center;margin-bottom:0.5rem;">
+            <i class="fas fa-bullhorn"></i> إرسال إشعار للجميع
+        </h2>
+        <p style="text-align:center;color:var(--text-color);opacity:0.6;font-size:0.85rem;margin-bottom:1rem;">
+            سيتم إرسال هذا الإشعار إلى جميع الصالونات والعملاء المسجلين
+        </p>
+
+        <div class="form-group">
+            <label style="font-weight:600;font-size:0.85rem;">عنوان الإشعار</label>
+            <input type="text" id="broadcastTitle" placeholder="مثال: عروض جديدة 🔥" style="width:100%;padding:0.5rem 0.8rem;border-radius:8px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--text-color);">
+        </div>
+
+        <div class="form-group">
+            <label style="font-weight:600;font-size:0.85rem;">نص الإشعار</label>
+            <textarea id="broadcastMessage" rows="4" placeholder="اكتب نص الإشعار هنا..." style="width:100%;padding:0.5rem 0.8rem;border-radius:8px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--text-color);resize:vertical;"></textarea>
+        </div>
+
+        <div style="display:flex;gap:0.5rem;justify-content:center;margin-top:0.5rem;">
+            <button class="btn-gold" onclick="sendBroadcast()" style="padding:0.4rem 1.5rem;border-radius:50px;font-weight:700;">
+                <i class="fas fa-paper-plane"></i> إرسال
+            </button>
+            <button class="btn-outline" onclick="closeModal('broadcastModal')" style="padding:0.4rem 1.5rem;border-radius:50px;">
+                إلغاء
+            </button>
+        </div>
+    </div>
+</div>
 
 <!-- ===== الصفحات ===== -->
 
