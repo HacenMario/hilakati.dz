@@ -3076,13 +3076,18 @@ const directionsButton = salon.lat && salon.lng ? `
             
             <div><h4 style="color:var(--gold);">⭐ التقييمات</h4>${reviewsHtml}</div>
             
-            <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-top:0.6rem;">
-                <button class="btn-gold btn-sm" onclick="closeModal('salonDetailsModal');openBooking('${salon._id}')"><i class="fas fa-calendar-plus"></i> احجز الآن</button>
-                <button class="btn-primary btn-sm" onclick="closeModal('salonDetailsModal');openReview('${salon._id}')"><i class="fas fa-star"></i> قيم الصالون</button>
-                ${directionsButton}
-                ${whatsappButton}
-            </div>
-        `;
+<div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-top:0.6rem;">
+    <!-- ✅ زر احجز الآن (أبيض مع خط برتقالي) -->
+    <button onclick="closeModal('salonDetailsModal');openBooking('${salon._id}')" 
+        style="display:inline-block;padding:0.4rem 1.2rem;border-radius:50px;font-size:0.8rem;font-weight:700;background:#ffffff;color:#e67e22;border:2px solid #e67e22;cursor:pointer;transition:all 0.3s ease;box-shadow:0 4px 15px rgba(230,126,34,0.2);">
+        <i class="fas fa-calendar-plus" style="color:#e67e22;"></i> احجز الآن
+    </button>
+    
+    <button class="btn-primary btn-sm" onclick="closeModal('salonDetailsModal');openReview('${salon._id}')"><i class="fas fa-star"></i> قيم الصالون</button>
+    
+    ${directionsButton}
+    ${whatsappButton}
+</div>
         openModal('salonDetailsModal');
     } catch (error) {
         console.error('❌ فشل في تحميل التفاصيل:', error);
