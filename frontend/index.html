@@ -2064,12 +2064,8 @@ window.addEventListener('scroll', () => {
 function navigateTo(page) {
     document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
     const target = document.getElementById(`page-${page}`);
-    if (!target) { 
-        showToast('❌ الصفحة غير موجودة', 'error'); 
-        return; 
-    }
+    if (!target) { showToast('❌ الصفحة غير موجودة'); return; }
     target.classList.remove('hidden');
-    
     document.querySelectorAll('.nav-links a').forEach(l => l.classList.remove('active'));
     const navLink = document.querySelector(`.nav-links a[data-page="${page}"]`);
     if (navLink) navLink.classList.add('active');
@@ -2077,21 +2073,23 @@ function navigateTo(page) {
     // تحديث الصفحات الخاصة
     if (page === 'dashboard') { 
         if (!localStorage.getItem('token')) { 
-            showToast('❌ يرجى تسجيل الدخول كصالون', 'error'); 
+            showToast('❌ يرجى تسجيل الدخول كصالون'); 
             navigateTo('home'); 
             return; 
         } 
         loadDashboard(); 
-    } else if (page === 'admin') { 
+    }
+    if (page === 'admin') { 
         if (!localStorage.getItem('adminToken')) { 
-            showToast('❌ يرجى تسجيل الدخول كAdmin', 'error'); 
+            showToast('❌ يرجى تسجيل الدخول كAdmin'); 
             navigateTo('home'); 
             return; 
         } 
         loadAdminDashboard(); 
-    } else if (page === 'customer-dashboard') { 
+    }
+    if (page === 'customer-dashboard') { 
         if (!localStorage.getItem('customerToken')) { 
-            showToast('❌ يرجى تسجيل الدخول كعميل', 'error'); 
+            showToast('❌ يرجى تسجيل الدخول كعميل'); 
             navigateTo('home'); 
             return; 
         } 
@@ -3024,11 +3022,8 @@ async function showSalonDetails(id) {
         } catch (error) {
             // ... بديل اللوغو ...
         }
-        // ============================================================
-        // ✅ تعريف الأزرار
-        // ============================================================
-        
-        // ✅ زر واتساب
+
+          // ✅ زر واتساب
         let whatsappButton = '';
         if (salon.phone) {
             const cleanPhone = cleanPhoneNumber(salon.phone);
@@ -3041,15 +3036,7 @@ async function showSalonDetails(id) {
                                 <i class="fab fa-whatsapp"></i> لا يوجد رقم
                               </span>`;
         }
-        // ✅ زر الاتجاهات إلى Google Maps
-const directionsButton = salon.lat && salon.lng ? `
-    <a href="https://www.google.com/maps/dir/?api=1&destination=${salon.lat},${salon.lng}" 
-       target="_blank" 
-       class="btn-sm" 
-       style="display:inline-block;text-decoration:none;padding:0.4rem 1rem;border-radius:50px;font-size:0.75rem;font-weight:600;background:linear-gradient(135deg, #f39c12, #e67e22);color:#fff;transition:var(--transition);cursor:pointer;box-shadow:0 4px 15px rgba(243,156,18,0.3);">
-        <i class="fas fa-directions"></i> اتجاهات
-    </a>
-` : '';
+
         // ============================================================
         // عرض المحتوى (استخدام mapButton هنا)
         // ============================================================
@@ -3078,18 +3065,13 @@ const directionsButton = salon.lat && salon.lng ? `
             
             <div><h4 style="color:var(--gold);">⭐ التقييمات</h4>${reviewsHtml}</div>
             
-<div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-top:0.6rem;">
-    <!-- ✅ زر احجز الآن (أبيض مع خط برتقالي) -->
-    <button onclick="closeModal('salonDetailsModal');openBooking('${salon._id}')" 
-        style="display:inline-block;padding:0.4rem 1.2rem;border-radius:50px;font-size:0.8rem;font-weight:700;background:#ffffff;color:#e67e22;border:2px solid #e67e22;cursor:pointer;transition:all 0.3s ease;box-shadow:0 4px 15px rgba(230,126,34,0.2);">
-        <i class="fas fa-calendar-plus" style="color:#e67e22;"></i> احجز الآن
-    </button>
-    
-    <button class="btn-primary btn-sm" onclick="closeModal('salonDetailsModal');openReview('${salon._id}')"><i class="fas fa-star"></i> قيم الصالون</button>
-    
-    ${directionsButton}
-    ${whatsappButton}
-</div>
+            <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-top:0.6rem;">
+                <button class="btn-gold btn-sm" onclick="closeModal('salonDetailsModal');openBooking('${salon._id}')"><i class="fas fa-calendar-plus"></i> احجز الآن</button>
+                <button class="btn-primary btn-sm" onclick="closeModal('salonDetailsModal');openReview('${salon._id}')"><i class="fas fa-star"></i> قيم الصالون</button>
+                ${mapButton}   <!-- ✅ ✅ ✅ استخدام mapButton هنا -->
+                ${whatsappButton}
+            </div>
+        `;
         openModal('salonDetailsModal');
     } catch (error) {
         console.error('❌ فشل في تحميل التفاصيل:', error);
