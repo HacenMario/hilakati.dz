@@ -911,28 +911,6 @@ app.post('/api/admin/broadcast', adminAuthMiddleware, async (req, res) => {
     }
 });
 
-// ============================================================
-// مسار مؤقت: إصلاح الإشعارات القديمة (شغله مرة واحدة)
-// ============================================================
-app.get('/api/fix-notifications', async (req, res) => {
-    try {
-        // ✅ تحديث الإشعارات التي ليس لها createdAt
-        const result = await Notification.updateMany(
-            { createdAt: { $exists: false } },
-            { $set: { createdAt: new Date() } }
-        );
-        
-        console.log(`✅ تم تحديث ${result.modifiedCount} إشعار`);
-        res.json({ 
-            message: `✅ تم تحديث ${result.modifiedCount} إشعار`,
-            modifiedCount: result.modifiedCount
-        });
-    } catch (error) {
-        console.error('❌ فشل تحديث الإشعارات:', error);
-        res.status(500).json({ message: error.message });
-    }
-});
-
 // 6. حذف جميع التقييمات لصالون (نسخة محسنة)
 app.delete('/api/admin/salons/:id/reviews', adminAuthMiddleware, async (req, res) => {
     try {
