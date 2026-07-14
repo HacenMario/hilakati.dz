@@ -1630,7 +1630,7 @@
         <button class="btn-gold" style="width:100%;" onclick="resetPassword()">تغيير كلمة المرور</button>
     </div>
 </div>
-<!-- ===== ✅ نافذة إرسال إشعار للجميع (Broadcast) ===== -->
+<!-- ===== نافذة إرسال إشعار للجميع (Broadcast) ===== -->
 <div class="modal-overlay" id="broadcastModal">
     <div class="modal-box" style="max-width:500px;">
         <button class="modal-close" onclick="closeModal('broadcastModal')">&times;</button>
@@ -1638,8 +1638,18 @@
             <i class="fas fa-bullhorn"></i> إرسال إشعار للجميع
         </h2>
         <p style="text-align:center;color:var(--text-color);opacity:0.6;font-size:0.85rem;margin-bottom:1rem;">
-            سيتم إرسال هذا الإشعار إلى جميع الصالونات والعملاء المسجلين
+            اختر الفئة المستهدفة لإرسال الإشعار
         </p>
+
+        <!-- ✅ اختيار نوع الحساب -->
+        <div class="form-group">
+            <label style="font-weight:600;font-size:0.85rem;">إرسال إلى</label>
+            <select id="broadcastUserType" style="width:100%;padding:0.5rem 0.8rem;border-radius:8px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--text-color);">
+                <option value="all">الجميع (عملاء + صالونات)</option>
+                <option value="customer">العملاء فقط</option>
+                <option value="salon">الصالونات فقط</option>
+            </select>
+        </div>
 
         <div class="form-group">
             <label style="font-weight:600;font-size:0.85rem;">عنوان الإشعار</label>
@@ -4478,6 +4488,7 @@ async function toggleCustomerBlock(customerId) {
 async function sendBroadcast() {
     const title = document.getElementById('broadcastTitle')?.value.trim();
     const message = document.getElementById('broadcastMessage')?.value.trim();
+    const userType = document.getElementById('broadcastUserType')?.value || 'all';
     
     if (!title || !message) {
         showToast('❌ الرجاء ملء جميع الحقول', 'error');
@@ -4497,7 +4508,7 @@ async function sendBroadcast() {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({ title, message })
+            body: JSON.stringify({ title, message, userType })
         });
         
         const data = await res.json();
@@ -4507,6 +4518,7 @@ async function sendBroadcast() {
             closeModal('broadcastModal');
             document.getElementById('broadcastTitle').value = '';
             document.getElementById('broadcastMessage').value = '';
+            refreshNotifications();
         } else {
             showToast(`❌ ${data.message || 'فشل الإرسال'}`, 'error');
         }
