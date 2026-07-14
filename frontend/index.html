@@ -3022,7 +3022,10 @@ async function showSalonDetails(id) {
         } catch (error) {
             // ... بديل اللوغو ...
         }
-
+        // ============================================================
+        // ✅ تعريف الأزرار
+        // ============================================================
+        
         // ✅ زر واتساب
         let whatsappButton = '';
         if (salon.phone) {
@@ -3036,6 +3039,12 @@ async function showSalonDetails(id) {
                                 <i class="fab fa-whatsapp"></i> لا يوجد رقم
                               </span>`;
         }
+        // ✅ زر الاتجاهات إلى Google Maps
+const directionsButton = salon.lat && salon.lng ? `
+    <button class="btn-success btn-sm" onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=${salon.lat},${salon.lng}', '_blank')">
+        <i class="fas fa-directions"></i> اتجاهات
+    </button>
+` : '';
 
         // ============================================================
         // عرض المحتوى (استخدام mapButton هنا)
@@ -3068,6 +3077,7 @@ async function showSalonDetails(id) {
             <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-top:0.6rem;">
                 <button class="btn-gold btn-sm" onclick="closeModal('salonDetailsModal');openBooking('${salon._id}')"><i class="fas fa-calendar-plus"></i> احجز الآن</button>
                 <button class="btn-primary btn-sm" onclick="closeModal('salonDetailsModal');openReview('${salon._id}')"><i class="fas fa-star"></i> قيم الصالون</button>
+                ${directionsButton}
                 ${whatsappButton}
             </div>
         `;
