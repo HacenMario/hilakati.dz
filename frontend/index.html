@@ -3041,7 +3041,7 @@ async function showSalonDetails(id) {
         }
         // ✅ زر الاتجاهات إلى Google Maps
 const directionsButton = salon.lat && salon.lng ? `
-    <button class="btn-success btn-sm" onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=${salon.lat},${salon.lng}', '_blank')">
+    <button class="btn-success btn-sm" onclick="console.log('🔄 فتح Google Maps:', ${salon.lat}, ${salon.lng}); window.open('https://www.google.com/maps/dir/?api=1&destination=${salon.lat},${salon.lng}', '_blank')">
         <i class="fas fa-directions"></i> اتجاهات
     </button>
 ` : '';
