@@ -833,7 +833,9 @@ app.get('/api/admin/appointments', adminAuthMiddleware, async (req, res) => {
     }
 });
 
-// 5. إرسال إشعار جماعي لجميع الصالونات والعملاء
+// ============================================================
+// إرسال إشعار جماعي لجميع الصالونات والعملاء
+// ============================================================
 app.post('/api/admin/broadcast', adminAuthMiddleware, async (req, res) => {
     try {
         const { title, message } = req.body;
@@ -855,7 +857,7 @@ app.post('/api/admin/broadcast', adminAuthMiddleware, async (req, res) => {
                 title,
                 message,
                 read: false,
-                createdAt: new Date()
+                createdAt: new Date() // ✅ إضافة التاريخ
             });
         });
         
@@ -866,23 +868,21 @@ app.post('/api/admin/broadcast', adminAuthMiddleware, async (req, res) => {
                 title,
                 message,
                 read: false,
-                createdAt: new Date()
+                createdAt: new Date() // ✅ إضافة التاريخ
             });
         });
         
-        // حفظ الإشعارات في قاعدة البيانات (إذا كان لديك نموذج Notification)
+        // حفظ الإشعارات في قاعدة البيانات
         if (notifications.length > 0) {
             await Notification.insertMany(notifications);
         }
         
-        // إرسال إشعار فوري عبر Socket.io للمستخدمين المتصلين
+        // إرسال إشعار فوري عبر Socket.io
         const io = req.app.get('io');
         if (io) {
-            // إرسال لكل صالون متصل
             salons.forEach(salon => {
                 io.to(`salon-${salon._id}`).emit('new-notification', { title, message });
             });
-            // إرسال لكل عميل متصل
             customers.forEach(customer => {
                 io.to(`customer-${customer._id}`).emit('new-notification', { title, message });
             });
@@ -896,6 +896,21 @@ app.post('/api/admin/broadcast', adminAuthMiddleware, async (req, res) => {
     } catch (error) {
         console.error('❌ خطأ في broadcast:', error);
         res.status(500).json({ message: 'فشل إرسال الإشعارات' });
+    }
+});
+
+// ============================================================
+// مسار مؤقت: إصلاح الإشعارات القديمة (شغله مرة واحدة)
+// ============================================================
+app.get('/api/fix-notifications', async (req, res) => {
+    try {
+        const result = await Notification.updateMany(
+            { createdAt: { $exists: false } },
+            { $set: { createdAt: new Date() } }
+        );
+        res.json({ message: `✅ تم تحديث ${result.modifiedCount} إشعار` });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
 });
 
