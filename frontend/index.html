@@ -3036,6 +3036,15 @@ async function showSalonDetails(id) {
                                 <i class="fab fa-whatsapp"></i> لا يوجد رقم
                               </span>`;
         }
+        // ✅ زر الخريطة (بدون خريطة تفاعلية، فقط رابط Google Maps)
+const mapButton = salon.lat && salon.lng ? `
+    <a href="https://www.google.com/maps/search/?api=1&query=${salon.lat},${salon.lng}" 
+       target="_blank" 
+       class="btn-primary btn-sm" 
+       style="display:inline-block;text-decoration:none;padding:0.3rem 0.9rem;border-radius:50px;font-size:0.75rem;font-weight:600;background:linear-gradient(135deg, #f39c12, #e67e22);color:#fff;transition:var(--transition);">
+        <i class="fas fa-map-marked-alt"></i> عرض على الخريطة
+    </a>
+` : '';
 
         // ============================================================
         // عرض المحتوى (استخدام mapButton هنا)
