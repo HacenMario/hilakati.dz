@@ -1285,7 +1285,7 @@ app.put('/api/appointments/:id/cancel', authMiddleware, async (req, res) => {
 });
 
 // ============================================================
-// إكمال الحجز
+// إكمال الحجز مع إشعار (يحوي اسم الصالون)
 // ============================================================
 app.put('/api/appointments/:id/complete', authMiddleware, async (req, res) => {
     try {
@@ -1296,17 +1296,23 @@ app.put('/api/appointments/:id/complete', authMiddleware, async (req, res) => {
         appointment.status = 'completed';
         await appointment.save();
 
+        // ===== إشعار للعميل مع اسم الصالون =====
         if (appointment.customerId) {
             try {
+                // ✅ جلب اسم الصالون
+                const salon = await Salon.findById(appointment.salonId).select('name');
+                const salonName = salon ? salon.name : 'الصالون';
+                
                 const notification = new Notification({
                     userId: appointment.customerId,
                     userType: 'customer',
                     title: '✅ تم إكمال حجزك',
-                    message: `تم إكمال حجزك في ${appointment.date} الساعة ${appointment.time}. شكراً لزيارتنا!`,
+                    message: `تم إكمال حجزك في ${appointment.date} الساعة ${appointment.time}. نشكرك على زيارة صالون ${salonName}! 💈`,
                     read: false,
                     createdAt: new Date()
                 });
                 await notification.save();
+                console.log(`✅ تم إرسال إشعار إكمال للعميل ${appointment.customerId} مع اسم صالون ${salonName}`);
             } catch (err) {
                 console.error('❌ فشل إرسال إشعار الإكمال:', err);
             }
@@ -1320,7 +1326,7 @@ app.put('/api/appointments/:id/complete', authMiddleware, async (req, res) => {
 });
 
 // ============================================================
-// إكمال الحجز مع تقييم
+// إكمال الحجز مع تقييم (مع إشعار للعميل يحوي اسم الصالون)
 // ============================================================
 app.put('/api/appointments/:id/complete-with-review', customerAuthMiddleware, async (req, res) => {
     try {
@@ -1355,6 +1361,10 @@ app.put('/api/appointments/:id/complete-with-review', customerAuthMiddleware, as
         appointment.status = 'completed';
         await appointment.save();
 
+        // ===== جلب اسم الصالون للإشعارات =====
+        const salon = await Salon.findById(appointment.salonId).select('name');
+        const salonName = salon ? salon.name : 'الصالون';
+
         let review = null;
         if (rating && rating > 0) {
             const customer = await Customer.findById(req.customerId);
@@ -1376,6 +1386,7 @@ app.put('/api/appointments/:id/complete-with-review', customerAuthMiddleware, as
             });
         }
 
+        // ===== إشعار للصالون =====
         try {
             const notification = new Notification({
                 userId: appointment.salonId,
@@ -1387,7 +1398,23 @@ app.put('/api/appointments/:id/complete-with-review', customerAuthMiddleware, as
             });
             await notification.save();
         } catch (notifError) {
-            console.error('❌ فشل إرسال الإشعار:', notifError);
+            console.error('❌ فشل إرسال إشعار الصالون:', notifError);
+        }
+
+        // ===== ✅ إشعار للعميل مع اسم الصالون =====
+        try {
+            const customerNotification = new Notification({
+                userId: appointment.customerId,
+                userType: 'customer',
+                title: '✅ تم إكمال حجزك',
+                message: `تم إكمال حجزك في ${appointment.date} الساعة ${appointment.time}. نشكرك على زيارة صالون ${salonName}! 💈`,
+                read: false,
+                createdAt: new Date()
+            });
+            await customerNotification.save();
+            console.log(`✅ تم إرسال إشعار إكمال للعميل ${appointment.customerId} مع اسم صالون ${salonName}`);
+        } catch (notifError) {
+            console.error('❌ فشل إرسال إشعار العميل:', notifError);
         }
 
         res.status(200).json({
