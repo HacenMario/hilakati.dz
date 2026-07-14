@@ -3351,41 +3351,24 @@ async function updateNotificationUI() {
             let html = '';
             notificationArray.slice(0, 20).forEach(n => {
                 if (!n) return;
-                
-                // ✅ معالجة التاريخ بشكل صحيح (نسخة محسنة)
-                let time = 'تاريخ غير معروف';
-                if (n.createdAt) {
-                    try {
-                        const date = new Date(n.createdAt);
-                        if (!isNaN(date.getTime())) {
-                            // ✅ تنسيق التاريخ: "14 يوليو 2026، 10:59 م"
-                            time = date.toLocaleDateString('ar-EG', { 
-                                year: 'numeric', 
-                                month: 'long', 
-                                day: 'numeric' 
-                            }) + '، ' + date.toLocaleTimeString('ar-EG', { 
-                                hour: '2-digit', 
-                                minute: '2-digit' 
-                            });
-                        } else {
-                            console.warn('⚠️ تاريخ غير صالح (isNaN):', n.createdAt);
-                        }
-                    } catch (e) {
-                        console.warn('⚠️ خطأ في تحويل التاريخ:', n.createdAt, e);
-                        // ✅ محاولة بديلة: عرض التاريخ كما هو
-                        if (typeof n.createdAt === 'string') {
-                            time = n.createdAt.substring(0, 16).replace('T', ' ');
-                        }
-                    }
-                } else {
-                    // ✅ إذا لم يكن هناك createdAt، استخدم وقت الحجز كبديل
-                    if (n.appointmentTime) {
-                        time = n.appointmentTime;
-                    } else {
-                        time = 'تاريخ غير معروف';
-                    }
-                }
-
+// ✅ تنسيق التاريخ العادي
+let time = 'تاريخ غير معروف';
+if (n.createdAt) {
+    try {
+        const date = new Date(n.createdAt);
+        if (!isNaN(date.getTime())) {
+            // ✅ التنسيق العادي: 2026-07-14 23:51
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            time = `${year}-${month}-${day} ${hours}:${minutes}`;
+        }
+    } catch (e) {
+        console.warn('⚠️ تاريخ غير صالح:', n.createdAt);
+    }
+}
                 const isUnread = !n.read;
                 html += `
                     <div class="notif-item ${isUnread ? 'unread' : ''}" 
