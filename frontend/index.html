@@ -3309,7 +3309,7 @@ async function fetchNotifications() {
     }
 }
 // ============================================================
-// 2. تحديث واجهة الإشعارات
+// 2. تحديث واجهة الإشعارات (نسخة محسنة)
 // ============================================================
 let notificationTimeout = null;
 
@@ -3347,17 +3347,18 @@ async function updateNotificationUI() {
                 return;
             }
 
-            // ✅ عرض الإشعارات مع التاريخ
+            // ✅ عرض الإشعارات مع تحسين معالجة التاريخ
             let html = '';
             notificationArray.slice(0, 20).forEach(n => {
                 if (!n) return;
                 
-                // ✅ معالجة التاريخ بشكل صحيح
+                // ✅ معالجة التاريخ بشكل صحيح (نسخة محسنة)
                 let time = 'تاريخ غير معروف';
                 if (n.createdAt) {
                     try {
                         const date = new Date(n.createdAt);
                         if (!isNaN(date.getTime())) {
+                            // ✅ تنسيق التاريخ: "14 يوليو 2026، 10:59 م"
                             time = date.toLocaleDateString('ar-EG', { 
                                 year: 'numeric', 
                                 month: 'long', 
@@ -3366,15 +3367,23 @@ async function updateNotificationUI() {
                                 hour: '2-digit', 
                                 minute: '2-digit' 
                             });
+                        } else {
+                            console.warn('⚠️ تاريخ غير صالح (isNaN):', n.createdAt);
                         }
                     } catch (e) {
-                        console.warn('⚠️ تاريخ غير صالح:', n.createdAt);
+                        console.warn('⚠️ خطأ في تحويل التاريخ:', n.createdAt, e);
+                        // ✅ محاولة بديلة: عرض التاريخ كما هو
+                        if (typeof n.createdAt === 'string') {
+                            time = n.createdAt.substring(0, 16).replace('T', ' ');
+                        }
                     }
-                }
-
-                // ✅ إذا لم يكن هناك createdAt، استخدم وقت الحجز كبديل
-                if (time === 'تاريخ غير معروف' && n.appointmentTime) {
-                    time = n.appointmentTime;
+                } else {
+                    // ✅ إذا لم يكن هناك createdAt، استخدم وقت الحجز كبديل
+                    if (n.appointmentTime) {
+                        time = n.appointmentTime;
+                    } else {
+                        time = 'تاريخ غير معروف';
+                    }
                 }
 
                 const isUnread = !n.read;
