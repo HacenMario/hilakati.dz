@@ -4543,22 +4543,44 @@ function updateUI() {
     const token = localStorage.getItem('token');
     const customerToken = localStorage.getItem('customerToken');
     const adminToken = localStorage.getItem('adminToken');
-    document.getElementById('loginBtn').style.display = token ? 'none' : 'inline-block';
-    document.getElementById('registerBtn').style.display = token ? 'none' : 'inline-block';
-    document.getElementById('logoutBtn').style.display = token ? 'inline-block' : 'none';
-    document.getElementById('dashNavLink').style.display = token ? 'inline-block' : 'none';
-    document.getElementById('userDisplay').style.display = token ? 'inline-block' : 'none';
-    if (token) document.getElementById('userDisplay').textContent = '👋 صالون';
-    document.getElementById('customerLoginBtn').style.display = customerToken ? 'none' : 'inline-block';
-    document.getElementById('customerRegisterBtn').style.display = customerToken ? 'none' : 'inline-block';
-    document.getElementById('customerLogoutBtn').style.display = customerToken ? 'inline-block' : 'none';
-    document.getElementById('customerNameDisplay').style.display = customerToken ? 'inline' : 'none';
-    document.getElementById('customerDashboardBtn').style.display = customerToken ? 'inline-block' : 'none';
-    document.getElementById('customerDashLink').style.display = customerToken ? 'inline-block' : 'none';
-    if (customerToken) document.getElementById('customerNameDisplay').textContent = `👋 ${localStorage.getItem('customerName') || 'عميل'}`;
-    document.getElementById('adminNavLink').style.display = adminToken ? 'inline-block' : 'none';
-    document.getElementById('adminLogoutBtn').style.display = adminToken ? 'inline-block' : 'none';
-    document.getElementById('myBookingsBtn').style.display = 'inline-block';
+    
+    // ✅ التحقق من وجود العناصر قبل تعديلها
+    const loginBtn = document.getElementById('loginBtn');
+    const registerBtn = document.getElementById('registerBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const dashNavLink = document.getElementById('dashNavLink');
+    const userDisplay = document.getElementById('userDisplay');
+    const customerLoginBtn = document.getElementById('customerLoginBtn');
+    const customerRegisterBtn = document.getElementById('customerRegisterBtn');
+    const customerLogoutBtn = document.getElementById('customerLogoutBtn');
+    const customerNameDisplay = document.getElementById('customerNameDisplay');
+    const customerDashLink = document.getElementById('customerDashLink');
+    const adminNavLink = document.getElementById('adminNavLink');
+    const adminLogoutBtn = document.getElementById('adminLogoutBtn');
+    const myBookingsBtn = document.getElementById('myBookingsBtn');
+
+    if (loginBtn) loginBtn.style.display = token ? 'none' : 'inline-block';
+    if (registerBtn) registerBtn.style.display = token ? 'none' : 'inline-block';
+    if (logoutBtn) logoutBtn.style.display = token ? 'inline-block' : 'none';
+    if (dashNavLink) dashNavLink.style.display = token ? 'inline-block' : 'none';
+    if (userDisplay) {
+        userDisplay.style.display = token ? 'inline-block' : 'none';
+        if (token) userDisplay.textContent = '👋 صالون';
+    }
+
+    if (customerLoginBtn) customerLoginBtn.style.display = customerToken ? 'none' : 'inline-block';
+    if (customerRegisterBtn) customerRegisterBtn.style.display = customerToken ? 'none' : 'inline-block';
+    if (customerLogoutBtn) customerLogoutBtn.style.display = customerToken ? 'inline-block' : 'none';
+    if (customerNameDisplay) {
+        customerNameDisplay.style.display = customerToken ? 'inline' : 'none';
+        if (customerToken) customerNameDisplay.textContent = `👋 ${localStorage.getItem('customerName') || 'عميل'}`;
+    }
+    if (customerDashLink) customerDashLink.style.display = customerToken ? 'inline-block' : 'none';
+
+    if (adminNavLink) adminNavLink.style.display = adminToken ? 'inline-block' : 'none';
+    if (adminLogoutBtn) adminLogoutBtn.style.display = adminToken ? 'inline-block' : 'none';
+    if (myBookingsBtn) myBookingsBtn.style.display = 'inline-block';
+
     refreshNotifications();
 }
 function updateCustomerUI() { updateUI(); }
