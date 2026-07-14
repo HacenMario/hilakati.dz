@@ -1308,19 +1308,60 @@
         <button class="btn-outline btn-sm" onclick="toggleLang()" id="langToggle">🇫🇷 FR</button>
 
         <!-- ===== أزرار الأدوار ===== -->
-        <div class="role-buttons">
-            <button class="btn-gold btn-sm" onclick="showAllBookings()" id="myBookingsBtn"><i class="fas fa-calendar-alt"></i> حجوزاتي</button>
-            <button class="btn-gold btn-sm" id="customerDashboardBtn" style="display:none;" onclick="navigateTo('customer-dashboard')"><i class="fas fa-user"></i> حسابي</button>
-            <button class="btn-outline btn-sm" id="customerLoginBtn" onclick="openModal('customerLoginModal')" data-i18n="customerLogin"><i class="fas fa-user"></i> دخول عميل</button>
-            <button class="btn-primary btn-sm" id="customerRegisterBtn" onclick="openModal('customerRegisterModal')" data-i18n="customerRegister"><i class="fas fa-user-plus"></i> حساب عميل</button>
-            <button class="btn-danger btn-sm" id="customerLogoutBtn" style="display:none;" onclick="customerLogout()" data-i18n="logout"><i class="fas fa-sign-out-alt"></i> خروج</button>
-            <button class="btn-outline btn-sm" id="loginBtn" onclick="openModal('loginModal')" data-i18n="login"><i class="fas fa-sign-in-alt"></i> دخول صالون</button>
-            <button class="btn-primary btn-sm" id="registerBtn" onclick="openModal('registerModal')" data-i18n="registerSalon"><i class="fas fa-store"></i> تسجيل صالون</button>
-            <button class="btn-danger btn-sm" id="logoutBtn" style="display:none;" onclick="logout()" data-i18n="logout"><i class="fas fa-sign-out-alt"></i> خروج</button>
-            <button class="btn-outline btn-sm" onclick="openModal('adminLoginModal')" data-i18n="adminLogin"><i class="fas fa-user-cog"></i> Admin</button>
-            <button class="btn-danger btn-sm" id="adminLogoutBtn" style="display:none;" onclick="adminLogout()" data-i18n="logout"><i class="fas fa-sign-out-alt"></i> خروج Admin</button>
-        </div>
+<div class="role-buttons" style="display:flex;flex-wrap:wrap;gap:0.3rem;align-items:center;">
+
+    <!-- ===== قسم العميل ===== -->
+    <div style="display:flex;align-items:center;gap:0.2rem;background:rgba(255,255,255,0.05);padding:0.2rem 0.5rem;border-radius:50px;border:1px solid var(--border-color);">
+        <span style="font-size:0.6rem;color:var(--gold);opacity:0.6;font-weight:700;margin-left:0.2rem;">👤 عميل</span>
+        
+        <button class="btn-outline btn-sm" id="customerLoginBtn" onclick="openModal('customerLoginModal')" style="font-size:0.65rem;padding:0.2rem 0.6rem;">
+            <i class="fas fa-sign-in-alt"></i> دخول
+        </button>
+        
+        <button class="btn-primary btn-sm" id="customerRegisterBtn" onclick="openModal('customerRegisterModal')" style="font-size:0.65rem;padding:0.2rem 0.6rem;">
+            <i class="fas fa-user-plus"></i> حساب
+        </button>
+        
+        <button class="btn-gold btn-sm" onclick="showAllBookings()" id="myBookingsBtn" style="font-size:0.65rem;padding:0.2rem 0.6rem;">
+            <i class="fas fa-calendar-alt"></i> حجوزاتي
+        </button>
+        
+        <button class="btn-danger btn-sm" id="customerLogoutBtn" style="display:none;font-size:0.65rem;padding:0.2rem 0.6rem;" onclick="customerLogout()">
+            <i class="fas fa-sign-out-alt"></i> خروج
+        </button>
     </div>
+
+    <!-- ===== قسم الصالون ===== -->
+    <div style="display:flex;align-items:center;gap:0.2rem;background:rgba(255,255,255,0.05);padding:0.2rem 0.5rem;border-radius:50px;border:1px solid var(--border-color);">
+        <span style="font-size:0.6rem;color:var(--gold);opacity:0.6;font-weight:700;margin-left:0.2rem;">💈 صالون</span>
+        
+        <button class="btn-outline btn-sm" id="loginBtn" onclick="openModal('loginModal')" style="font-size:0.65rem;padding:0.2rem 0.6rem;">
+            <i class="fas fa-sign-in-alt"></i> دخول
+        </button>
+        
+        <button class="btn-primary btn-sm" id="registerBtn" onclick="openModal('registerModal')" style="font-size:0.65rem;padding:0.2rem 0.6rem;">
+            <i class="fas fa-store"></i> تسجيل
+        </button>
+        
+        <button class="btn-danger btn-sm" id="logoutBtn" style="display:none;font-size:0.65rem;padding:0.2rem 0.6rem;" onclick="logout()">
+            <i class="fas fa-sign-out-alt"></i> خروج
+        </button>
+    </div>
+
+    <!-- ===== Admin ===== -->
+    <div style="display:flex;align-items:center;gap:0.2rem;background:rgba(255,255,255,0.05);padding:0.2rem 0.5rem;border-radius:50px;border:1px solid var(--border-color);">
+        <span style="font-size:0.6rem;color:var(--gold);opacity:0.6;font-weight:700;margin-left:0.2rem;">🔑 Admin</span>
+        
+        <button class="btn-outline btn-sm" onclick="openModal('adminLoginModal')" style="font-size:0.65rem;padding:0.2rem 0.6rem;">
+            <i class="fas fa-user-cog"></i> دخول
+        </button>
+        
+        <button class="btn-danger btn-sm" id="adminLogoutBtn" style="display:none;font-size:0.65rem;padding:0.2rem 0.6rem;" onclick="adminLogout()">
+            <i class="fas fa-sign-out-alt"></i> خروج
+        </button>
+    </div>
+
+</div>
 </header>
 
 <!-- ===== Toast ===== -->
