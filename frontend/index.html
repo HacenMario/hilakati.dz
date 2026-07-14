@@ -3023,29 +3023,48 @@ async function showSalonDetails(id) {
             // ... بديل اللوغو ...
         }
 
-          // ✅ زر واتساب
-        let whatsappButton = '';
-        if (salon.phone) {
-            const cleanPhone = cleanPhoneNumber(salon.phone);
-            const whatsappUrl = `https://wa.me/${cleanPhone}`;
-            whatsappButton = `<a href="${whatsappUrl}" target="_blank" class="btn-whatsapp btn-sm" style="display:inline-block;text-decoration:none;">
-                                <i class="fab fa-whatsapp"></i> واتساب
-                              </a>`;
-        } else {
-            whatsappButton = `<span class="btn-outline btn-sm" style="opacity:0.5;cursor:not-allowed;display:inline-block;">
-                                <i class="fab fa-whatsapp"></i> لا يوجد رقم
-                              </span>`;
-        }
-        // ✅ زر الخريطة (بدون خريطة تفاعلية، فقط رابط Google Maps)
+// ============================================================
+// ✅ تعريف الأزرار بألوان مختلفة تماماً
+// ============================================================
+
+// ✅ 1. زر احجز الآن (بنفسجي)
+const bookingButton = `
+    <button onclick="closeModal('salonDetailsModal');openBooking('${salon._id}')" 
+        style="display:inline-block;padding:0.4rem 1.2rem;border-radius:50px;font-size:0.8rem;font-weight:700;background:linear-gradient(135deg, #9b59b6, #8e44ad);color:#fff;border:none;cursor:pointer;transition:all 0.3s ease;box-shadow:0 4px 15px rgba(155,89,182,0.4);">
+        <i class="fas fa-calendar-plus"></i> احجز الآن
+    </button>
+`;
+
+// ✅ 2. زر قيم الصالون (أزرق)
+const reviewButton = `
+    <button onclick="closeModal('salonDetailsModal');openReview('${salon._id}')" 
+        style="display:inline-block;padding:0.4rem 1.2rem;border-radius:50px;font-size:0.8rem;font-weight:700;background:linear-gradient(135deg, #3498db, #2980b9);color:#fff;border:none;cursor:pointer;transition:all 0.3s ease;box-shadow:0 4px 15px rgba(52,152,219,0.4);">
+        <i class="fas fa-star"></i> قيم الصالون
+    </button>
+`;
+
+// ✅ 3. زر عرض على الخريطة (برتقالي)
 const mapButton = salon.lat && salon.lng ? `
     <a href="https://www.google.com/maps/search/?api=1&query=${salon.lat},${salon.lng}" 
        target="_blank" 
-       class="btn-primary btn-sm" 
-       style="display:inline-block;text-decoration:none;padding:0.3rem 0.9rem;border-radius:50px;font-size:0.75rem;font-weight:600;background:linear-gradient(135deg, #f39c12, #e67e22);color:#fff;transition:var(--transition);">
-        <i class="fas fa-map-marked-alt"></i> موقع الصالون على الخريطة
+       style="display:inline-block;padding:0.4rem 1rem;border-radius:50px;font-size:0.75rem;font-weight:600;background:linear-gradient(135deg, #f39c12, #e67e22);color:#fff;text-decoration:none;transition:all 0.3s ease;box-shadow:0 4px 15px rgba(243,156,18,0.3);">
+        <i class="fas fa-map-marked-alt"></i> عرض على الخريطة
     </a>
 ` : '';
 
+// ✅ 4. زر واتساب (أخضر واتساب)
+let whatsappButton = '';
+if (salon.phone) {
+    const cleanPhone = cleanPhoneNumber(salon.phone);
+    const whatsappUrl = `https://wa.me/${cleanPhone}`;
+    whatsappButton = `<a href="${whatsappUrl}" target="_blank" style="display:inline-block;padding:0.3rem 0.9rem;border-radius:50px;font-size:0.75rem;font-weight:600;background:#25D366;color:#fff;text-decoration:none;transition:all 0.3s ease;box-shadow:0 4px 15px rgba(37,211,102,0.3);">
+                        <i class="fab fa-whatsapp"></i> واتساب
+                      </a>`;
+} else {
+    whatsappButton = `<span style="display:inline-block;padding:0.3rem 0.9rem;border-radius:50px;font-size:0.75rem;font-weight:600;background:transparent;color:#888;border:1px solid #888;cursor:not-allowed;">
+                        <i class="fab fa-whatsapp"></i> لا يوجد رقم
+                      </span>`;
+}
         // ============================================================
         // عرض المحتوى (استخدام mapButton هنا)
         // ============================================================
