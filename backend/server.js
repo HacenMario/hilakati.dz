@@ -519,17 +519,18 @@ app.put('/api/admin/approve-salon/:id', adminAuthMiddleware, async (req, res) =>
         salon.isActive = true;
         await salon.save();
 
-        // إشعار لصاحب الصالون (إذا كان مسجلاً)
-        try {
-            const notification = new Notification({
-                userId: salon._id,
-                userType: 'salon',
-                title: '✅ تم تفعيل صالونك',
-                message: `تم قبول طلب تسجيل صالون "${salon.name}". يمكنك الآن البدء في استقبال الحجوزات!`,
-                read: false
-            });
-            await notification.save();
-        } catch (e) {}
+// إشعار لصاحب الصالون (إذا كان مسجلاً)
+try {
+    const notification = new Notification({
+        userId: salon._id,
+        userType: 'salon',
+        title: '✅ تم تفعيل صالونك',
+        message: `تم قبول طلب تسجيل صالون "${salon.name}". يمكنك الآن البدء في استقبال الحجوزات!`,
+        read: false,
+        createdAt: new Date() // ✅ أضف هذا السطر
+    });
+    await notification.save();
+} catch (e) {}
 
         res.json({ message: '✅ تم تفعيل الصالون بنجاح' });
     } catch (error) {
