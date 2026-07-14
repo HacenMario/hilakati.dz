@@ -872,10 +872,10 @@ app.post('/api/admin/broadcast', adminAuthMiddleware, async (req, res) => {
         const notifications = users.map(user => ({
             userId: user.userId,
             userType: user.userType,
-            title,
-            message,
+            title: title,
+            message: message,
             read: false,
-            createdAt: new Date() // ✅ تأكد من وجود هذا السطر
+            createdAt: new Date()  // ⚠️ هذا السطر هو الحل
         }));
 
         await Notification.insertMany(notifications);
