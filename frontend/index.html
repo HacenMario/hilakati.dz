@@ -3321,10 +3321,7 @@ async function updateNotificationUI() {
 
     notificationTimeout = setTimeout(async () => {
         try {
-            // ✅ fetchNotifications دائماً ترجع مصفوفة
             const notifications = await fetchNotifications();
-            
-            // ✅ تأكيد إضافي أنها مصفوفة
             const notificationArray = Array.isArray(notifications) ? notifications : [];
             console.log('📦 الإشعارات المستلمة (نهائي):', notificationArray.length);
 
@@ -3350,29 +3347,35 @@ async function updateNotificationUI() {
                 return;
             }
 
-            // ✅ عرض الإشعارات
+            // ✅ عرض الإشعارات مع التاريخ
             let html = '';
             notificationArray.slice(0, 20).forEach(n => {
                 if (!n) return;
                 
-let time = 'تاريخ غير معروف';
-if (n.createdAt) {
-    try {
-        const date = new Date(n.createdAt);
-        if (!isNaN(date.getTime())) {
-            time = date.toLocaleDateString('ar-EG', { 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-            }) + '، ' + date.toLocaleTimeString('ar-EG', { 
-                hour: '2-digit', 
-                minute: '2-digit' 
-            });
-        }
-    } catch (e) {
-        console.warn('⚠️ تاريخ غير صالح:', n.createdAt);
-    }
-}
+                // ✅ معالجة التاريخ بشكل صحيح
+                let time = 'تاريخ غير معروف';
+                if (n.createdAt) {
+                    try {
+                        const date = new Date(n.createdAt);
+                        if (!isNaN(date.getTime())) {
+                            time = date.toLocaleDateString('ar-EG', { 
+                                year: 'numeric', 
+                                month: 'long', 
+                                day: 'numeric' 
+                            }) + '، ' + date.toLocaleTimeString('ar-EG', { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                            });
+                        }
+                    } catch (e) {
+                        console.warn('⚠️ تاريخ غير صالح:', n.createdAt);
+                    }
+                }
+
+                // ✅ إذا لم يكن هناك createdAt، استخدم وقت الحجز كبديل
+                if (time === 'تاريخ غير معروف' && n.appointmentTime) {
+                    time = n.appointmentTime;
+                }
 
                 const isUnread = !n.read;
                 html += `
