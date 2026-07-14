@@ -70,6 +70,80 @@ const transporter = nodemailer.createTransport({
 });
 
 // ============================================================
+// Passport.js - Google OAuth
+// ============================================================
+const passport = require('passport');
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const session = require('express-session');
+
+// ===== إعدادات الجلسة =====
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'session_secret_key',
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: false } // في الإنتاج استخدم true مع HTTPS
+}));
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+// ===== استراتيجية Google =====
+passport.use(new GoogleStrategy({
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackURL: '/api/auth/google/callback',
+    passReqToCallback: true
+}, async (req, accessToken, refreshToken, profile, done) => {
+    try {
+        console.log('🔍 Google Profile:', profile);
+
+        // 1. البحث عن مستخدم موجود
+        let customer = await Customer.findOne({ email: profile.emails[0].value });
+
+        if (customer) {
+            // 2. إذا كان موجوداً، تحديث googleId إذا لم يكن موجوداً
+            if (!customer.googleId) {
+                customer.googleId = profile.id;
+                customer.avatar = profile.photos?.[0]?.value || '';
+                await customer.save();
+            }
+            return done(null, customer);
+        }
+
+        // 3. إذا لم يكن موجوداً، إنشاء مستخدم جديد
+        customer = new Customer({
+            name: profile.displayName,
+            email: profile.emails[0].value,
+            googleId: profile.id,
+            avatar: profile.photos?.[0]?.value || '',
+            isVerified: true,
+            password: null // لا كلمة مرور لأنه يستخدم Google
+        });
+        await customer.save();
+
+        return done(null, customer);
+
+    } catch (err) {
+        console.error('❌ Google Strategy Error:', err);
+        return done(err, null);
+    }
+}));
+
+// ===== Serialize / Deserialize =====
+passport.serializeUser((user, done) => {
+    done(null, user.id);
+});
+
+passport.deserializeUser(async (id, done) => {
+    try {
+        const user = await Customer.findById(id);
+        done(null, user);
+    } catch (err) {
+        done(err, null);
+    }
+});
+
+// ============================================================
 // النماذج
 // ============================================================
 const Salon = require('./models/Salon');
@@ -378,6 +452,47 @@ app.delete('/api/admin/salons/:id/reviews', adminAuthMiddleware, async (req, res
         res.status(500).json({ message: '❌ فشل في حذف التقييمات' });
     }
 });
+
+// ============================================================
+// مسارات Google Login
+// ============================================================
+
+// ✅ بدء عملية تسجيل الدخول بـ Google
+app.get('/api/auth/google',
+    passport.authenticate('google', { 
+        scope: ['profile', 'email'],
+        prompt: 'select_account'
+    })
+);
+
+// ✅ رد Google بعد المصادقة
+app.get('/api/auth/google/callback',
+    passport.authenticate('google', { 
+        failureRedirect: '/login-failed',
+        session: true
+    }),
+    (req, res) => {
+        // ✅ نجاح تسجيل الدخول - إنشاء JWT وإعادة التوجيه
+        const token = jwt.sign(
+            { id: req.user._id }, 
+            process.env.JWT_CUSTOMER_SECRET || 'customer_secret_key', 
+            { expiresIn: '7d' }
+        );
+        
+        const name = encodeURIComponent(req.user.name);
+        
+        // ✅ إعادة التوجيه إلى الواجهة الأمامية مع التوكن
+        res.redirect(
+            `https://hilakatidz.vercel.app/?googleLogin=true&token=${token}&customerId=${req.user._id}&name=${name}`
+        );
+    }
+);
+
+// ✅ مسار فشل تسجيل الدخول
+app.get('/login-failed', (req, res) => {
+    res.redirect('https://hilakatidz.vercel.app/?googleLogin=failed');
+});
+
 // ============================================================
 // Admin: جلب الصالونات المعلقة
 // ============================================================
