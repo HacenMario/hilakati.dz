@@ -327,7 +327,7 @@
             font-size: 0.75rem;
         }
 
-        /* ========= Notifications ========= */
+        /* ========== Notifications ========== */
         .notif-bell {
             position: relative;
             cursor: pointer;
@@ -1418,14 +1418,7 @@
         <div class="form-group"><label data-i18n="password">كلمة المرور</label><input type="password" id="custPassword" required minlength="6"></div>
         <button type="submit" class="btn-gold" style="width:100%;padding:0.5rem;"><i class="fas fa-user-plus"></i> إنشاء الحساب</button>
     </form>
-        <!-- ✅ زر Google Login للتسجيل -->
-        <div style="text-align:center;margin:0.8rem 0;">
-            <p style="color:var(--text-color);opacity:0.5;font-size:0.8rem;">أو سجل باستخدام</p>
-            <a href="/api/auth/google" class="btn-primary" style="display:inline-block;padding:0.4rem 1.2rem;border-radius:50px;background:#db4437;color:#fff;text-decoration:none;font-size:0.8rem;border:none;cursor:pointer;">
-                <i class="fab fa-google"></i> تسجيل بـ Google
-            </a>
-        </div>
-    </div>
+</div></div>
 
 <!-- دخول عميل -->
 <div class="modal-overlay" id="customerLoginModal"><div class="modal-box">
@@ -1437,17 +1430,7 @@
         <button type="submit" class="btn-gold" style="width:100%;padding:0.5rem;">دخول</button>
     </form>
     <button class="btn-outline btn-sm" onclick="openModal('forgotPasswordModalCustomer')" style="margin-top:0.5rem; width:100%;">نسيت كلمة المرور؟</button>
-        <!-- ✅ زر Google Login (بعد النموذج) -->
-        <div style="text-align:center;margin:0.8rem 0;">
-            <p style="color:var(--text-color);opacity:0.5;font-size:0.8rem;">أو سجل دخول باستخدام</p>
-            <a href="/api/auth/google" class="btn-primary" style="display:inline-block;padding:0.4rem 1.2rem;border-radius:50px;background:#db4437;color:#fff;text-decoration:none;font-size:0.8rem;border:none;cursor:pointer;">
-                <i class="fab fa-google"></i> دخول بـ Google
-            </a>
-        </div>
-
-        <button class="btn-outline btn-sm" onclick="openModal('forgotPasswordModalCustomer')" style="margin-top:0.5rem; width:100%;">نسيت كلمة المرور؟</button>
-    </div>
-</div>
+</div></div>
 
 <!-- Admin -->
 <div class="modal-overlay" id="adminLoginModal"><div class="modal-box">
@@ -4649,40 +4632,6 @@ async function init() {
     setInterval(refreshNotifications, 30000);
     console.log('🇩🇿 حلاقتي - النسخة الكاملة مع نسيان كلمة المرور وصلاحيات Admin');
 }
-
-// ===== معالجة Google Login =====
-function handleGoogleLogin() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const googleLogin = urlParams.get('googleLogin');
-    const token = urlParams.get('token');
-    const customerId = urlParams.get('customerId');
-    const name = urlParams.get('name');
-
-    if (googleLogin === 'true' && token && customerId && name) {
-        // ✅ حفظ البيانات في localStorage
-        localStorage.setItem('customerToken', token);
-        localStorage.setItem('customerId', customerId);
-        localStorage.setItem('customerName', decodeURIComponent(name));
-
-        showToast(`✅ مرحباً ${decodeURIComponent(name)}!`, 'success');
-        updateCustomerUI();
-        refreshNotifications();
-        
-        // ✅ إزالة المعاملات من الرابط
-        window.history.replaceState({}, document.title, window.location.pathname);
-        
-        // ✅ الانتقال إلى لوحة العميل
-        navigateTo('customer-dashboard');
-        
-        return true;
-    } else if (googleLogin === 'failed') {
-        showToast('❌ فشل تسجيل الدخول بـ Google', 'error');
-        window.history.replaceState({}, document.title, window.location.pathname);
-        return false;
-    }
-    return false;
-}
-
 // ===== إرسال رسالة الاتصال عبر EmailJS =====
 function sendContactMessage(e) {
     e.preventDefault();
