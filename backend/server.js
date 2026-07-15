@@ -1194,7 +1194,25 @@ app.get('/api/appointments/client/:phone', async (req, res) => {
 // ============================================================
 app.post('/api/appointments/request', async (req, res) => {
     try {
-        const { salonId, customerId, clientName, clientPhone, clientEmail, services, totalPrice, staff, date, time, payment, notes, recurring } = req.body;
+        const { 
+            salonId, 
+            customerId, 
+            clientName, 
+            clientPhone, 
+            clientEmail, 
+            services, 
+            totalPrice, 
+            staff, 
+            date, 
+            time, 
+            payment, 
+            notes, 
+            recurring,
+            couponId,
+            couponCode,
+            discountAmount,
+            originalPrice
+        } = req.body;
 
         // 1. التحقق من الصالون
         const salon = await Salon.findById(salonId);
@@ -1283,26 +1301,73 @@ app.post('/api/appointments/request', async (req, res) => {
             });
         }
 
-        // 5. إنشاء الحجز
+        // ============================================================
+        // ✅ 5. تحديث عدد استخدامات الكوبون (إذا وجد)
+        // ============================================================
+        if (couponId) {
+            try {
+                const Coupon = require('./models/Coupon');
+                const coupon = await Coupon.findById(couponId);
+                
+                if (coupon) {
+                    // ✅ زيادة عدد الاستخدامات
+                    coupon.usedCount = (coupon.usedCount || 0) + 1;
+                    await coupon.save();
+                    
+                    console.log(`✅ تم تحديث الكوبون ${coupon.code}: استخدام ${coupon.usedCount}/${coupon.usageLimit}`);
+                    
+                    // ✅ إذا وصل الكوبون إلى الحد الأقصى، قم بتعطيله تلقائياً
+                    if (coupon.usedCount >= coupon.usageLimit) {
+                        coupon.isActive = false;
+                        await coupon.save();
+                        console.log(`🔒 تم تعطيل الكوبون ${coupon.code} تلقائياً (وصل للحد الأقصى)`);
+                    }
+                } else {
+                    console.warn(`⚠️ الكوبون ${couponId} غير موجود`);
+                }
+            } catch (couponError) {
+                console.error('❌ فشل تحديث الكوبون:', couponError);
+                // لا نوقف الحجز إذا فشل تحديث الكوبون
+            }
+        }
+
+        // 6. إنشاء الحجز
         const appointment = new Appointment({
-            salonId, customerId, clientName, clientPhone, clientEmail,
-            services, totalPrice, staff, date, time, payment, notes,
-            recurring, status: 'pending'
+            salonId, 
+            customerId, 
+            clientName, 
+            clientPhone, 
+            clientEmail,
+            services, 
+            totalPrice, 
+            staff, 
+            date, 
+            time, 
+            payment, 
+            notes,
+            recurring, 
+            status: 'pending',
+            // ✅ حفظ معلومات الكوبون في الحجز
+            couponId: couponId || null,
+            couponCode: couponCode || null,
+            discountAmount: discountAmount || 0,
+            originalPrice: originalPrice || totalPrice
         });
         await appointment.save();
 
-        // 6. إشعار للصالون (مع اسم الصالون)
+        // 7. إشعار للصالون (مع اسم الصالون)
         try {
             const salonName = salon.name || 'الصالون';
             const notification = new Notification({
                 userId: salonId,
                 userType: 'salon',
                 title: '📅 حجز جديد',
-                message: `حجز من ${clientName} في ${date} الساعة ${time} - صالون ${salonName}`,
+                message: `حجز من ${clientName} في ${date} الساعة ${time} - صالون ${salonName}${couponCode ? ` 🎫 كوبون: ${couponCode}` : ''}`,
                 read: false,
                 createdAt: new Date()
             });
             await notification.save();
+            
             const io = req.app.get('io');
             if (io) {
                 io.to(`salon-${salonId}`).emit('new-notification', {
@@ -1314,14 +1379,40 @@ app.post('/api/appointments/request', async (req, res) => {
             console.error('❌ فشل إنشاء الإشعار:', notifError);
         }
 
+        // 8. إشعار للعميل (إذا كان مسجلاً)
+        if (customerId) {
+            try {
+                const customerNotification = new Notification({
+                    userId: customerId,
+                    userType: 'customer',
+                    title: '📅 طلب حجز جديد',
+                    message: `تم إرسال طلب حجزك في صالون ${salon.name || 'الصالون'} بتاريخ ${date} الساعة ${time}${couponCode ? ` 🎫 كوبون: ${couponCode}` : ''}`,
+                    read: false,
+                    createdAt: new Date()
+                });
+                await customerNotification.save();
+                
+                const io = req.app.get('io');
+                if (io) {
+                    io.to(`customer-${customerId}`).emit('new-notification', {
+                        title: '📅 طلب حجز جديد',
+                        message: `تم إرسال طلب حجزك في صالون ${salon.name || 'الصالون'} بتاريخ ${date} الساعة ${time}`
+                    });
+                }
+            } catch (notifError) {
+                console.error('❌ فشل إشعار العميل:', notifError);
+            }
+        }
+
         res.status(201).json({
             message: '✅ تم إرسال طلب الحجز بنجاح!',
-            appointment
+            appointment,
+            couponUpdated: couponId ? true : false
         });
 
     } catch (err) {
         console.error('❌ فشل إنشاء الحجز:', err);
-        res.status(500).json({ message: '❌ فشل إنشاء الحجز' });
+        res.status(500).json({ message: '❌ فشل إنشاء الحجز: ' + err.message });
     }
 });
 
