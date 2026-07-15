@@ -1298,6 +1298,8 @@
     <div class="header-actions">
         <span id="userDisplay" style="display:none;color:var(--gold);font-weight:500;font-size:0.7rem;"></span>
         <span id="customerNameDisplay" style="display:none;color:var(--gold);font-weight:500;font-size:0.7rem;"></span>
+        <!-- ✅ زر تثبيت PWA (دائم) -->
+        <button class="btn-gold btn-sm" onclick="installPWA()" id="pwaInstallBtn" style="display:inline-block;"><i class="fas fa-download"></i> تثبيت التطبيق</button>
 
         <!-- ===== زر الإشعارات ===== -->
         <div class="notif-bell" id="notifBell" style="position:relative;display:inline-block;cursor:pointer;margin-left:0.5rem;">
@@ -1990,6 +1992,75 @@
 </section>
 
 <script>
+// ✅ تثبيت التطبيق (نسخة محسنة)
+async function installPWA() {
+    console.log('🔄 محاولة تثبيت التطبيق...');
+    
+    // ✅ 1. إذا كان deferredPrompt متاحاً
+    if (deferredPrompt) {
+        try {
+            deferredPrompt.prompt();
+            const result = await deferredPrompt.userChoice;
+            console.log(`✅ نتيجة التثبيت: ${result.outcome}`);
+            deferredPrompt = null;
+            
+            if (result.outcome === 'accepted') {
+                showToast('✅ تم تثبيت التطبيق بنجاح!', 'success');
+            } else {
+                showToast('❌ تم إلغاء التثبيت', 'info');
+            }
+            return;
+        } catch (error) {
+            console.error('❌ فشل التثبيت:', error);
+        }
+    }
+    
+// ✅ التحقق من وضع العرض
+if (window.matchMedia('(display-mode: standalone)').matches) {
+    // التطبيق مثبت
+    const installBtn = document.getElementById('pwaInstallBtn');
+    if (installBtn) {
+        installBtn.style.display = 'none';
+    }
+}
+    
+    // ✅ 3. حل أخير: عرض تعليمات التثبيت اليدوي
+    showInstallInstructions();
+}
+
+// ✅ عرض تعليمات التثبيت اليدوي
+function showInstallInstructions() {
+    const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
+    
+    let message = '';
+    if (isMobile) {
+        message = `
+📱 كيفية تثبيت التطبيق على هاتفك:
+
+🔹 في متصفح Chrome/Android:
+1. اضغط على زر القائمة (⋮) في الأعلى
+2. اختر "إضافة إلى الشاشة الرئيسية"
+3. اضغط "إضافة"
+
+🔹 في Safari (iPhone/iPad):
+1. اضغط على زر المشاركة (⬆️)
+2. اختر "إضافة إلى الشاشة الرئيسية"
+3. اضغط "إضافة"
+        `;
+    } else {
+        message = `
+💻 كيفية تثبيت التطبيق على جهاز الكمبيوتر:
+
+🔹 في متصفح Chrome/Edge:
+1. اضغط على زر القائمة (⋮) في الأعلى
+2. اختر "تثبيت التطبيق" أو "Install App"
+3. اضغط "تثبيت"
+        `;
+    }
+    
+    alert(message);
+}
+    
 // ============================================================
 // PWA - تثبيت التطبيق
 // ============================================================
