@@ -3,17 +3,38 @@ const router = express.Router();
 const Coupon = require('../models/Coupon');
 const auth = require('../middleware/auth');
 
-// ✅ جلب جميع الكوبونات
+// ============================================================
+// ✅ 1. جلب كوبون واحد للتعديل (يأتي أولاً لتجنب التصادم)
+// ============================================================
+router.get('/:id', auth, async (req, res) => {
+    try {
+        const coupon = await Coupon.findById(req.params.id);
+        if (!coupon) {
+            return res.status(404).json({ message: '❌ الكوبون غير موجود' });
+        }
+        res.json(coupon);
+    } catch (error) {
+        console.error('❌ فشل جلب الكوبون:', error);
+        res.status(500).json({ message: 'فشل جلب الكوبون' });
+    }
+});
+
+// ============================================================
+// ✅ 2. جلب جميع كوبونات صالون
+// ============================================================
 router.get('/:salonId', auth, async (req, res) => {
     try {
         const coupons = await Coupon.find({ salonId: req.params.salonId });
         res.json(coupons);
     } catch (error) {
+        console.error('❌ فشل جلب الكوبونات:', error);
         res.status(500).json({ message: 'فشل جلب الكوبونات' });
     }
 });
 
-// ✅ إنشاء كوبون جديد
+// ============================================================
+// ✅ 3. إنشاء كوبون جديد
+// ============================================================
 router.post('/', auth, async (req, res) => {
     try {
         // ✅ إنشاء كود فريد إذا لم يتم توفيره
@@ -24,11 +45,50 @@ router.post('/', auth, async (req, res) => {
         await coupon.save();
         res.status(201).json({ message: '✅ تم إنشاء الكوبون', coupon });
     } catch (error) {
+        console.error('❌ فشل إنشاء الكوبون:', error);
         res.status(500).json({ message: 'فشل إنشاء الكوبون' });
     }
 });
 
-// ✅ التحقق من صلاحية الكوبون
+// ============================================================
+// ✅ 4. تحديث كوبون
+// ============================================================
+router.put('/:id', auth, async (req, res) => {
+    try {
+        const coupon = await Coupon.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        if (!coupon) {
+            return res.status(404).json({ message: '❌ الكوبون غير موجود' });
+        }
+        res.json({ message: '✅ تم تحديث الكوبون', coupon });
+    } catch (error) {
+        console.error('❌ فشل تحديث الكوبون:', error);
+        res.status(500).json({ message: 'فشل تحديث الكوبون' });
+    }
+});
+
+// ============================================================
+// ✅ 5. استخدام كوبون (زيادة عدد الاستخدامات)
+// ============================================================
+router.put('/use/:id', auth, async (req, res) => {
+    try {
+        const coupon = await Coupon.findByIdAndUpdate(
+            req.params.id,
+            { $inc: { usedCount: 1 } },
+            { new: true }
+        );
+        if (!coupon) {
+            return res.status(404).json({ message: '❌ الكوبون غير موجود' });
+        }
+        res.json({ message: '✅ تم استخدام الكوبون', coupon });
+    } catch (error) {
+        console.error('❌ فشل استخدام الكوبون:', error);
+        res.status(500).json({ message: 'فشل استخدام الكوبون' });
+    }
+});
+
+// ============================================================
+// ✅ 6. التحقق من صلاحية الكوبون
+// ============================================================
 router.post('/validate', async (req, res) => {
     try {
         const { code, salonId, total } = req.body;
@@ -69,46 +129,30 @@ router.post('/validate', async (req, res) => {
             newTotal: total - discount
         });
     } catch (error) {
+        console.error('❌ فشل التحقق من الكوبون:', error);
         res.status(500).json({ message: 'فشل التحقق من الكوبون' });
     }
 });
-// ✅ تحديث كوبون
-router.put('/:id', async (req, res) => {
+
+// ============================================================
+// ✅ 7. حذف كوبون
+// ============================================================
+router.delete('/:id', auth, async (req, res) => {
     try {
-        const coupon = await Coupon.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const coupon = await Coupon.findByIdAndDelete(req.params.id);
         if (!coupon) {
             return res.status(404).json({ message: '❌ الكوبون غير موجود' });
         }
-        res.json({ message: '✅ تم تحديث الكوبون', coupon });
-    } catch (error) {
-        res.status(500).json({ message: 'فشل تحديث الكوبون' });
-    }
-});
-
-// ✅ استخدام كوبون
-router.put('/use/:id', auth, async (req, res) => {
-    try {
-        const coupon = await Coupon.findByIdAndUpdate(
-            req.params.id,
-            { $inc: { usedCount: 1 } },
-            { new: true }
-        );
-        res.json({ message: '✅ تم استخدام الكوبون', coupon });
-    } catch (error) {
-        res.status(500).json({ message: 'فشل استخدام الكوبون' });
-    }
-});
-
-// ✅ حذف كوبون
-router.delete('/:id', auth, async (req, res) => {
-    try {
-        await Coupon.findByIdAndDelete(req.params.id);
         res.json({ message: '✅ تم حذف الكوبون' });
     } catch (error) {
+        console.error('❌ فشل حذف الكوبون:', error);
         res.status(500).json({ message: 'فشل حذف الكوبون' });
     }
 });
 
+// ============================================================
+// ✅ دالة مساعدة: توليد كود كوبون عشوائي
+// ============================================================
 function generateCouponCode() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let code = '';
