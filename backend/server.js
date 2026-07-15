@@ -1798,61 +1798,90 @@ app.post('/api/contact', async (req, res) => {
         res.status(500).json({ message: '❌ فشل إرسال الرسالة' });
     }
 });
-// ============================================================
-// مسارات الكوبونات (مباشرة في server.js)
-// ============================================================
-const Coupon = require('./models/Coupon');
 
-// ✅ جلب جميع كوبونات صالون
-app.get('/api/coupons/:salonId', authMiddleware, async (req, res) => {
+// ============================================================
+// تحميل الكوبونات
+// ============================================================
+async function loadCoupons() {
+    const salonId = localStorage.getItem('salonId');
+    const token = localStorage.getItem('token');
+    
+    if (!salonId || !token) {
+        console.warn('⚠️ لا يوجد salonId أو token');
+        const container = document.getElementById('couponsList');
+        if (container) {
+            container.innerHTML = '<p style="color:var(--text-color);opacity:0.5;">يرجى تسجيل الدخول لعرض الكوبونات</p>';
+        }
+        return;
+    }
+
     try {
-        const coupons = await Coupon.find({ salonId: req.params.salonId });
-        res.json(coupons);
+        const res = await fetch(`${API_BASE}/coupons/${salonId}`, {
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        // ✅ التحقق من حالة الاستجابة
+        if (!res.ok) {
+            if (res.status === 404) {
+                console.warn('⚠️ لا توجد كوبونات لهذا الصالون');
+                const container = document.getElementById('couponsList');
+                if (container) {
+                    container.innerHTML = '<p style="color:var(--text-color);opacity:0.5;">لا توجد كوبونات. قم بإنشاء كوبون جديد!</p>';
+                }
+                return;
+            }
+            const errorData = await res.json();
+            throw new Error(errorData.message || 'فشل جلب الكوبونات');
+        }
+
+        const coupons = await res.json();
+        
+        // ✅ التأكد من أن البيانات مصفوفة
+        if (!Array.isArray(coupons)) {
+            console.warn('⚠️ البيانات ليست مصفوفة:', coupons);
+            const container = document.getElementById('couponsList');
+            if (container) {
+                container.innerHTML = '<p style="color:var(--text-color);opacity:0.5;">لا توجد كوبونات</p>';
+            }
+            return;
+        }
+
+        const container = document.getElementById('couponsList');
+        if (!container) return;
+
+        if (coupons.length === 0) {
+            container.innerHTML = '<p style="color:var(--text-color);opacity:0.5;">لا توجد كوبونات. قم بإنشاء كوبون جديد!</p>';
+            return;
+        }
+
+        // ✅ عرض الكوبونات
+        container.innerHTML = coupons.map(c => `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:0.3rem 0;border-bottom:1px solid var(--border-color);flex-wrap:wrap;gap:0.3rem;">
+                <div>
+                    <strong style="color:var(--gold);">${c.code}</strong>
+                    <span style="font-size:0.7rem;opacity:0.5;">${c.type === 'percentage' ? `${c.value}%` : `${c.value} دج`}</span>
+                    <span style="font-size:0.7rem;">استخدم ${c.usedCount}/${c.usageLimit}</span>
+                    <span style="font-size:0.7rem;color:${new Date(c.validUntil) > new Date() ? 'var(--success)' : 'var(--danger)'};">
+                        ${new Date(c.validUntil) > new Date() ? '✅ فعال' : '❌ منتهي'}
+                    </span>
+                </div>
+                <div style="display:flex;gap:0.3rem;flex-wrap:wrap;">
+                    <button class="btn-primary btn-sm" onclick="editCoupon('${c._id}')"><i class="fas fa-edit"></i></button>
+                    <button class="btn-danger btn-sm" onclick="deleteCoupon('${c._id}')"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+        `).join('');
     } catch (error) {
         console.error('❌ فشل جلب الكوبونات:', error);
-        res.status(500).json({ message: 'فشل جلب الكوبونات' });
-    }
-});
-
-// ✅ إنشاء كوبون جديد
-app.post('/api/coupons', authMiddleware, async (req, res) => {
-    try {
-        const coupon = new Coupon(req.body);
-        await coupon.save();
-        res.status(201).json({ message: '✅ تم إنشاء الكوبون', coupon });
-    } catch (error) {
-        console.error('❌ فشل إنشاء الكوبون:', error);
-        res.status(500).json({ message: 'فشل إنشاء الكوبون' });
-    }
-});
-
-// ✅ تحديث كوبون
-app.put('/api/coupons/:id', authMiddleware, async (req, res) => {
-    try {
-        const coupon = await Coupon.findByIdAndUpdate(req.params.id, req.body, { new: true });
-        if (!coupon) {
-            return res.status(404).json({ message: '❌ الكوبون غير موجود' });
+        const container = document.getElementById('couponsList');
+        if (container) {
+            container.innerHTML = `<p style="color:var(--danger);">❌ ${error.message || 'فشل تحميل الكوبونات'}</p>`;
         }
-        res.json({ message: '✅ تم تحديث الكوبون', coupon });
-    } catch (error) {
-        console.error('❌ فشل تحديث الكوبون:', error);
-        res.status(500).json({ message: 'فشل تحديث الكوبون' });
     }
-});
-
-// ✅ حذف كوبون
-app.delete('/api/coupons/:id', authMiddleware, async (req, res) => {
-    try {
-        const coupon = await Coupon.findByIdAndDelete(req.params.id);
-        if (!coupon) {
-            return res.status(404).json({ message: '❌ الكوبون غير موجود' });
-        }
-        res.json({ message: '✅ تم حذف الكوبون' });
-    } catch (error) {
-        console.error('❌ فشل حذف الكوبون:', error);
-        res.status(500).json({ message: 'فشل حذف الكوبون' });
-    }
-});
+}
 
 // ============================================================
 // تشغيل الخادم
