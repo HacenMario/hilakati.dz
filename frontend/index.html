@@ -5313,7 +5313,7 @@ async function deleteInventory(id) {
     }
 }
 // ============================================================
-// تحميل الكوبونات
+// تحميل الكوبونات (باستخدام المسار الجديد)
 // ============================================================
 async function loadCoupons() {
     const salonId = localStorage.getItem('salonId');
@@ -5329,14 +5329,14 @@ async function loadCoupons() {
     }
 
     try {
-        const res = await fetch(`${API_BASE}/coupons/${salonId}`, {
+        // ✅ استخدام المسار الجديد
+        const res = await fetch(`${API_BASE}/get-coupons/${salonId}`, {
             headers: { 
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
             }
         });
 
-        // ✅ التحقق من حالة الاستجابة
         if (!res.ok) {
             if (res.status === 404) {
                 console.warn('⚠️ لا توجد كوبونات لهذا الصالون');
@@ -5352,7 +5352,6 @@ async function loadCoupons() {
 
         const coupons = await res.json();
         
-        // ✅ التأكد من أن البيانات مصفوفة
         if (!Array.isArray(coupons)) {
             console.warn('⚠️ البيانات ليست مصفوفة:', coupons);
             const container = document.getElementById('couponsList');
@@ -5370,7 +5369,6 @@ async function loadCoupons() {
             return;
         }
 
-        // ✅ عرض الكوبونات
         container.innerHTML = coupons.map(c => `
             <div style="display:flex;justify-content:space-between;align-items:center;padding:0.3rem 0;border-bottom:1px solid var(--border-color);flex-wrap:wrap;gap:0.3rem;">
                 <div>
