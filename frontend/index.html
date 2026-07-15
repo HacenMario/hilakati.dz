@@ -5483,7 +5483,6 @@ async function editCoupon(couponId) {
     }
 
     try {
-        // ✅ استخدام المسار الجديد لجلب كوبون واحد
         const res = await fetch(`${API_BASE}/get-coupon/${couponId}`, {
             headers: { 
                 'Authorization': `Bearer ${token}`,
@@ -5517,12 +5516,62 @@ async function editCoupon(couponId) {
         document.getElementById('editCouponDescription').value = coupon.description || '';
         document.getElementById('editCouponStatus').value = coupon.isActive ? 'true' : 'false';
 
+        // ✅ فتح النافذة
         openModal('editCouponModal');
     } catch (error) {
         console.error('❌ فشل جلب بيانات الكوبون:', error);
         showToast(`❌ ${error.message || 'فشل تحميل بيانات الكوبون'}`, 'error');
     }
 }
+// ✅ معالج تعديل الكوبون
+document.getElementById('editCouponForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const token = localStorage.getItem('token');
+    const couponId = document.getElementById('editCouponId').value;
+    
+    const code = document.getElementById('editCouponCode').value.trim();
+    const type = document.getElementById('editCouponType').value;
+    const value = parseFloat(document.getElementById('editCouponValue').value);
+    const minOrder = parseFloat(document.getElementById('editCouponMinOrder').value) || 0;
+    const maxDiscount = parseFloat(document.getElementById('editCouponMaxDiscount').value) || 0;
+    const validFrom = new Date(document.getElementById('editCouponValidFrom').value);
+    const validUntil = new Date(document.getElementById('editCouponValidUntil').value);
+    const usageLimit = parseInt(document.getElementById('editCouponUsageLimit').value) || 1;
+    const description = document.getElementById('editCouponDescription').value.trim();
+    const isActive = document.getElementById('editCouponStatus').value === 'true';
+    
+    if (validFrom > validUntil) {
+        showToast('❌ تاريخ البدء يجب أن يكون قبل تاريخ الانتهاء', 'error');
+        return;
+    }
+    
+    try {
+        const res = await fetch(`${API_BASE}/update-coupon/${couponId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                code, type, value, minOrder, maxDiscount,
+                validFrom, validUntil, usageLimit, description,
+                isActive
+            })
+        });
+        
+        if (res.ok) {
+            showToast('✅ تم تحديث الكوبون', 'success');
+            closeModal('editCouponModal');
+            loadCoupons();
+        } else {
+            const data = await res.json();
+            showToast(`❌ ${data.message}`, 'error');
+        }
+    } catch (error) {
+        console.error('❌ فشل تحديث الكوبون:', error);
+        showToast('❌ فشل الاتصال', 'error');
+    }
+});
 
 // ============================================================
 // حذف كوبون
