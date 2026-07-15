@@ -5891,7 +5891,7 @@ async function editCoupon(couponId) {
     }
 
     try {
-        const res = await fetch(`${API_BASE}/coupons/${couponId}`, {
+        const res = await fetch(`${API_BASE}/get-coupon/${couponId}`, {  // ✅ تم التصحيح
             headers: { 
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
@@ -5901,7 +5901,7 @@ async function editCoupon(couponId) {
         if (!res.ok) {
             if (res.status === 404) {
                 showToast('❌ الكوبون غير موجود', 'error');
-                loadCoupons(); // تحديث القائمة
+                loadCoupons();
                 return;
             }
             const errorData = await res.json();
