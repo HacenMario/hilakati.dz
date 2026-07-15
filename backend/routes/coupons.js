@@ -72,6 +72,18 @@ router.post('/validate', async (req, res) => {
         res.status(500).json({ message: 'فشل التحقق من الكوبون' });
     }
 });
+// ✅ تحديث كوبون
+router.put('/:id', async (req, res) => {
+    try {
+        const coupon = await Coupon.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        if (!coupon) {
+            return res.status(404).json({ message: '❌ الكوبون غير موجود' });
+        }
+        res.json({ message: '✅ تم تحديث الكوبون', coupon });
+    } catch (error) {
+        res.status(500).json({ message: 'فشل تحديث الكوبون' });
+    }
+});
 
 // ✅ استخدام كوبون
 router.put('/use/:id', auth, async (req, res) => {
