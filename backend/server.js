@@ -1798,6 +1798,61 @@ app.post('/api/contact', async (req, res) => {
         res.status(500).json({ message: '❌ فشل إرسال الرسالة' });
     }
 });
+// ============================================================
+// مسارات الكوبونات (مؤقتة للاختبار)
+// ============================================================
+const Coupon = require('./models/Coupon');
+
+// ✅ جلب جميع كوبونات صالون
+app.get('/api/coupons/:salonId', authMiddleware, async (req, res) => {
+    try {
+        const coupons = await Coupon.find({ salonId: req.params.salonId });
+        res.json(coupons);
+    } catch (error) {
+        console.error('❌ فشل جلب الكوبونات:', error);
+        res.status(500).json({ message: 'فشل جلب الكوبونات' });
+    }
+});
+
+// ✅ إنشاء كوبون جديد
+app.post('/api/coupons', authMiddleware, async (req, res) => {
+    try {
+        const coupon = new Coupon(req.body);
+        await coupon.save();
+        res.status(201).json({ message: '✅ تم إنشاء الكوبون', coupon });
+    } catch (error) {
+        console.error('❌ فشل إنشاء الكوبون:', error);
+        res.status(500).json({ message: 'فشل إنشاء الكوبون' });
+    }
+});
+
+// ✅ تحديث كوبون
+app.put('/api/coupons/:id', authMiddleware, async (req, res) => {
+    try {
+        const coupon = await Coupon.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        if (!coupon) {
+            return res.status(404).json({ message: '❌ الكوبون غير موجود' });
+        }
+        res.json({ message: '✅ تم تحديث الكوبون', coupon });
+    } catch (error) {
+        console.error('❌ فشل تحديث الكوبون:', error);
+        res.status(500).json({ message: 'فشل تحديث الكوبون' });
+    }
+});
+
+// ✅ حذف كوبون
+app.delete('/api/coupons/:id', authMiddleware, async (req, res) => {
+    try {
+        const coupon = await Coupon.findByIdAndDelete(req.params.id);
+        if (!coupon) {
+            return res.status(404).json({ message: '❌ الكوبون غير موجود' });
+        }
+        res.json({ message: '✅ تم حذف الكوبون' });
+    } catch (error) {
+        console.error('❌ فشل حذف الكوبون:', error);
+        res.status(500).json({ message: 'فشل حذف الكوبون' });
+    }
+});
 
 // ============================================================
 // تشغيل الخادم
