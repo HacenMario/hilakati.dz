@@ -2486,13 +2486,33 @@ function showToast(message, type = 'success') {
     toast._timer = setTimeout(() => toast.classList.remove('show'), 4000);
 }
 function openModal(id) {
+    console.log(`🔍 محاولة فتح النافذة: ${id}`);
+    
+    // ✅ البحث عن النافذة
     const modal = document.getElementById(id);
-    if (modal) {
+    
+    if (!modal) {
+        console.error(`❌ النافذة ${id} غير موجودة في DOM`);
+        showToast(`❌ النافذة غير موجودة`, 'error');
+        return;
+    }
+    
+    console.log(`✅ تم العثور على النافذة: ${id}`);
+    
+    // ✅ إزالة أي class قديم
+    modal.classList.remove('active');
+    modal.style.display = 'none';
+    
+    // ✅ إعادة تعيين العرض مع تأخير
+    setTimeout(() => {
+        modal.style.display = 'flex';
         modal.classList.add('active');
         console.log(`✅ تم فتح النافذة: ${id}`);
-    } else {
-        console.error(`❌ النافذة ${id} غير موجودة`);
-    }
+        
+        // ✅ التأكد من ظهورها
+        const rect = modal.getBoundingClientRect();
+        console.log(`📐 أبعاد النافذة:`, rect);
+    }, 50);
 }
 
 function closeModal(id) {
@@ -5508,32 +5528,52 @@ async function editCoupon(couponId) {
         const coupon = await res.json();
         console.log('📦 بيانات الكوبون:', coupon);
 
-        // ✅ تعبئة النموذج بالبيانات
-        document.getElementById('editCouponId').value = coupon._id;
-        document.getElementById('editCouponCode').value = coupon.code || '';
-        document.getElementById('editCouponType').value = coupon.type || 'percentage';
-        document.getElementById('editCouponValue').value = coupon.value || 0;
-        document.getElementById('editCouponMinOrder').value = coupon.minOrder || 0;
-        document.getElementById('editCouponMaxDiscount').value = coupon.maxDiscount || 0;
-        document.getElementById('editCouponValidFrom').value = coupon.validFrom ? new Date(coupon.validFrom).toISOString().split('T')[0] : '';
-        document.getElementById('editCouponValidUntil').value = coupon.validUntil ? new Date(coupon.validUntil).toISOString().split('T')[0] : '';
-        document.getElementById('editCouponUsageLimit').value = coupon.usageLimit || 1;
-        document.getElementById('editCouponDescription').value = coupon.description || '';
-        document.getElementById('editCouponStatus').value = coupon.isActive ? 'true' : 'false';
-
-        console.log('✅ تم تعبئة البيانات، جاري فتح النافذة...');
-        
-        // ✅ التحقق من وجود النافذة قبل فتحها
-        const modal = document.getElementById('editCouponModal');
-        if (!modal) {
-            console.error('❌ النافذة editCouponModal غير موجودة في DOM!');
-            showToast('❌ خطأ في النافذة', 'error');
+        // ✅ تعبئة النموذج بالبيانات (مع try-catch لكل عنصر)
+        try {
+            document.getElementById('editCouponId').value = coupon._id || '';
+            document.getElementById('editCouponCode').value = coupon.code || '';
+            document.getElementById('editCouponType').value = coupon.type || 'percentage';
+            document.getElementById('editCouponValue').value = coupon.value || 0;
+            document.getElementById('editCouponMinOrder').value = coupon.minOrder || 0;
+            document.getElementById('editCouponMaxDiscount').value = coupon.maxDiscount || 0;
+            
+            // ✅ التحقق من التواريخ قبل تعبئتها
+            if (coupon.validFrom) {
+                document.getElementById('editCouponValidFrom').value = new Date(coupon.validFrom).toISOString().split('T')[0];
+            }
+            if (coupon.validUntil) {
+                document.getElementById('editCouponValidUntil').value = new Date(coupon.validUntil).toISOString().split('T')[0];
+            }
+            
+            document.getElementById('editCouponUsageLimit').value = coupon.usageLimit || 1;
+            document.getElementById('editCouponDescription').value = coupon.description || '';
+            document.getElementById('editCouponStatus').value = coupon.isActive ? 'true' : 'false';
+            
+            console.log('✅ تم تعبئة جميع الحقول بنجاح');
+        } catch (fillError) {
+            console.error('❌ خطأ في تعبئة البيانات:', fillError);
+            showToast('❌ خطأ في تعبئة البيانات', 'error');
             return;
         }
-        
-        console.log('✅ النافذة موجودة، جاري فتحها...');
-        openModal('editCouponModal');
-        console.log('✅ تم استدعاء openModal');
+
+        // ✅ فتح النافذة مع تأخير بسيط
+        console.log('🔄 جاري فتح النافذة...');
+        const modal = document.getElementById('editCouponModal');
+        if (modal) {
+            // ✅ إزالة أي class قديم
+            modal.classList.remove('active');
+            modal.style.display = 'none';
+            
+            // ✅ إعادة تعيين العرض
+            setTimeout(() => {
+                modal.style.display = 'flex';
+                modal.classList.add('active');
+                console.log('✅ تم فتح النافذة بنجاح');
+            }, 100);
+        } else {
+            console.error('❌ النافذة غير موجودة!');
+            showToast('❌ خطأ في النافذة', 'error');
+        }
 
     } catch (error) {
         console.error('❌ فشل جلب بيانات الكوبون:', error);
