@@ -5312,25 +5312,65 @@ async function deleteInventory(id) {
         showToast('❌ فشل الاتصال', 'error');
     }
 }
-
 // ============================================================
-// 3. الكوبونات
+// تحميل الكوبونات
 // ============================================================
-
 async function loadCoupons() {
     const salonId = localStorage.getItem('salonId');
-    if (!salonId) return;
     const token = localStorage.getItem('token');
+    
+    if (!salonId || !token) {
+        console.warn('⚠️ لا يوجد salonId أو token');
+        const container = document.getElementById('couponsList');
+        if (container) {
+            container.innerHTML = '<p style="color:var(--text-color);opacity:0.5;">يرجى تسجيل الدخول لعرض الكوبونات</p>';
+        }
+        return;
+    }
+
     try {
         const res = await fetch(`${API_BASE}/coupons/${salonId}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
         });
+
+        // ✅ التحقق من حالة الاستجابة
+        if (!res.ok) {
+            if (res.status === 404) {
+                console.warn('⚠️ لا توجد كوبونات لهذا الصالون');
+                const container = document.getElementById('couponsList');
+                if (container) {
+                    container.innerHTML = '<p style="color:var(--text-color);opacity:0.5;">لا توجد كوبونات. قم بإنشاء كوبون جديد!</p>';
+                }
+                return;
+            }
+            const errorData = await res.json();
+            throw new Error(errorData.message || 'فشل جلب الكوبونات');
+        }
+
         const coupons = await res.json();
-        const container = document.getElementById('couponsList');
-        if (!coupons || coupons.length === 0) {
-            container.innerHTML = '<p style="color:var(--text-color);opacity:0.5;">لا توجد كوبونات</p>';
+        
+        // ✅ التأكد من أن البيانات مصفوفة
+        if (!Array.isArray(coupons)) {
+            console.warn('⚠️ البيانات ليست مصفوفة:', coupons);
+            const container = document.getElementById('couponsList');
+            if (container) {
+                container.innerHTML = '<p style="color:var(--text-color);opacity:0.5;">لا توجد كوبونات</p>';
+            }
             return;
         }
+
+        const container = document.getElementById('couponsList');
+        if (!container) return;
+
+        if (coupons.length === 0) {
+            container.innerHTML = '<p style="color:var(--text-color);opacity:0.5;">لا توجد كوبونات. قم بإنشاء كوبون جديد!</p>';
+            return;
+        }
+
+        // ✅ عرض الكوبونات
         container.innerHTML = coupons.map(c => `
             <div style="display:flex;justify-content:space-between;align-items:center;padding:0.3rem 0;border-bottom:1px solid var(--border-color);flex-wrap:wrap;gap:0.3rem;">
                 <div>
@@ -5342,18 +5382,19 @@ async function loadCoupons() {
                     </span>
                 </div>
                 <div style="display:flex;gap:0.3rem;flex-wrap:wrap;">
-                    <div style="display:flex;gap:0.3rem;flex-wrap:wrap;">
                     <button class="btn-primary btn-sm" onclick="editCoupon('${c._id}')"><i class="fas fa-edit"></i></button>
-                    <button class="btn-${c.isActive ? 'warning' : 'success'} btn-sm" onclick="toggleCouponStatus('${c._id}', ${!c.isActive})">${c.isActive ? '🔴 تعطيل' : '🟢 تفعيل'}</button>
                     <button class="btn-danger btn-sm" onclick="deleteCoupon('${c._id}')"><i class="fas fa-trash"></i></button>
-                    </div>
+                </div>
             </div>
         `).join('');
     } catch (error) {
         console.error('❌ فشل جلب الكوبونات:', error);
+        const container = document.getElementById('couponsList');
+        if (container) {
+            container.innerHTML = `<p style="color:var(--danger);">❌ ${error.message || 'فشل تحميل الكوبونات'}</p>`;
+        }
     }
 }
-
 function openCouponModal() {
     document.getElementById('couponForm').reset();
     // ✅ تعيين التواريخ الافتراضية
@@ -5406,25 +5447,39 @@ document.getElementById('couponForm').addEventListener('submit', async (e) => {
     }
 });
 
-async function deleteCoupon(id) {
-    if (!confirm('⚠️ هل أنت متأكد من حذف هذا الكوبون؟')) return;
+// ============================================================
+// حذف كوبون
+// ============================================================
+async function deleteCoupon(couponId) {
+    if (!confirm('⚠️ هل أنت متأكد من حذف هذا الكوبون نهائياً؟')) return;
+    
     const token = localStorage.getItem('token');
+    if (!token) {
+        showToast('❌ يرجى تسجيل الدخول', 'error');
+        return;
+    }
+
     try {
-        const res = await fetch(`${API_BASE}/coupons/${id}`, {
+        const res = await fetch(`${API_BASE}/coupons/${couponId}`, {
             method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` }
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
         });
+
         if (res.ok) {
             showToast('✅ تم حذف الكوبون', 'success');
-            loadCoupons();
+            loadCoupons(); // تحديث القائمة
         } else {
-            showToast('❌ فشل الحذف', 'error');
+            const data = await res.json();
+            showToast(`❌ ${data.message || 'فشل الحذف'}`, 'error');
         }
     } catch (error) {
+        console.error('❌ فشل حذف الكوبون:', error);
         showToast('❌ فشل الاتصال', 'error');
     }
 }
-
 // ============================================================
 // 4. طلبات عروض الأسعار
 // ============================================================
@@ -5697,30 +5752,38 @@ async function editInventory(itemId) {
     }
 }
 
-// ✅ تعديل كوبون (جميع البيانات)
+// ============================================================
+// تعديل كوبون
+// ============================================================
 async function editCoupon(couponId) {
-    console.log('🔄 تعديل الكوبون:', couponId);
     const token = localStorage.getItem('token');
     if (!token) {
         showToast('❌ يرجى تسجيل الدخول', 'error');
         return;
     }
-    
+
     try {
         const res = await fetch(`${API_BASE}/coupons/${couponId}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
         });
-        
+
         if (!res.ok) {
-            const data = await res.json();
-            showToast(`❌ ${data.message}`, 'error');
-            return;
+            if (res.status === 404) {
+                showToast('❌ الكوبون غير موجود', 'error');
+                loadCoupons(); // تحديث القائمة
+                return;
+            }
+            const errorData = await res.json();
+            throw new Error(errorData.message || 'فشل جلب الكوبون');
         }
-        
+
         const coupon = await res.json();
         console.log('📦 بيانات الكوبون:', coupon);
-        
-        // ✅ تعبئة النموذج بالبيانات الحالية
+
+        // ✅ تعبئة النموذج بالبيانات
         document.getElementById('editCouponId').value = coupon._id;
         document.getElementById('editCouponCode').value = coupon.code || '';
         document.getElementById('editCouponType').value = coupon.type || 'percentage';
@@ -5732,11 +5795,11 @@ async function editCoupon(couponId) {
         document.getElementById('editCouponUsageLimit').value = coupon.usageLimit || 1;
         document.getElementById('editCouponDescription').value = coupon.description || '';
         document.getElementById('editCouponStatus').value = coupon.isActive ? 'true' : 'false';
-        
+
         openModal('editCouponModal');
     } catch (error) {
         console.error('❌ فشل جلب بيانات الكوبون:', error);
-        showToast('❌ فشل تحميل بيانات الكوبون', 'error');
+        showToast(`❌ ${error.message || 'فشل تحميل بيانات الكوبون'}`, 'error');
     }
 }
 // ✅ معالج تعديل الكوبون
