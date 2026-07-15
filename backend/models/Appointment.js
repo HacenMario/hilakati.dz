@@ -14,7 +14,29 @@ const AppointmentSchema = new mongoose.Schema({
   status: { type: String, enum: ['pending', 'confirmed', 'completed', 'cancelled'], default: 'pending' },
   payment: { type: String, enum: ['cash', 'online'], default: 'cash' },
   notes: String,
-  recurring: { type: String, enum: ['none', 'weekly', 'monthly'], default: 'none' }
+  recurring: { type: String, enum: ['none', 'weekly', 'monthly'], default: 'none' },
+  
+  // ============================================================
+  // 🆕 حقول الكوبونات
+  // ============================================================
+  couponId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Coupon', 
+    default: null 
+  },
+  couponCode: { 
+    type: String, 
+    default: null 
+  },
+  discountAmount: { 
+    type: Number, 
+    default: 0 
+  },
+  originalPrice: { 
+    type: Number, 
+    default: 0 
+  }
+  
 }, { timestamps: true });
 
 module.exports = mongoose.model('Appointment', AppointmentSchema);
