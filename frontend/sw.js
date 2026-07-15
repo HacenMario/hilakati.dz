@@ -19,6 +19,7 @@ self.addEventListener('install', event => {
                 console.log('✅ تم فتح الكاش');
                 return cache.addAll(urlsToCache);
             })
+            .catch(err => console.error('❌ فشل التخزين المؤقت:', err))
     );
 });
 
@@ -28,6 +29,9 @@ self.addEventListener('fetch', event => {
         caches.match(event.request)
             .then(response => {
                 return response || fetch(event.request);
+            })
+            .catch(() => {
+                return new Response('⚠️ غير متصل بالإنترنت');
             })
     );
 });
