@@ -7,9 +7,17 @@ const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const http = require('http');
 const socketIo = require('socket.io');
-
 const app = express();
 const server = http.createServer(app);
+
+const staffRoutes = require('./routes/staff');
+const inventoryRoutes = require('./routes/inventory');
+const couponRoutes = require('./routes/coupons');
+const quoteRoutes = require('./routes/quotes');
+app.use('/api/staff', staffRoutes);
+app.use('/api/inventory', inventoryRoutes);
+app.use('/api/coupons', couponRoutes);
+app.use('/api/quotes', quoteRoutes);
 
 // ============================================================
 // Socket.io
