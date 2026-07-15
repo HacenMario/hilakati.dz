@@ -2062,7 +2062,7 @@ function showInstallInstructions() {
 }
     
 // ============================================================
-// PWA - تثبيت التطبيق (نسخة محسنة)
+// PWA - تثبيت التطبيق (نسخة الهاتف)
 // ============================================================
 
 let deferredPrompt = null;
@@ -2080,54 +2080,32 @@ window.addEventListener('beforeinstallprompt', (e) => {
     }
 });
 
-// ✅ تثبيت التطبيق
+// ✅ تثبيت التطبيق (نسخة الهاتف)
 async function installPWA() {
     console.log('🔄 محاولة تثبيت التطبيق...');
-    console.log('deferredPrompt:', deferredPrompt);
     
-    // ✅ إذا كان deferredPrompt متاحاً
+    // ✅ 1. إذا كان deferredPrompt متاحاً (Chrome/Edge)
     if (deferredPrompt) {
         try {
-            // عرض نافذة التثبيت
             deferredPrompt.prompt();
-            // انتظار رد المستخدم
             const result = await deferredPrompt.userChoice;
             console.log(`✅ نتيجة التثبيت: ${result.outcome}`);
+            deferredPrompt = null;
             
-            // إخفاء الزر بعد التثبيت
             if (result.outcome === 'accepted') {
                 showToast('✅ تم تثبيت التطبيق بنجاح!', 'success');
                 const installBtn = document.getElementById('pwaInstallBtn');
                 if (installBtn) {
                     installBtn.style.display = 'none';
                 }
-            } else {
-                showToast('❌ تم إلغاء التثبيت', 'info');
             }
-            
-            deferredPrompt = null;
             return;
         } catch (error) {
             console.error('❌ فشل التثبيت:', error);
-            showToast('❌ فشل التثبيت، حاول مرة أخرى', 'error');
         }
     }
     
-    // ✅ إذا لم يكن deferredPrompt متاحاً، استخدم حل بديل
-    await installPWAFallback();
-}
-
-// ✅ حل بديل: فتح نافذة التثبيت عبر المتصفح
-async function installPWAFallback() {
-    // ✅ التحقق من أن المتصفح يدعم PWA
-    if ('BeforeInstallPromptEvent' in window) {
-        showToast('⏳ جاري تحضير التثبيت...', 'info');
-        // ✅ إعادة تحميل الصفحة لتشغيل الحدث
-        window.location.reload();
-        return;
-    }
-    
-    // ✅ إذا كان التطبيق مثبتاً بالفعل
+    // ✅ 2. إذا كان التطبيق مثبتاً بالفعل
     if (window.matchMedia('(display-mode: standalone)').matches) {
         showToast('✅ التطبيق مثبت بالفعل!', 'success');
         const installBtn = document.getElementById('pwaInstallBtn');
@@ -2137,29 +2115,77 @@ async function installPWAFallback() {
         return;
     }
     
-    // ✅ حل أخير: عرض تعليمات التثبيت اليدوي
-    showInstallInstructions();
-}
-
-// ✅ عرض تعليمات التثبيت اليدوي
-function showInstallInstructions() {
+    // ✅ 3. للهواتف (iOS / Android) - استخدام navigator.share أو توجيه مباشر
     const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
     
-    let message = '';
     if (isMobile) {
-        message = 
-            '📱 لتثبيت تطبيق حلاقتي:\n\n' +
-            '1. اضغط على زر القائمة (⋮ أو ⬆️)\n' +
-            '2. اختر "إضافة إلى الشاشة الرئيسية"\n' +
-            '3. اضغط "إضافة" ✅';
-    } else {
-        message = 
-            '💻 لتثبيت تطبيق حلاقتي:\n\n' +
-            '1. اضغط على زر القائمة (⋮) في المتصفح\n' +
-            '2. اختر "تثبيت التطبيق" أو "Install App"\n' +
-            '3. اضغط "تثبيت" ✅';
+        // ✅ محاولة استخدام navigator.share (iOS Safari)
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: 'حلاقتي - منصة حجز صالونات الحلاقة والتجميل',
+                    text: 'احجز موعدك بسهولة مع أفضل الصالونات في الجزائر',
+                    url: window.location.href
+                });
+                showToast('✅ تمت المشاركة! يمكنك إضافة الصفحة للشاشة الرئيسية', 'success');
+                return;
+            } catch (error) {
+                console.log('⚠️ تم إلغاء المشاركة');
+            }
+        }
+        
+        // ✅ حل مباشر: فتح صفحة التعليمات مع رابط التثبيت
+        showMobileInstallInstructions();
+        return;
     }
+    
+    // ✅ 4. للحاسوب: عرض تعليمات التثبيت
+    showDesktopInstallInstructions();
+}
+
+// ✅ تعليمات التثبيت للهاتف (مباشرة)
+function showMobileInstallInstructions() {
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    
+    let message = '';
+    let steps = [];
+    
+    if (isIOS) {
+        steps = [
+            '📱 اضغط على زر المشاركة ⬆️ في أسفل الشاشة',
+            '📲 اختر "إضافة إلى الشاشة الرئيسية"',
+            '✅ اضغط على "إضافة" في الأعلى'
+        ];
+        message = 'لإضافة التطبيق إلى شاشتك الرئيسية:\n\n' + steps.map((s, i) => `${i+1}. ${s}`).join('\n');
+    } else if (isAndroid) {
+        steps = [
+            '📱 اضغط على زر القائمة ⋮ في أعلى الشاشة',
+            '📲 اختر "إضافة إلى الشاشة الرئيسية"',
+            '✅ اضغط على "إضافة"'
+        ];
+        message = 'لإضافة التطبيق إلى شاشتك الرئيسية:\n\n' + steps.map((s, i) => `${i+1}. ${s}`).join('\n');
+    } else {
+        steps = [
+            '📱 افتح قائمة المتصفح (⋮ أو ⬆️)',
+            '📲 اختر "إضافة إلى الشاشة الرئيسية"',
+            '✅ اضغط "إضافة"'
+        ];
+        message = 'لإضافة التطبيق إلى شاشتك الرئيسية:\n\n' + steps.map((s, i) => `${i+1}. ${s}`).join('\n');
+    }
+    
+    // ✅ عرض التعليمات في نافذة منبثقة
     alert(message);
+}
+
+// ✅ تعليمات التثبيت للحاسوب
+function showDesktopInstallInstructions() {
+    alert(
+        '💻 لتثبيت تطبيق حلاقتي على جهازك:\n\n' +
+        '1. اضغط على زر القائمة (⋮) في المتصفح\n' +
+        '2. اختر "تثبيت التطبيق" أو "Install App"\n' +
+        '3. اضغط "تثبيت" ✅'
+    );
 }
 
 // ✅ إخفاء الإشعار
@@ -2180,6 +2206,14 @@ window.addEventListener('appinstalled', () => {
     }
 });
 
+// ✅ التحقق من وضع العرض عند التحميل
+if (window.matchMedia('(display-mode: standalone)').matches) {
+    const installBtn = document.getElementById('pwaInstallBtn');
+    if (installBtn) {
+        installBtn.style.display = 'none';
+    }
+}
+    
 // ===== أيقونات نوع الصالون =====
 function getSalonTypeIcon(type) {
     const icons = {
