@@ -153,6 +153,109 @@ const Admin = require('./models/Admin');
 const Notification = require('./models/Notification');
 
 // ============================================================
+// ✅ التحقق من صلاحية الكوبون (مسار عام - لا يحتاج مصادقة)
+// ============================================================
+app.post('/api/coupons/validate', async (req, res) => {
+    try {
+        const { code, salonId, total } = req.body;
+        
+        console.log(`🔍 التحقق من الكوبون: ${code} للصالون ${salonId}`);
+        
+        // ✅ التحقق من وجود البيانات
+        if (!code || !salonId) {
+            return res.status(400).json({ 
+                valid: false,
+                message: '❌ كود الكوبون ومعرف الصالون مطلوبان' 
+            });
+        }
+        
+        // ✅ استيراد نموذج Coupon (إذا لم يكن مستورداً)
+        const Coupon = require('./models/Coupon');
+        
+        // ✅ البحث عن الكوبون
+        const coupon = await Coupon.findOne({ 
+            code: code.toUpperCase().trim(), 
+            salonId, 
+            isActive: true 
+        });
+        
+        if (!coupon) {
+            return res.status(404).json({ 
+                valid: false,
+                message: '❌ كوبون غير صالح أو غير موجود' 
+            });
+        }
+        
+        console.log(`✅ تم العثور على الكوبون: ${coupon.code}`);
+        
+        // ✅ التحقق من الصلاحية
+        const now = new Date();
+        const validFrom = new Date(coupon.validFrom);
+        const validUntil = new Date(coupon.validUntil);
+        
+        if (now < validFrom || now > validUntil) {
+            return res.status(400).json({ 
+                valid: false,
+                message: '❌ انتهت صلاحية الكوبون' 
+            });
+        }
+        
+        // ✅ التحقق من عدد الاستخدامات
+        if (coupon.usedCount >= coupon.usageLimit) {
+            return res.status(400).json({ 
+                valid: false,
+                message: '❌ تم استخدام الكوبون بالكامل' 
+            });
+        }
+        
+        // ✅ التحقق من الحد الأدنى للطلب
+        if (total < coupon.minOrder) {
+            return res.status(400).json({ 
+                valid: false,
+                message: `❌ الحد الأدنى للطلب هو ${coupon.minOrder} دج` 
+            });
+        }
+        
+        // ✅ حساب الخصم
+        let discount = 0;
+        if (coupon.type === 'percentage') {
+            discount = (total * coupon.value) / 100;
+            if (coupon.maxDiscount > 0) {
+                discount = Math.min(discount, coupon.maxDiscount);
+            }
+        } else {
+            discount = coupon.value;
+        }
+        
+        discount = Math.round(discount);
+        const newTotal = Math.max(0, total - discount);
+        
+        console.log(`💰 الخصم: ${discount} دج، السعر الجديد: ${newTotal} دج`);
+        
+        res.json({
+            valid: true,
+            coupon: {
+                _id: coupon._id,
+                code: coupon.code,
+                type: coupon.type,
+                value: coupon.value,
+                minOrder: coupon.minOrder,
+                maxDiscount: coupon.maxDiscount
+            },
+            discount: discount,
+            newTotal: newTotal
+        });
+        
+    } catch (error) {
+        console.error('❌ فشل التحقق من الكوبون:', error);
+        res.status(500).json({ 
+            valid: false,
+            message: '❌ فشل التحقق من الكوبون: ' + error.message 
+        });
+    }
+});
+
+// ============================================================
 // Middleware للمصادقة
 // ============================================================
 function authMiddleware(req, res, next) {
@@ -1953,108 +2056,7 @@ app.delete('/api/delete-coupon/:id', authMiddleware, async (req, res) => {
         res.status(500).json({ message: 'فشل حذف الكوبون' });
     }
 });
-// ============================================================
-// ✅ التحقق من صلاحية الكوبون (مسار عام - لا يحتاج مصادقة)
-// ============================================================
-app.post('/api/coupons/validate', async (req, res) => {
-    try {
-        const { code, salonId, total } = req.body;
-        
-        console.log(`🔍 التحقق من الكوبون: ${code} للصالون ${salonId}`);
-        
-        // ✅ التحقق من وجود البيانات المطلوبة
-        if (!code || !salonId) {
-            return res.status(400).json({ 
-                valid: false,
-                message: '❌ كود الكوبون ومعرف الصالون مطلوبان' 
-            });
-        }
-        
-        // ✅ البحث عن الكوبون
-        const Coupon = require('./models/Coupon');
-        const coupon = await Coupon.findOne({ 
-            code: code.toUpperCase().trim(), 
-            salonId, 
-            isActive: true 
-        });
-        
-        if (!coupon) {
-            return res.status(404).json({ 
-                valid: false,
-                message: '❌ كوبون غير صالح أو غير موجود' 
-            });
-        }
-        
-        console.log(`✅ تم العثور على الكوبون: ${coupon.code}`);
-        
-        // ✅ التحقق من الصلاحية (التاريخ)
-        const now = new Date();
-        if (now < new Date(coupon.validFrom) || now > new Date(coupon.validUntil)) {
-            return res.status(400).json({ 
-                valid: false,
-                message: '❌ انتهت صلاحية الكوبون' 
-            });
-        }
-        
-        // ✅ التحقق من عدد الاستخدامات
-        if (coupon.usedCount >= coupon.usageLimit) {
-            return res.status(400).json({ 
-                valid: false,
-                message: '❌ تم استخدام الكوبون بالكامل' 
-            });
-        }
-        
-        // ✅ التحقق من الحد الأدنى للطلب
-        if (total < coupon.minOrder) {
-            return res.status(400).json({ 
-                valid: false,
-                message: `❌ الحد الأدنى للطلب هو ${coupon.minOrder} دج` 
-            });
-        }
-        
-        // ✅ حساب قيمة الخصم
-        let discount = 0;
-        if (coupon.type === 'percentage') {
-            discount = (total * coupon.value) / 100;
-            if (coupon.maxDiscount > 0) {
-                discount = Math.min(discount, coupon.maxDiscount);
-            }
-        } else {
-            // نوع固定 (fixed)
-            discount = coupon.value;
-        }
-        
-        discount = Math.round(discount);
-        const newTotal = Math.max(0, total - discount);
-        
-        console.log(`💰 الخصم: ${discount} دج، السعر الجديد: ${newTotal} دج`);
-        
-        // ✅ إرجاع النتيجة
-        res.json({
-            valid: true,
-            coupon: {
-                _id: coupon._id,
-                code: coupon.code,
-                type: coupon.type,
-                value: coupon.value,
-                minOrder: coupon.minOrder,
-                maxDiscount: coupon.maxDiscount,
-                validFrom: coupon.validFrom,
-                validUntil: coupon.validUntil
-            },
-            discount: discount,
-            newTotal: newTotal,
-            message: `✅ تم تطبيق خصم ${discount} دج`
-        });
-        
-    } catch (error) {
-        console.error('❌ فشل التحقق من الكوبون:', error);
-        res.status(500).json({ 
-            valid: false,
-            message: '❌ فشل التحقق من الكوبون: ' + error.message 
-        });
-    }
-});
+
 
 // ============================================================
 // تشغيل الخادم
