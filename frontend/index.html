@@ -5699,12 +5699,26 @@ async function editInventory(itemId) {
 
 // ✅ تعديل كوبون (جميع البيانات)
 async function editCoupon(couponId) {
+    console.log('🔄 تعديل الكوبون:', couponId);
     const token = localStorage.getItem('token');
+    if (!token) {
+        showToast('❌ يرجى تسجيل الدخول', 'error');
+        return;
+    }
+    
     try {
         const res = await fetch(`${API_BASE}/coupons/${couponId}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
+        
+        if (!res.ok) {
+            const data = await res.json();
+            showToast(`❌ ${data.message}`, 'error');
+            return;
+        }
+        
         const coupon = await res.json();
+        console.log('📦 بيانات الكوبون:', coupon);
         
         // ✅ تعبئة النموذج بالبيانات الحالية
         document.getElementById('editCouponId').value = coupon._id;
@@ -5725,7 +5739,6 @@ async function editCoupon(couponId) {
         showToast('❌ فشل تحميل بيانات الكوبون', 'error');
     }
 }
-
 // ✅ معالج تعديل الكوبون
 document.getElementById('editCouponForm').addEventListener('submit', async (e) => {
     e.preventDefault();
