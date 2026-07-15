@@ -5528,48 +5528,69 @@ async function editCoupon(couponId) {
         const coupon = await res.json();
         console.log('📦 بيانات الكوبون:', coupon);
 
-        // ✅ تعبئة النموذج بالبيانات (مع try-catch لكل عنصر)
-        try {
-            document.getElementById('editCouponId').value = coupon._id || '';
-            document.getElementById('editCouponCode').value = coupon.code || '';
-            document.getElementById('editCouponType').value = coupon.type || 'percentage';
-            document.getElementById('editCouponValue').value = coupon.value || 0;
-            document.getElementById('editCouponMinOrder').value = coupon.minOrder || 0;
-            document.getElementById('editCouponMaxDiscount').value = coupon.maxDiscount || 0;
-            
-            // ✅ التحقق من التواريخ قبل تعبئتها
-            if (coupon.validFrom) {
-                document.getElementById('editCouponValidFrom').value = new Date(coupon.validFrom).toISOString().split('T')[0];
+        // ✅ تعبئة النموذج بالبيانات
+        const elements = {
+            id: document.getElementById('editCouponId'),
+            code: document.getElementById('editCouponCode'),
+            type: document.getElementById('editCouponType'),
+            value: document.getElementById('editCouponValue'),
+            minOrder: document.getElementById('editCouponMinOrder'),
+            maxDiscount: document.getElementById('editCouponMaxDiscount'),
+            validFrom: document.getElementById('editCouponValidFrom'),
+            validUntil: document.getElementById('editCouponValidUntil'),
+            usageLimit: document.getElementById('editCouponUsageLimit'),
+            description: document.getElementById('editCouponDescription'),
+            status: document.getElementById('editCouponStatus')
+        };
+
+        // ✅ التحقق من وجود جميع العناصر
+        for (const [key, el] of Object.entries(elements)) {
+            if (!el) {
+                console.error(`❌ العنصر editCoupon${key.charAt(0).toUpperCase() + key.slice(1)} غير موجود`);
+                showToast(`❌ خطأ في النموذج: ${key}`, 'error');
+                return;
             }
-            if (coupon.validUntil) {
-                document.getElementById('editCouponValidUntil').value = new Date(coupon.validUntil).toISOString().split('T')[0];
-            }
-            
-            document.getElementById('editCouponUsageLimit').value = coupon.usageLimit || 1;
-            document.getElementById('editCouponDescription').value = coupon.description || '';
-            document.getElementById('editCouponStatus').value = coupon.isActive ? 'true' : 'false';
-            
-            console.log('✅ تم تعبئة جميع الحقول بنجاح');
-        } catch (fillError) {
-            console.error('❌ خطأ في تعبئة البيانات:', fillError);
-            showToast('❌ خطأ في تعبئة البيانات', 'error');
-            return;
         }
 
-        // ✅ فتح النافذة مع تأخير بسيط
-        console.log('🔄 جاري فتح النافذة...');
+        // ✅ تعبئة البيانات
+        elements.id.value = coupon._id || '';
+        elements.code.value = coupon.code || '';
+        elements.type.value = coupon.type || 'percentage';
+        elements.value.value = coupon.value || 0;
+        elements.minOrder.value = coupon.minOrder || 0;
+        elements.maxDiscount.value = coupon.maxDiscount || 0;
+        elements.validFrom.value = coupon.validFrom ? new Date(coupon.validFrom).toISOString().split('T')[0] : '';
+        elements.validUntil.value = coupon.validUntil ? new Date(coupon.validUntil).toISOString().split('T')[0] : '';
+        elements.usageLimit.value = coupon.usageLimit || 1;
+        elements.description.value = coupon.description || '';
+        elements.status.value = coupon.isActive ? 'true' : 'false';
+
+        console.log('✅ تم تعبئة جميع الحقول بنجاح');
+
+        // ✅ فتح النافذة
         const modal = document.getElementById('editCouponModal');
         if (modal) {
-            // ✅ إزالة أي class قديم
-            modal.classList.remove('active');
-            modal.style.display = 'none';
+            // ✅ التأكد من أن النافذة تحتوي على محتوى
+            console.log('📄 محتوى النافذة:', modal.innerHTML.substring(0, 200) + '...');
             
-            // ✅ إعادة تعيين العرض
+            // ✅ عرض النافذة
+            modal.style.display = 'flex';
+            modal.classList.add('active');
+            
+            // ✅ التأكد من الأبعاد بعد الفتح
             setTimeout(() => {
-                modal.style.display = 'flex';
-                modal.classList.add('active');
-                console.log('✅ تم فتح النافذة بنجاح');
-            }, 100);
+                const rect = modal.getBoundingClientRect();
+                console.log('📐 أبعاد النافذة بعد الفتح:', rect);
+                if (rect.width === 0 || rect.height === 0) {
+                    console.error('❌ النافذة لا تزال بحجم صفر!');
+                    // ✅ محاولة إصلاح: إضافة محتوى مؤقت
+                    const box = modal.querySelector('.modal-box');
+                    if (box) {
+                        box.style.minHeight = '300px';
+                        box.style.minWidth = '300px';
+                    }
+                }
+            }, 200);
         } else {
             console.error('❌ النافذة غير موجودة!');
             showToast('❌ خطأ في النافذة', 'error');
