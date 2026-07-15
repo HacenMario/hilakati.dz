@@ -13,7 +13,7 @@
     <!-- PWA -->
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#f5b042">
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
     <style>
@@ -1994,10 +1994,11 @@
 // PWA - تثبيت التطبيق
 // ============================================================
 
-let deferredPrompt;
+let deferredPrompt = null;
 
-// ✅ اكتشاف حدث التثبيت
+// ✅ هذا الحدث يتم تشغيله تلقائياً بواسطة المتصفح
 window.addEventListener('beforeinstallprompt', (e) => {
+    console.log('✅ تم اكتشاف حدث beforeinstallprompt');
     // منع ظهور الإشعار الافتراضي
     e.preventDefault();
     // حفظ الحدث لاستخدامه لاحقاً
@@ -2012,23 +2013,45 @@ function showInstallBanner() {
     const banner = document.getElementById('installBanner');
     if (banner) {
         banner.style.display = 'block';
+        console.log('✅ تم عرض إشعار التثبيت');
+    } else {
+        console.error('❌ عنصر installBanner غير موجود');
     }
 }
 
 // ✅ تثبيت التطبيق
 async function installApp() {
-    if (deferredPrompt) {
+    console.log('🔄 محاولة تثبيت التطبيق...');
+    console.log('deferredPrompt:', deferredPrompt);
+    
+    if (!deferredPrompt) {
+        console.warn('⚠️ لا يوجد حدث تثبيت متاح');
+        showToast('❌ التثبيت غير متاح حالياً', 'error');
+        return;
+    }
+    
+    try {
         // عرض نافذة التثبيت
         deferredPrompt.prompt();
         // انتظار رد المستخدم
         const result = await deferredPrompt.userChoice;
         console.log(`✅ نتيجة التثبيت: ${result.outcome}`);
+        
         // إخفاء الإشعار
         const banner = document.getElementById('installBanner');
         if (banner) {
             banner.style.display = 'none';
         }
         deferredPrompt = null;
+        
+        if (result.outcome === 'accepted') {
+            showToast('✅ تم تثبيت التطبيق بنجاح!', 'success');
+        } else {
+            showToast('❌ تم إلغاء التثبيت', 'info');
+        }
+    } catch (error) {
+        console.error('❌ فشل التثبيت:', error);
+        showToast('❌ فشل التثبيت', 'error');
     }
 }
 
@@ -2047,6 +2070,7 @@ window.addEventListener('appinstalled', () => {
     if (banner) {
         banner.style.display = 'none';
     }
+    showToast('🎉 شكراً لتثبيت تطبيق حلاقتي!', 'success');
 });
 
 // ===== أيقونات نوع الصالون =====
