@@ -1882,6 +1882,77 @@ async function loadCoupons() {
         }
     }
 }
+// ============================================================
+// مسارات الكوبونات (الجديدة)
+// ============================================================
+const Coupon = require('./models/Coupon');
+
+// ✅ جلب كوبونات صالون معين
+app.get('/api/get-coupons/:salonId', authMiddleware, async (req, res) => {
+    try {
+        console.log(`📡 جلب كوبونات للصالون: ${req.params.salonId}`);
+        const coupons = await Coupon.find({ salonId: req.params.salonId });
+        console.log(`📦 عدد الكوبونات: ${coupons.length}`);
+        res.json(coupons);
+    } catch (error) {
+        console.error('❌ فشل جلب الكوبونات:', error);
+        res.status(500).json({ message: 'فشل جلب الكوبونات' });
+    }
+});
+
+// ✅ إنشاء كوبون جديد
+app.post('/api/create-coupon', authMiddleware, async (req, res) => {
+    try {
+        const coupon = new Coupon(req.body);
+        await coupon.save();
+        res.status(201).json({ message: '✅ تم إنشاء الكوبون', coupon });
+    } catch (error) {
+        console.error('❌ فشل إنشاء الكوبون:', error);
+        res.status(500).json({ message: 'فشل إنشاء الكوبون' });
+    }
+});
+
+// ✅ جلب كوبون واحد للتعديل
+app.get('/api/get-coupon/:id', authMiddleware, async (req, res) => {
+    try {
+        const coupon = await Coupon.findById(req.params.id);
+        if (!coupon) {
+            return res.status(404).json({ message: '❌ الكوبون غير موجود' });
+        }
+        res.json(coupon);
+    } catch (error) {
+        console.error('❌ فشل جلب الكوبون:', error);
+        res.status(500).json({ message: 'فشل جلب الكوبون' });
+    }
+});
+
+// ✅ تحديث كوبون
+app.put('/api/update-coupon/:id', authMiddleware, async (req, res) => {
+    try {
+        const coupon = await Coupon.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        if (!coupon) {
+            return res.status(404).json({ message: '❌ الكوبون غير موجود' });
+        }
+        res.json({ message: '✅ تم تحديث الكوبون', coupon });
+    } catch (error) {
+        console.error('❌ فشل تحديث الكوبون:', error);
+        res.status(500).json({ message: 'فشل تحديث الكوبون' });
+    }
+});
+
+// ✅ حذف كوبون
+app.delete('/api/delete-coupon/:id', authMiddleware, async (req, res) => {
+    try {
+        const coupon = await Coupon.findByIdAndDelete(req.params.id);
+        if (!coupon) {
+            return res.status(404).json({ message: '❌ الكوبون غير موجود' });
+        }
+        res.json({ message: '✅ تم حذف الكوبون' });
+    } catch (error) {
+        console.error('❌ فشل حذف الكوبون:', error);
+        res.status(500).json({ message: 'فشل حذف الكوبون' });
+    }
+});
 
 // ============================================================
 // تشغيل الخادم
