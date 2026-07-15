@@ -2487,7 +2487,12 @@ function showToast(message, type = 'success') {
 }
 function openModal(id) {
     const modal = document.getElementById(id);
-    if (modal) modal.classList.add('active');
+    if (modal) {
+        modal.classList.add('active');
+        console.log(`✅ تم فتح النافذة: ${id}`);
+    } else {
+        console.error(`❌ النافذة ${id} غير موجودة`);
+    }
 }
 
 function closeModal(id) {
@@ -5516,13 +5521,26 @@ async function editCoupon(couponId) {
         document.getElementById('editCouponDescription').value = coupon.description || '';
         document.getElementById('editCouponStatus').value = coupon.isActive ? 'true' : 'false';
 
-        // ✅ فتح النافذة
+        console.log('✅ تم تعبئة البيانات، جاري فتح النافذة...');
+        
+        // ✅ التحقق من وجود النافذة قبل فتحها
+        const modal = document.getElementById('editCouponModal');
+        if (!modal) {
+            console.error('❌ النافذة editCouponModal غير موجودة في DOM!');
+            showToast('❌ خطأ في النافذة', 'error');
+            return;
+        }
+        
+        console.log('✅ النافذة موجودة، جاري فتحها...');
         openModal('editCouponModal');
+        console.log('✅ تم استدعاء openModal');
+
     } catch (error) {
         console.error('❌ فشل جلب بيانات الكوبون:', error);
         showToast(`❌ ${error.message || 'فشل تحميل بيانات الكوبون'}`, 'error');
     }
 }
+
 // ✅ معالج تعديل الكوبون
 document.getElementById('editCouponForm').addEventListener('submit', async (e) => {
     e.preventDefault();
