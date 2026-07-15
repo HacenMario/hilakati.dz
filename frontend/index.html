@@ -4800,6 +4800,24 @@ document.querySelectorAll('.sidebar .menu a').forEach(link => {
         if (target) { target.classList.remove('hidden'); if (['overview','appointments','reviews'].includes(page)) loadDashboard(); }
     });
 });
+// ============================================================
+// PWA - تسجيل Service Worker
+// ============================================================
+
+// ✅ تسجيل Service Worker
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+            .then(registration => {
+                console.log('✅ Service Worker مسجل بنجاح:', registration);
+            })
+            .catch(error => {
+                console.error('❌ فشل تسجيل Service Worker:', error);
+            });
+    });
+} else {
+    console.warn('⚠️ Service Worker غير مدعوم في هذا المتصفح');
+}
 
 // ===== Init =====
 async function init() {
