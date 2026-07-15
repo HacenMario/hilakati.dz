@@ -5223,21 +5223,40 @@ document.getElementById('inventoryForm').addEventListener('submit', async (e) =>
 
 async function getLowStockItems() {
     const salonId = localStorage.getItem('salonId');
-    if (!salonId) return;
+    if (!salonId) {
+        showToast('❌ يرجى تسجيل الدخول', 'error');
+        return;
+    }
     const token = localStorage.getItem('token');
+    if (!token) {
+        showToast('❌ يرجى تسجيل الدخول', 'error');
+        return;
+    }
+    
     try {
         const res = await fetch(`${API_BASE}/inventory/low-stock/${salonId}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
         });
+        
+        if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(errorData.message || 'فشل جلب المنتجات');
+        }
+        
         const items = await res.json();
         if (items.length === 0) {
             showToast('✅ جميع المنتجات متوفرة', 'success');
         } else {
             showToast(`⚠️ ${items.length} منتج منخفض`, 'warning');
-            loadInventory();
+            // عرض المنتجات المنخفضة في قائمة منبثقة أو تحديث القائمة
+            loadInventory(); // تحديث القائمة لإظهار المنتجات المنخفضة
         }
     } catch (error) {
-        showToast('❌ فشل جلب المنتجات المنخفضة', 'error');
+        console.error('❌ فشل جلب المنتجات المنخفضة:', error);
+        showToast(`❌ ${error.message || 'فشل جلب المنتجات'}`, 'error');
     }
 }
 
