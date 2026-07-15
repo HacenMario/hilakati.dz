@@ -1784,16 +1784,43 @@
                 <div style="margin-top:0.15rem;font-size:0.65rem;color:var(--gold);" id="dashRating"></div>
             </div>
             <div class="menu">
-                <a href="#" class="active" data-dash="overview"><i class="fas fa-chart-pie"></i> <span data-i18n="overview">نظرة عامة</span></a>
-                <a href="#" data-dash="appointments"><i class="fas fa-calendar-alt"></i> <span data-i18n="appointments">المواعيد</span></a>
-                <a href="#" data-dash="services"><i class="fas fa-scissors"></i> <span data-i18n="services">الخدمات</span></a>
-                <a href="#" data-dash="staff"><i class="fas fa-users"></i> <span data-i18n="staff">الموظفون</span></a>
-                <a href="#" data-dash="hours"><i class="fas fa-clock"></i> <span data-i18n="hours">ساعات العمل</span></a>
-                <a href="#" data-dash="reviews"><i class="fas fa-star"></i> <span data-i18n="reviews">التقييمات</span></a>
-                <a href="#" data-dash="settings"><i class="fas fa-cog"></i> <span data-i18n="settings">الإعدادات</span></a>
-            </div>
+    <a href="#" class="active" data-dash="overview"><i class="fas fa-chart-pie"></i> <span data-i18n="overview">نظرة عامة</span></a>
+    <a href="#" data-dash="appointments"><i class="fas fa-calendar-alt"></i> <span data-i18n="appointments">المواعيد</span></a>
+    <a href="#" data-dash="services"><i class="fas fa-scissors"></i> <span data-i18n="services">الخدمات</span></a>
+    <a href="#" data-dash="staff"><i class="fas fa-users"></i> <span data-i18n="staff">الموظفون</span></a>
+    <a href="#" data-dash="hours"><i class="fas fa-clock"></i> <span data-i18n="hours">ساعات العمل</span></a>
+    <a href="#" data-dash="reviews"><i class="fas fa-star"></i> <span data-i18n="reviews">التقييمات</span></a>
+    <a href="#" data-dash="inventory"><i class="fas fa-boxes"></i> <span>المخزون</span></a>
+    <a href="#" data-dash="coupons"><i class="fas fa-ticket-alt"></i> <span>الكوبونات</span></a>
+    <a href="#" data-dash="quotes"><i class="fas fa-file-invoice"></i> <span>عروض الأسعار</span></a>
+    <a href="#" data-dash="settings"><i class="fas fa-cog"></i> <span data-i18n="settings">الإعدادات</span></a>
+</div>
         </aside>
         <div class="dashboard-content" id="dashContent">
+            
+            <div id="dashStaff" class="hidden">
+    <h3 style="color:var(--gold);margin-bottom:0.6rem;font-size:1rem;"><i class="fas fa-users"></i> إدارة الموظفين</h3>
+    <button class="btn-gold btn-sm" onclick="addStaffMember()"><i class="fas fa-plus"></i> إضافة موظف</button>
+    <div id="staffList" style="margin-top:0.5rem;"></div>
+</div>
+<!-- ===== إدارة المخزون ===== -->
+<div id="dashInventory" class="hidden">
+    <h3 style="color:var(--gold);margin-bottom:0.6rem;font-size:1rem;"><i class="fas fa-boxes"></i> إدارة المخزون</h3>
+    <button class="btn-gold btn-sm" onclick="addInventoryItem()"><i class="fas fa-plus"></i> إضافة منتج</button>
+    <button class="btn-danger btn-sm" onclick="getLowStockItems()"><i class="fas fa-exclamation-triangle"></i> المنتجات المنخفضة</button>
+    <div id="inventoryList" style="margin-top:0.5rem;"></div>
+</div>
+<!-- ===== الكوبونات ===== -->
+<div id="dashCoupons" class="hidden">
+    <h3 style="color:var(--gold);margin-bottom:0.6rem;font-size:1rem;"><i class="fas fa-ticket-alt"></i> الكوبونات والخصومات</h3>
+    <button class="btn-gold btn-sm" onclick="openCouponModal()"><i class="fas fa-plus"></i> إنشاء كوبون</button>
+    <div id="couponsList" style="margin-top:0.5rem;"></div>
+</div>
+<!-- ===== طلبات عروض الأسعار ===== -->
+<div id="dashQuotes" class="hidden">
+    <h3 style="color:var(--gold);margin-bottom:0.6rem;font-size:1rem;"><i class="fas fa-file-invoice"></i> طلبات عروض الأسعار</h3>
+    <div id="quotesList" style="margin-top:0.5rem;"></div>
+</div>
             <div id="dashOverview">
                 <h3 style="color:var(--gold);margin-bottom:0.6rem;font-size:1rem;"><i class="fas fa-chart-line"></i> <span data-i18n="overview">نظرة عامة</span></h3>
                 <div class="stats-grid">
@@ -1975,6 +2002,83 @@
 </div>
     </div>
 </section>
+
+<!-- ===== نافذة إضافة موظف ===== -->
+<div class="modal-overlay" id="staffModal">
+    <div class="modal-box">
+        <button class="modal-close" onclick="closeModal('staffModal')">&times;</button>
+        <h2><i class="fas fa-user-plus"></i> إضافة موظف</h2>
+        <form id="staffForm">
+            <div class="form-group"><label>الاسم</label><input type="text" id="staffName" required></div>
+            <div class="form-group"><label>البريد الإلكتروني</label><input type="email" id="staffEmail" required></div>
+            <div class="form-group"><label>رقم الهاتف</label><input type="tel" id="staffPhone" required></div>
+            <div class="form-group"><label>الوظيفة</label>
+                <select id="staffPosition">
+                    <option value="coiffeur">حلاق</option>
+                    <option value="barber">حلاق رجالي</option>
+                    <option value="esthetician">خبيرة تجميل</option>
+                    <option value="manager">مدير</option>
+                    <option value="assistant">مساعد</option>
+                </select>
+            </div>
+            <div class="form-group"><label>نسبة العمولة (%)</label><input type="number" id="staffCommission" value="0" min="0" max="100"></div>
+            <div class="form-group"><label>الاختصاصات (افصل بينها بفاصلة)</label><input type="text" id="staffSpecialties" placeholder="قص شعر, صبغة, تمليس"></div>
+            <button type="submit" class="btn-gold" style="width:100%;padding:0.5rem;">إضافة الموظف</button>
+        </form>
+    </div>
+</div>
+
+<!-- ===== نافذة إضافة منتج للمخزون ===== -->
+<div class="modal-overlay" id="inventoryModal">
+    <div class="modal-box">
+        <button class="modal-close" onclick="closeModal('inventoryModal')">&times;</button>
+        <h2><i class="fas fa-box"></i> إضافة منتج</h2>
+        <form id="inventoryForm">
+            <div class="form-group"><label>اسم المنتج</label><input type="text" id="invName" required></div>
+            <div class="form-group"><label>الفئة</label>
+                <select id="invCategory">
+                    <option value="products">منتجات</option>
+                    <option value="tools">أدوات</option>
+                    <option value="furniture">أثاث</option>
+                    <option value="consumables">مواد استهلاكية</option>
+                </select>
+            </div>
+            <div class="form-group"><label>الكمية</label><input type="number" id="invQuantity" required min="0"></div>
+            <div class="form-group"><label>الحد الأدنى للتنبيه</label><input type="number" id="invMinQuantity" value="5" min="0"></div>
+            <div class="form-group"><label>الوحدة</label><input type="text" id="invUnit" placeholder="قطعة، لتر، كيلو..."></div>
+            <div class="form-group"><label>السعر (دج)</label><input type="number" id="invPrice" min="0"></div>
+            <div class="form-group"><label>المورد</label><input type="text" id="invSupplier"></div>
+            <button type="submit" class="btn-gold" style="width:100%;padding:0.5rem;">إضافة المنتج</button>
+        </form>
+    </div>
+</div>
+
+<!-- ===== نافذة إنشاء كوبون ===== -->
+<div class="modal-overlay" id="couponModal">
+    <div class="modal-box">
+        <button class="modal-close" onclick="closeModal('couponModal')">&times;</button>
+        <h2><i class="fas fa-ticket-alt"></i> إنشاء كوبون</h2>
+        <form id="couponForm">
+            <div class="form-group"><label>كود الكوبون (اتركه فارغاً للتوليد التلقائي)</label><input type="text" id="couponCode" placeholder="عشوائي"></div>
+            <div class="form-group"><label>النوع</label>
+                <select id="couponType">
+                    <option value="percentage">نسبة مئوية (%)</option>
+                    <option value="fixed">قيمة ثابتة (دج)</option>
+                </select>
+            </div>
+            <div class="form-group"><label>القيمة</label><input type="number" id="couponValue" required min="1"></div>
+            <div class="form-group"><label>الحد الأدنى للطلب (دج)</label><input type="number" id="couponMinOrder" value="0" min="0"></div>
+            <div class="form-group"><label>أقصى خصم (دج) - للكوبونات النسبية</label><input type="number" id="couponMaxDiscount" value="0" min="0"></div>
+            <div class="form-row">
+                <div class="form-group"><label>تاريخ البدء</label><input type="date" id="couponValidFrom" required></div>
+                <div class="form-group"><label>تاريخ الانتهاء</label><input type="date" id="couponValidUntil" required></div>
+            </div>
+            <div class="form-group"><label>عدد مرات الاستخدام</label><input type="number" id="couponUsageLimit" value="1" min="1"></div>
+            <div class="form-group"><label>الوصف</label><textarea id="couponDescription"></textarea></div>
+            <button type="submit" class="btn-gold" style="width:100%;padding:0.5rem;">إنشاء الكوبون</button>
+        </form>
+    </div>
+</div>
 
 <!-- لوحة Admin -->
 <section class="section hidden" id="page-admin">
@@ -4151,6 +4255,12 @@ async function loadDashboard() {
                 showToast('❌ فشل الاتصال بالخادم', 'error');
             }
         });
+        
+// ✅ تحميل الإضافات الجديدة
+loadStaff();
+loadInventory();
+loadCoupons();
+loadQuotes();
 
         refreshNotifications();
     } catch (error) {
@@ -4915,9 +5025,10 @@ document.querySelectorAll('.sidebar .menu a').forEach(link => {
         this.classList.add('active');
         const page = this.dataset.dash;
         document.querySelectorAll('#dashContent > div').forEach(div => div.classList.add('hidden'));
-        const map = { 'overview':'dashOverview', 'appointments':'dashAppointments', 'services':'dashServices', 'staff':'dashStaff', 'hours':'dashHours', 'reviews':'dashReviews', 'settings':'dashSettings' };
+        const map = { 'overview':'dashOverview', 'appointments':'dashAppointments', 'services':'dashServices', 'staff':'dashStaff', 'hours':'dashHours', 'reviews':'dashReviews', 'inventory':'dashInventory','coupons':'dashCoupons','quotes':'dashQuotes','settings':'dashSettings'};
         const target = document.getElementById(map[page]);
         if (target) { target.classList.remove('hidden'); if (['overview','appointments','reviews'].includes(page)) loadDashboard(); }
+        
     });
 });
 // ============================================================
@@ -4937,6 +5048,438 @@ if ('serviceWorker' in navigator) {
     });
 } else {
     console.warn('⚠️ Service Worker غير مدعوم في هذا المتصفح');
+}
+
+// ============================================================
+// 1. إدارة الموظفين
+// ============================================================
+
+async function loadStaff() {
+    const salonId = localStorage.getItem('salonId');
+    if (!salonId) return;
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`${API_BASE}/staff/${salonId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const staff = await res.json();
+        const container = document.getElementById('staffList');
+        if (!staff || staff.length === 0) {
+            container.innerHTML = '<p style="color:var(--text-color);opacity:0.5;">لا يوجد موظفون</p>';
+            return;
+        }
+        container.innerHTML = staff.map(s => `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:0.3rem 0;border-bottom:1px solid var(--border-color);flex-wrap:wrap;gap:0.3rem;">
+                <div>
+                    <strong>${s.name}</strong> - ${s.position}
+                    <span style="font-size:0.7rem;opacity:0.5;">${s.specialties?.join(', ') || ''}</span>
+                </div>
+                <div style="display:flex;gap:0.3rem;flex-wrap:wrap;">
+                    <button class="btn-primary btn-sm" onclick="editStaff('${s._id}')"><i class="fas fa-edit"></i></button>
+                    <button class="btn-danger btn-sm" onclick="deleteStaff('${s._id}')"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('❌ فشل جلب الموظفين:', error);
+    }
+}
+
+async function addStaffMember() {
+    openModal('staffModal');
+}
+
+document.getElementById('staffForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const salonId = localStorage.getItem('salonId');
+    const token = localStorage.getItem('token');
+    const name = document.getElementById('staffName').value.trim();
+    const email = document.getElementById('staffEmail').value.trim();
+    const phone = document.getElementById('staffPhone').value.trim();
+    const position = document.getElementById('staffPosition').value;
+    const commissionRate = parseFloat(document.getElementById('staffCommission').value) || 0;
+    const specialties = document.getElementById('staffSpecialties').value.split(',').map(s => s.trim()).filter(s => s);
+    
+    try {
+        const res = await fetch(`${API_BASE}/staff`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ salonId, name, email, phone, position, commissionRate, specialties })
+        });
+        if (res.ok) {
+            showToast('✅ تم إضافة الموظف', 'success');
+            closeModal('staffModal');
+            document.getElementById('staffForm').reset();
+            loadStaff();
+        } else {
+            const data = await res.json();
+            showToast(`❌ ${data.message}`, 'error');
+        }
+    } catch (error) {
+        showToast('❌ فشل الاتصال', 'error');
+    }
+});
+
+async function deleteStaff(id) {
+    if (!confirm('⚠️ هل أنت متأكد من حذف هذا الموظف؟')) return;
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`${API_BASE}/staff/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            showToast('✅ تم حذف الموظف', 'success');
+            loadStaff();
+        } else {
+            showToast('❌ فشل الحذف', 'error');
+        }
+    } catch (error) {
+        showToast('❌ فشل الاتصال', 'error');
+    }
+}
+
+// ============================================================
+// 2. إدارة المخزون
+// ============================================================
+
+async function loadInventory() {
+    const salonId = localStorage.getItem('salonId');
+    if (!salonId) return;
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`${API_BASE}/inventory/${salonId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const items = await res.json();
+        const container = document.getElementById('inventoryList');
+        if (!items || items.length === 0) {
+            container.innerHTML = '<p style="color:var(--text-color);opacity:0.5;">لا توجد منتجات</p>';
+            return;
+        }
+        container.innerHTML = items.map(item => `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:0.3rem 0;border-bottom:1px solid var(--border-color);flex-wrap:wrap;gap:0.3rem;">
+                <div>
+                    <strong>${item.name}</strong>
+                    <span style="font-size:0.7rem;opacity:0.5;">${item.category}</span>
+                    <span style="color:${item.quantity <= item.minQuantity ? 'var(--danger)' : 'var(--success)'};">
+                        ${item.quantity} ${item.unit}
+                    </span>
+                    ${item.quantity <= item.minQuantity ? ' ⚠️' : ''}
+                </div>
+                <div style="display:flex;gap:0.3rem;flex-wrap:wrap;">
+                    <button class="btn-primary btn-sm" onclick="editInventory('${item._id}')"><i class="fas fa-edit"></i></button>
+                    <button class="btn-danger btn-sm" onclick="deleteInventory('${item._id}')"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('❌ فشل جلب المخزون:', error);
+    }
+}
+
+async function addInventoryItem() {
+    openModal('inventoryModal');
+}
+
+document.getElementById('inventoryForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const salonId = localStorage.getItem('salonId');
+    const token = localStorage.getItem('token');
+    const name = document.getElementById('invName').value.trim();
+    const category = document.getElementById('invCategory').value;
+    const quantity = parseInt(document.getElementById('invQuantity').value) || 0;
+    const minQuantity = parseInt(document.getElementById('invMinQuantity').value) || 5;
+    const unit = document.getElementById('invUnit').value.trim() || 'قطعة';
+    const price = parseFloat(document.getElementById('invPrice').value) || 0;
+    const supplier = document.getElementById('invSupplier').value.trim();
+    
+    try {
+        const res = await fetch(`${API_BASE}/inventory`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ salonId, name, category, quantity, minQuantity, unit, price, supplier })
+        });
+        if (res.ok) {
+            showToast('✅ تم إضافة المنتج', 'success');
+            closeModal('inventoryModal');
+            document.getElementById('inventoryForm').reset();
+            loadInventory();
+        } else {
+            const data = await res.json();
+            showToast(`❌ ${data.message}`, 'error');
+        }
+    } catch (error) {
+        showToast('❌ فشل الاتصال', 'error');
+    }
+});
+
+async function getLowStockItems() {
+    const salonId = localStorage.getItem('salonId');
+    if (!salonId) return;
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`${API_BASE}/inventory/low-stock/${salonId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const items = await res.json();
+        if (items.length === 0) {
+            showToast('✅ جميع المنتجات متوفرة', 'success');
+        } else {
+            showToast(`⚠️ ${items.length} منتج منخفض`, 'warning');
+            loadInventory();
+        }
+    } catch (error) {
+        showToast('❌ فشل جلب المنتجات المنخفضة', 'error');
+    }
+}
+
+async function deleteInventory(id) {
+    if (!confirm('⚠️ هل أنت متأكد من حذف هذا المنتج؟')) return;
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`${API_BASE}/inventory/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            showToast('✅ تم حذف المنتج', 'success');
+            loadInventory();
+        } else {
+            showToast('❌ فشل الحذف', 'error');
+        }
+    } catch (error) {
+        showToast('❌ فشل الاتصال', 'error');
+    }
+}
+
+// ============================================================
+// 3. الكوبونات
+// ============================================================
+
+async function loadCoupons() {
+    const salonId = localStorage.getItem('salonId');
+    if (!salonId) return;
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`${API_BASE}/coupons/${salonId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const coupons = await res.json();
+        const container = document.getElementById('couponsList');
+        if (!coupons || coupons.length === 0) {
+            container.innerHTML = '<p style="color:var(--text-color);opacity:0.5;">لا توجد كوبونات</p>';
+            return;
+        }
+        container.innerHTML = coupons.map(c => `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:0.3rem 0;border-bottom:1px solid var(--border-color);flex-wrap:wrap;gap:0.3rem;">
+                <div>
+                    <strong style="color:var(--gold);">${c.code}</strong>
+                    <span style="font-size:0.7rem;opacity:0.5;">${c.type === 'percentage' ? `${c.value}%` : `${c.value} دج`}</span>
+                    <span style="font-size:0.7rem;">استخدم ${c.usedCount}/${c.usageLimit}</span>
+                    <span style="font-size:0.7rem;color:${new Date(c.validUntil) > new Date() ? 'var(--success)' : 'var(--danger)'};">
+                        ${new Date(c.validUntil) > new Date() ? '✅ فعال' : '❌ منتهي'}
+                    </span>
+                </div>
+                <div style="display:flex;gap:0.3rem;flex-wrap:wrap;">
+                    <button class="btn-danger btn-sm" onclick="deleteCoupon('${c._id}')"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('❌ فشل جلب الكوبونات:', error);
+    }
+}
+
+function openCouponModal() {
+    document.getElementById('couponForm').reset();
+    // ✅ تعيين التواريخ الافتراضية
+    const today = new Date().toISOString().split('T')[0];
+    const nextMonth = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    document.getElementById('couponValidFrom').value = today;
+    document.getElementById('couponValidUntil').value = nextMonth;
+    openModal('couponModal');
+}
+
+document.getElementById('couponForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const salonId = localStorage.getItem('salonId');
+    const token = localStorage.getItem('token');
+    const code = document.getElementById('couponCode').value.trim() || undefined;
+    const type = document.getElementById('couponType').value;
+    const value = parseFloat(document.getElementById('couponValue').value);
+    const minOrder = parseFloat(document.getElementById('couponMinOrder').value) || 0;
+    const maxDiscount = parseFloat(document.getElementById('couponMaxDiscount').value) || 0;
+    const validFrom = new Date(document.getElementById('couponValidFrom').value);
+    const validUntil = new Date(document.getElementById('couponValidUntil').value);
+    const usageLimit = parseInt(document.getElementById('couponUsageLimit').value) || 1;
+    const description = document.getElementById('couponDescription').value.trim();
+    
+    if (validFrom > validUntil) {
+        showToast('❌ تاريخ البدء يجب أن يكون قبل تاريخ الانتهاء', 'error');
+        return;
+    }
+    
+    try {
+        const res = await fetch(`${API_BASE}/coupons`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ salonId, code, type, value, minOrder, maxDiscount, validFrom, validUntil, usageLimit, description })
+        });
+        if (res.ok) {
+            showToast('✅ تم إنشاء الكوبون', 'success');
+            closeModal('couponModal');
+            document.getElementById('couponForm').reset();
+            loadCoupons();
+        } else {
+            const data = await res.json();
+            showToast(`❌ ${data.message}`, 'error');
+        }
+    } catch (error) {
+        showToast('❌ فشل الاتصال', 'error');
+    }
+});
+
+async function deleteCoupon(id) {
+    if (!confirm('⚠️ هل أنت متأكد من حذف هذا الكوبون؟')) return;
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`${API_BASE}/coupons/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            showToast('✅ تم حذف الكوبون', 'success');
+            loadCoupons();
+        } else {
+            showToast('❌ فشل الحذف', 'error');
+        }
+    } catch (error) {
+        showToast('❌ فشل الاتصال', 'error');
+    }
+}
+
+// ============================================================
+// 4. طلبات عروض الأسعار
+// ============================================================
+
+async function loadQuotes() {
+    const salonId = localStorage.getItem('salonId');
+    if (!salonId) return;
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`${API_BASE}/quotes/salon/${salonId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const quotes = await res.json();
+        const container = document.getElementById('quotesList');
+        if (!quotes || quotes.length === 0) {
+            container.innerHTML = '<p style="color:var(--text-color);opacity:0.5;">لا توجد طلبات</p>';
+            return;
+        }
+        container.innerHTML = quotes.map(q => `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:0.3rem 0;border-bottom:1px solid var(--border-color);flex-wrap:wrap;gap:0.3rem;">
+                <div>
+                    <strong>${q.customerName}</strong>
+                    <span style="font-size:0.7rem;opacity:0.5;">${q.serviceType}</span>
+                    <span style="font-size:0.7rem;color:${q.status === 'pending' ? 'var(--warning)' : q.status === 'quoted' ? 'var(--info)' : q.status === 'accepted' ? 'var(--success)' : 'var(--danger)'};">
+                        ${q.status === 'pending' ? '⏳ قيد الانتظار' : q.status === 'quoted' ? '📩 عرض سعر' : q.status === 'accepted' ? '✅ مقبول' : '❌ مرفوض'}
+                    </span>
+                    ${q.quotePrice ? `<span style="font-size:0.7rem;">💰 ${q.quotePrice} دج</span>` : ''}
+                </div>
+                <div style="display:flex;gap:0.3rem;flex-wrap:wrap;">
+                    ${q.status === 'pending' ? `
+                        <button class="btn-gold btn-sm" onclick="openQuoteForm('${q._id}')"><i class="fas fa-file-invoice"></i> عرض سعر</button>
+                    ` : ''}
+                    ${q.status === 'quoted' ? `
+                        <button class="btn-success btn-sm" onclick="updateQuoteStatus('${q._id}','accept')"><i class="fas fa-check"></i> قبول</button>
+                        <button class="btn-danger btn-sm" onclick="updateQuoteStatus('${q._id}','reject')"><i class="fas fa-times"></i> رفض</button>
+                    ` : ''}
+                    <button class="btn-danger btn-sm" onclick="deleteQuote('${q._id}')"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('❌ فشل جلب الطلبات:', error);
+    }
+}
+
+function openQuoteForm(quoteId) {
+    const price = prompt('💰 أدخل عرض السعر (بـ دج):');
+    if (price === null) return;
+    const message = prompt('📝 أضف ملاحظات (اختياري):');
+    submitQuote(quoteId, parseFloat(price), message || '');
+}
+
+async function submitQuote(quoteId, price, message) {
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`${API_BASE}/quotes/${quoteId}/quote`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ quotePrice: price, quoteMessage: message })
+        });
+        if (res.ok) {
+            showToast('✅ تم إرسال عرض السعر', 'success');
+            loadQuotes();
+        } else {
+            const data = await res.json();
+            showToast(`❌ ${data.message}`, 'error');
+        }
+    } catch (error) {
+        showToast('❌ فشل الاتصال', 'error');
+    }
+}
+
+async function updateQuoteStatus(quoteId, action) {
+    if (!confirm(`⚠️ هل أنت متأكد من ${action === 'accept' ? 'قبول' : 'رفض'} هذا العرض؟`)) return;
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`${API_BASE}/quotes/${quoteId}/${action}`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            showToast(`✅ تم ${action === 'accept' ? 'قبول' : 'رفض'} العرض`, 'success');
+            loadQuotes();
+        } else {
+            const data = await res.json();
+            showToast(`❌ ${data.message}`, 'error');
+        }
+    } catch (error) {
+        showToast('❌ فشل الاتصال', 'error');
+    }
+}
+
+async function deleteQuote(id) {
+    if (!confirm('⚠️ هل أنت متأكد من حذف هذا الطلب؟')) return;
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`${API_BASE}/quotes/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            showToast('✅ تم حذف الطلب', 'success');
+            loadQuotes();
+        } else {
+            showToast('❌ فشل الحذف', 'error');
+        }
+    } catch (error) {
+        showToast('❌ فشل الاتصال', 'error');
+    }
 }
 
 // ===== Init =====
