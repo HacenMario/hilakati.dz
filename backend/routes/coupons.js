@@ -33,9 +33,7 @@ router.get('/:id', auth, async (req, res) => {
     }
 });
 
-// ============================================================
-// ✅ 2. جلب جميع كوبونات صالون
-// ============================================================
+// ✅ جلب جميع كوبونات صالون
 router.get('/:salonId', auth, async (req, res) => {
     try {
         const coupons = await Coupon.find({ salonId: req.params.salonId });
