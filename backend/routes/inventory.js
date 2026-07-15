@@ -51,20 +51,20 @@ router.put('/:id/quantity', auth, async (req, res) => {
     }
 });
 
-// ✅ جلب المنتجات المنخفضة (للتنبيه)
-router.get('/low-stock/:salonId', auth, async (req, res) => {
+// ✅ جلب المنتجات المنخفضة (مع $expr للمقارنة)
+router.get('/low-stock/:salonId', authMiddleware, async (req, res) => {
     try {
         const items = await Inventory.find({
             salonId: req.params.salonId,
-            quantity: { $lte: 'minQuantity' },
-            isActive: true
+            isActive: true,
+            $expr: { $lte: ["$quantity", "$minQuantity"] }  // ✅ المقارنة الصحيحة بين حقلين
         });
         res.json(items);
     } catch (error) {
+        console.error('❌ خطأ في جلب المنتجات المنخفضة:', error);
         res.status(500).json({ message: 'فشل جلب المنتجات المنخفضة' });
     }
 });
-
 // ✅ حذف منتج
 router.delete('/:id', auth, async (req, res) => {
     try {
