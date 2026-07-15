@@ -23,6 +23,18 @@ router.post('/', auth, async (req, res) => {
         res.status(500).json({ message: 'فشل إضافة المنتج' });
     }
 });
+// ✅ تحديث منتج
+router.put('/:id', async (req, res) => {
+    try {
+        const item = await Inventory.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        if (!item) {
+            return res.status(404).json({ message: '❌ المنتج غير موجود' });
+        }
+        res.json({ message: '✅ تم تحديث المنتج', item });
+    } catch (error) {
+        res.status(500).json({ message: 'فشل تحديث المنتج' });
+    }
+});
 
 // ✅ تحديث الكمية
 router.put('/:id/quantity', auth, async (req, res) => {
