@@ -3,24 +3,29 @@ const router = express.Router();
 const Coupon = require('../models/Coupon');
 const auth = require('../middleware/auth');
 
-// ============================================================
-// ✅ 1. جلب كوبون واحد للتعديل (يأتي أولاً لتجنب التصادم)
-// ============================================================
-router.get('/:id', auth, async (req, res) => {
-    try {
-        const coupon = await Coupon.findById(req.params.id);
-        if (!coupon) {
-            return res.status(404).json({ message: '❌ الكوبون غير موجود' });
-        }
-        res.json(coupon);
-    } catch (error) {
-        console.error('❌ فشل جلب الكوبون:', error);
-        res.status(500).json({ message: 'فشل جلب الكوبون' });
-    }
-});
+const express = require('express');
+const router = express.Router();
+const Coupon = require('../models/Coupon');
+const Salon = require('../models/Salon'); // ✅ تأكد من استيراد نموذج الصالون
+const auth = require('../middleware/auth');
 
 // ============================================================
-// ✅ 2. جلب جميع كوبونات صالون
+// ✅ توليد كود كوبون بناءً على اسم الصالون
+// ============================================================
+function generateCouponCode(salonName) {
+    // تنظيف الاسم
+    const cleanName = salonName.replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, '').substring(0, 6);
+    // 4 أحرف عشوائية
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let random = '';
+    for (let i = 0; i < 4; i++) {
+        random += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return `${cleanName}${random}`.toUpperCase();
+}
+
+// ============================================================
+// ✅ جلب جميع كوبونات صالون
 // ============================================================
 router.get('/:salonId', auth, async (req, res) => {
     try {
@@ -33,13 +38,14 @@ router.get('/:salonId', auth, async (req, res) => {
 });
 
 // ============================================================
-// ✅ 3. إنشاء كوبون جديد
+// ✅ إنشاء كوبون جديد (مع توليد كود حسب اسم الصالون)
 // ============================================================
 router.post('/', auth, async (req, res) => {
     try {
-        // ✅ إنشاء كود فريد إذا لم يتم توفيره
+        // ✅ إذا لم يتم توفير كود، قم بتوليده بناءً على اسم الصالون
         if (!req.body.code) {
-            req.body.code = generateCouponCode();
+            const salon = await Salon.findById(req.body.salonId).select('name');
+            req.body.code = generateCouponCode(salon ? salon.name : 'SALON');
         }
         const coupon = new Coupon(req.body);
         await coupon.save();
@@ -51,7 +57,7 @@ router.post('/', auth, async (req, res) => {
 });
 
 // ============================================================
-// ✅ 4. تحديث كوبون
+// ✅ 3. تحديث كوبون
 // ============================================================
 router.put('/:id', auth, async (req, res) => {
     try {
@@ -67,7 +73,7 @@ router.put('/:id', auth, async (req, res) => {
 });
 
 // ============================================================
-// ✅ 5. استخدام كوبون (زيادة عدد الاستخدامات)
+// ✅ 4. استخدام كوبون (زيادة عدد الاستخدامات)
 // ============================================================
 router.put('/use/:id', auth, async (req, res) => {
     try {
@@ -87,7 +93,7 @@ router.put('/use/:id', auth, async (req, res) => {
 });
 
 // ============================================================
-// ✅ 6. التحقق من صلاحية الكوبون
+// ✅ 5. التحقق من صلاحية الكوبون
 // ============================================================
 router.post('/validate', async (req, res) => {
     try {
@@ -111,7 +117,6 @@ router.post('/validate', async (req, res) => {
             return res.status(400).json({ message: `❌ الحد الأدنى للطلب هو ${coupon.minOrder} دج` });
         }
         
-        // ✅ حساب الخصم
         let discount = 0;
         if (coupon.type === 'percentage') {
             discount = (total * coupon.value) / 100;
@@ -135,7 +140,7 @@ router.post('/validate', async (req, res) => {
 });
 
 // ============================================================
-// ✅ 7. حذف كوبون
+// ✅ 6. حذف كوبون
 // ============================================================
 router.delete('/:id', auth, async (req, res) => {
     try {
