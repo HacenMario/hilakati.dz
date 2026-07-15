@@ -5068,6 +5068,167 @@ async function loadStaff() {
             container.innerHTML = '<p style="color:var(--text-color);opacity:0.5;">لا يوجد موظفون</p>';
             return;
         }
+
+// ✅ تعديل موظف
+async function editStaff(staffId) {
+    const token = localStorage.getItem('token');
+    try {
+        // جلب بيانات الموظف
+        const res = await fetch(`${API_BASE}/staff/${staffId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const staff = await res.json();
+        
+        // عرض نافذة تعديل بسيطة (يمكن تحسينها لاحقاً)
+        const newName = prompt('الاسم الجديد:', staff.name);
+        if (newName === null) return;
+        const newPhone = prompt('رقم الهاتف الجديد:', staff.phone);
+        if (newPhone === null) return;
+        
+        // إرسال التحديث
+        const updateRes = await fetch(`${API_BASE}/staff/${staffId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ 
+                name: newName, 
+                phone: newPhone,
+                position: staff.position,
+                commissionRate: staff.commissionRate
+            })
+        });
+        
+        if (updateRes.ok) {
+            showToast('✅ تم تحديث الموظف', 'success');
+            loadStaff();
+        } else {
+            showToast('❌ فشل التحديث', 'error');
+        }
+    } catch (error) {
+        console.error('❌ فشل تعديل الموظف:', error);
+        showToast('❌ فشل الاتصال', 'error');
+    }
+}
+
+// ✅ تعديل منتج في المخزون
+async function editInventory(itemId) {
+    const token = localStorage.getItem('token');
+    try {
+        // جلب بيانات المنتج
+        const res = await fetch(`${API_BASE}/inventory/${itemId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const item = await res.json();
+        
+        // عرض نافذة تعديل بسيطة
+        const newName = prompt('اسم المنتج الجديد:', item.name);
+        if (newName === null) return;
+        const newQuantity = prompt('الكمية الجديدة:', item.quantity);
+        if (newQuantity === null) return;
+        const newMinQuantity = prompt('الحد الأدنى الجديد:', item.minQuantity);
+        if (newMinQuantity === null) return;
+        
+        // إرسال التحديث
+        const updateRes = await fetch(`${API_BASE}/inventory/${itemId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ 
+                name: newName, 
+                quantity: parseInt(newQuantity),
+                minQuantity: parseInt(newMinQuantity)
+            })
+        });
+        
+        if (updateRes.ok) {
+            showToast('✅ تم تحديث المنتج', 'success');
+            loadInventory();
+        } else {
+            showToast('❌ فشل التحديث', 'error');
+        }
+    } catch (error) {
+        console.error('❌ فشل تعديل المنتج:', error);
+        showToast('❌ فشل الاتصال', 'error');
+    }
+}
+
+// ✅ تعديل كوبون (بسيط - تغيير الحالة فقط)
+async function editCoupon(couponId) {
+    if (!confirm('⚠️ هل تريد تفعيل/تعطيل هذا الكوبون؟')) return;
+    const token = localStorage.getItem('token');
+    try {
+        // جلب الكوبون
+        const res = await fetch(`${API_BASE}/coupons/${couponId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const coupon = await res.json();
+        
+        // تغيير الحالة
+        const updateRes = await fetch(`${API_BASE}/coupons/${couponId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ 
+                isActive: !coupon.isActive
+            })
+        });
+        
+        if (updateRes.ok) {
+            showToast(`✅ تم ${coupon.isActive ? 'تعطيل' : 'تفعيل'} الكوبون`, 'success');
+            loadCoupons();
+        } else {
+            showToast('❌ فشل التحديث', 'error');
+        }
+    } catch (error) {
+        console.error('❌ فشل تعديل الكوبون:', error);
+        showToast('❌ فشل الاتصال', 'error');
+    }
+}
+
+// ✅ تعديل طلب عرض سعر (إضافة ملاحظات)
+async function editQuote(quoteId) {
+    const token = localStorage.getItem('token');
+    try {
+        // جلب الطلب
+        const res = await fetch(`${API_BASE}/quotes/${quoteId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const quote = await res.json();
+        
+        // عرض نافذة تعديل
+        const newMessage = prompt('تعديل الملاحظات:', quote.quoteMessage || '');
+        if (newMessage === null) return;
+        
+        // إرسال التحديث
+        const updateRes = await fetch(`${API_BASE}/quotes/${quoteId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ 
+                quoteMessage: newMessage
+            })
+        });
+        
+        if (updateRes.ok) {
+            showToast('✅ تم تحديث الملاحظات', 'success');
+            loadQuotes();
+        } else {
+            showToast('❌ فشل التحديث', 'error');
+        }
+    } catch (error) {
+        console.error('❌ فشل تعديل الطلب:', error);
+        showToast('❌ فشل الاتصال', 'error');
+    }
+}
+
         container.innerHTML = staff.map(s => `
             <div style="display:flex;justify-content:space-between;align-items:center;padding:0.3rem 0;border-bottom:1px solid var(--border-color);flex-wrap:wrap;gap:0.3rem;">
                 <div>
