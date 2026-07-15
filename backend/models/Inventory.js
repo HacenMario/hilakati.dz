@@ -5,8 +5,8 @@ const InventorySchema = new mongoose.Schema({
     name: { type: String, required: true },
     category: { type: String, enum: ['products', 'tools', 'furniture', 'consumables'], default: 'products' },
     quantity: { type: Number, required: true, default: 0 },
-    minQuantity: { type: Number, default: 5 }, // حد التنبيه عند النفاد
-    unit: { type: String, default: 'قطعة' }, // قطعة، لتر، كيلو، إلخ
+    minQuantity: { type: Number, default: 5 },
+    unit: { type: String, default: 'قطعة' },
     price: { type: Number, default: 0 },
     supplier: { type: String, default: '' },
     lastRestocked: { type: Date, default: Date.now },
