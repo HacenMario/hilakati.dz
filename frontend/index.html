@@ -2062,68 +2062,104 @@ function showInstallInstructions() {
 }
     
 // ============================================================
-// PWA - تثبيت التطبيق
+// PWA - تثبيت التطبيق (نسخة محسنة)
 // ============================================================
 
 let deferredPrompt = null;
 
-// ✅ هذا الحدث يتم تشغيله تلقائياً بواسطة المتصفح
+// ✅ استمع لحدث التثبيت
 window.addEventListener('beforeinstallprompt', (e) => {
     console.log('✅ تم اكتشاف حدث beforeinstallprompt');
-    // منع ظهور الإشعار الافتراضي
     e.preventDefault();
-    // حفظ الحدث لاستخدامه لاحقاً
     deferredPrompt = e;
     
-    // ✅ عرض إشعار التثبيت المخصص
-    showInstallBanner();
+    // ✅ إظهار الزر
+    const installBtn = document.getElementById('pwaInstallBtn');
+    if (installBtn) {
+        installBtn.style.display = 'inline-block';
+    }
 });
 
-// ✅ عرض إشعار التثبيت المخصص
-function showInstallBanner() {
-    const banner = document.getElementById('installBanner');
-    if (banner) {
-        banner.style.display = 'block';
-        console.log('✅ تم عرض إشعار التثبيت');
-    } else {
-        console.error('❌ عنصر installBanner غير موجود');
-    }
-}
-
 // ✅ تثبيت التطبيق
-async function installApp() {
+async function installPWA() {
     console.log('🔄 محاولة تثبيت التطبيق...');
     console.log('deferredPrompt:', deferredPrompt);
     
-    if (!deferredPrompt) {
-        console.warn('⚠️ لا يوجد حدث تثبيت متاح');
-        showToast('❌ التثبيت غير متاح حالياً', 'error');
+    // ✅ إذا كان deferredPrompt متاحاً
+    if (deferredPrompt) {
+        try {
+            // عرض نافذة التثبيت
+            deferredPrompt.prompt();
+            // انتظار رد المستخدم
+            const result = await deferredPrompt.userChoice;
+            console.log(`✅ نتيجة التثبيت: ${result.outcome}`);
+            
+            // إخفاء الزر بعد التثبيت
+            if (result.outcome === 'accepted') {
+                showToast('✅ تم تثبيت التطبيق بنجاح!', 'success');
+                const installBtn = document.getElementById('pwaInstallBtn');
+                if (installBtn) {
+                    installBtn.style.display = 'none';
+                }
+            } else {
+                showToast('❌ تم إلغاء التثبيت', 'info');
+            }
+            
+            deferredPrompt = null;
+            return;
+        } catch (error) {
+            console.error('❌ فشل التثبيت:', error);
+            showToast('❌ فشل التثبيت، حاول مرة أخرى', 'error');
+        }
+    }
+    
+    // ✅ إذا لم يكن deferredPrompt متاحاً، استخدم حل بديل
+    await installPWAFallback();
+}
+
+// ✅ حل بديل: فتح نافذة التثبيت عبر المتصفح
+async function installPWAFallback() {
+    // ✅ التحقق من أن المتصفح يدعم PWA
+    if ('BeforeInstallPromptEvent' in window) {
+        showToast('⏳ جاري تحضير التثبيت...', 'info');
+        // ✅ إعادة تحميل الصفحة لتشغيل الحدث
+        window.location.reload();
         return;
     }
     
-    try {
-        // عرض نافذة التثبيت
-        deferredPrompt.prompt();
-        // انتظار رد المستخدم
-        const result = await deferredPrompt.userChoice;
-        console.log(`✅ نتيجة التثبيت: ${result.outcome}`);
-        
-        // إخفاء الإشعار
-        const banner = document.getElementById('installBanner');
-        if (banner) {
-            banner.style.display = 'none';
+    // ✅ إذا كان التطبيق مثبتاً بالفعل
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+        showToast('✅ التطبيق مثبت بالفعل!', 'success');
+        const installBtn = document.getElementById('pwaInstallBtn');
+        if (installBtn) {
+            installBtn.style.display = 'none';
         }
-        deferredPrompt = null;
-        
-        if (result.outcome === 'accepted') {
-            showToast('✅ تم تثبيت التطبيق بنجاح!', 'success');
-        } else {
-            showToast('❌ تم إلغاء التثبيت', 'info');
-        }
-    } catch (error) {
-        console.error('❌ فشل التثبيت:', error);
-        showToast('❌ فشل التثبيت', 'error');
+        return;
     }
+    
+    // ✅ حل أخير: عرض تعليمات التثبيت اليدوي
+    showInstallInstructions();
+}
+
+// ✅ عرض تعليمات التثبيت اليدوي
+function showInstallInstructions() {
+    const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
+    
+    let message = '';
+    if (isMobile) {
+        message = 
+            '📱 لتثبيت تطبيق حلاقتي:\n\n' +
+            '1. اضغط على زر القائمة (⋮ أو ⬆️)\n' +
+            '2. اختر "إضافة إلى الشاشة الرئيسية"\n' +
+            '3. اضغط "إضافة" ✅';
+    } else {
+        message = 
+            '💻 لتثبيت تطبيق حلاقتي:\n\n' +
+            '1. اضغط على زر القائمة (⋮) في المتصفح\n' +
+            '2. اختر "تثبيت التطبيق" أو "Install App"\n' +
+            '3. اضغط "تثبيت" ✅';
+    }
+    alert(message);
 }
 
 // ✅ إخفاء الإشعار
@@ -2137,11 +2173,11 @@ function dismissInstallBanner() {
 // ✅ التحقق من تثبيت التطبيق
 window.addEventListener('appinstalled', () => {
     console.log('✅ تم تثبيت التطبيق بنجاح!');
-    const banner = document.getElementById('installBanner');
-    if (banner) {
-        banner.style.display = 'none';
-    }
     showToast('🎉 شكراً لتثبيت تطبيق حلاقتي!', 'success');
+    const installBtn = document.getElementById('pwaInstallBtn');
+    if (installBtn) {
+        installBtn.style.display = 'none';
+    }
 });
 
 // ===== أيقونات نوع الصالون =====
