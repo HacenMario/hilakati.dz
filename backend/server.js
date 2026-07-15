@@ -10,15 +10,6 @@ const socketIo = require('socket.io');
 const app = express();
 const server = http.createServer(app);
 
-const staffRoutes = require('./routes/staff');
-const inventoryRoutes = require('./routes/inventory');
-const couponRoutes = require('./routes/coupons');
-const quoteRoutes = require('./routes/quotes');
-app.use('/api/staff', staffRoutes);
-app.use('/api/inventory', inventoryRoutes);
-app.use('/api/coupons', couponRoutes);
-app.use('/api/quotes', quoteRoutes);
-
 // ============================================================
 // Socket.io
 // ============================================================
@@ -166,13 +157,15 @@ const Notification = require('./models/Notification');
 // ============================================================
 function authMiddleware(req, res, next) {
     const token = req.headers.authorization?.split(' ')[1];
-    if (!token) return res.status(401).json({ message: 'غير مصرح' });
+    if (!token) {
+        return res.status(401).json({ message: '❌ غير مصرح' });
+    }
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'salon_secret_key');
         req.userId = decoded.id;
         next();
     } catch (err) {
-        res.status(401).json({ message: 'توكن غير صالح' });
+        res.status(401).json({ message: '❌ توكن غير صالح' });
     }
 }
 
@@ -200,10 +193,20 @@ function adminAuthMiddleware(req, res, next) {
     }
 }
 
+const staffRoutes = require('./routes/staff');
+const inventoryRoutes = require('./routes/inventory');
+const couponRoutes = require('./routes/coupons');
+const quoteRoutes = require('./routes/quotes');
+
+// ✅ استخدام authMiddleware للتحقق من الصلاحية
+app.use('/api/staff', authMiddleware, staffRoutes);
+app.use('/api/inventory', authMiddleware, inventoryRoutes);
+app.use('/api/coupons', authMiddleware, couponRoutes);
+app.use('/api/quotes', authMiddleware, quoteRoutes);
+
 // ============================================================
 // مسارات المصادقة (صالون)
 // ============================================================
-
 // ✅ تسجيل صالون جديد (بحالة pending_approval)
 app.post('/api/auth/register', async (req, res) => {
     try {
