@@ -51,13 +51,14 @@ router.put('/:id/quantity', auth, async (req, res) => {
     }
 });
 
-// ✅ جلب المنتجات المنخفضة (مع $expr للمقارنة)
-router.get('/low-stock/:salonId', authMiddleware, async (req, res) => {
+// ✅ جلب المنتجات المنخفضة
+router.get('/low-stock/:salonId', async (req, res) => {
     try {
+        // استخدم $expr للمقارنة بين حقلين في نفس المستند
         const items = await Inventory.find({
             salonId: req.params.salonId,
             isActive: true,
-            $expr: { $lte: ["$quantity", "$minQuantity"] }  // ✅ المقارنة الصحيحة بين حقلين
+            $expr: { $lte: ["$quantity", "$minQuantity"] }
         });
         res.json(items);
     } catch (error) {
