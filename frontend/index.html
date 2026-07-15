@@ -1637,19 +1637,56 @@
     <h2 data-i18n="booking"><i class="fas fa-calendar-check"></i> حجز موعد</h2>
     <form id="bookingForm">
         <div class="form-group"><label data-i18n="salonName">الصالون</label><input type="text" id="bookSalonName" readonly style="background:var(--input-bg);color:var(--gold);"></div>
+        
         <div class="form-group"><label data-i18n="services">الخدمات (Ctrl لاختيار متعدد)</label><select id="bookService" multiple style="height:80px;" onchange="updateTotalPrice()"></select></div>
+        
+        <!-- ===== حقل السعر الإجمالي (سيتم تحديثه تلقائياً) ===== -->
         <div class="form-group"><label data-i18n="totalPrice">السعر الإجمالي</label><input type="text" id="bookTotalPrice" readonly style="background:var(--input-bg);color:var(--gold);font-weight:700;"></div>
+        
+        <!-- ===== 🆕 حقل كود الخصم (الكوبون) ===== -->
+        <div class="form-group" style="margin-bottom: 0.8rem;">
+            <label style="display:block;margin-bottom:0.2rem;color:var(--text-color);font-weight:500;font-size:0.8rem;">
+                🎫 كود الخصم (اختياري)
+            </label>
+            <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+                <input type="text" id="bookCouponCode" placeholder="أدخل كود الكوبون" 
+                       style="flex:1;min-width:150px;padding:0.5rem 0.8rem;border-radius:8px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--text-color);font-size:0.85rem;">
+                <button type="button" class="btn-gold btn-sm" onclick="applyCoupon()" 
+                        style="padding:0.4rem 1rem;border-radius:50px;font-weight:700;font-size:0.75rem;white-space:nowrap;">
+                    <i class="fas fa-ticket-alt"></i> تطبيق
+                </button>
+                <button type="button" class="btn-outline btn-sm" onclick="removeCoupon()" 
+                        style="padding:0.3rem 0.8rem;border-radius:50px;font-size:0.7rem;display:none;" id="removeCouponBtn">
+                    <i class="fas fa-times"></i> إلغاء
+                </button>
+            </div>
+            <div id="couponFeedback" style="font-size:0.75rem;margin-top:0.3rem;color:var(--text-color);opacity:0.7;"></div>
+        </div>
+        
+        <!-- ===== 🆕 عرض الخصم والسعر النهائي ===== -->
+        <div class="form-group" id="discountDisplay" style="display:none;">
+            <label>💰 قيمة الخصم</label>
+            <input type="text" id="bookDiscountAmount" readonly style="background:var(--input-bg);color:var(--success);font-weight:700;">
+        </div>
+        <div class="form-group" id="finalPriceDisplay" style="display:none;">
+            <label>💎 السعر بعد الخصم</label>
+            <input type="text" id="bookFinalPrice" readonly style="background:var(--input-bg);color:var(--gold);font-weight:700;font-size:1.1rem;">
+        </div>
+        
         <div class="form-group"><label data-i18n="staff">الموظف</label><select id="bookStaff" required></select></div>
+        
         <div class="form-row">
             <div class="form-group"><label data-i18n="date">التاريخ</label><input type="date" id="bookDate" required></div>
             <div class="form-group"><label data-i18n="time">الوقت</label><select id="bookTime" required><option value="">اختر الوقت</option><option value="09:00">09:00</option><option value="09:30">09:30</option><option value="10:00">10:00</option><option value="10:30">10:30</option><option value="11:00">11:00</option><option value="11:30">11:30</option><option value="12:00">12:00</option><option value="12:30">12:30</option><option value="13:00">13:00</option><option value="13:30">13:30</option><option value="14:00">14:00</option><option value="14:30">14:30</option><option value="15:00">15:00</option><option value="15:30">15:30</option><option value="16:00">16:00</option><option value="16:30">16:30</option><option value="17:00">17:00</option><option value="17:30">17:30</option><option value="18:00">18:00</option><option value="18:30">18:30</option><option value="19:00">19:00</option></select></div>
         </div>
+        
         <div class="form-group"><label data-i18n="clientName">الاسم الكامل</label><input type="text" id="bookClientName" required></div>
         <div class="form-group"><label data-i18n="clientPhone">رقم الهاتف</label><input type="tel" id="bookClientPhone" required></div>
         <div class="form-group"><label data-i18n="clientEmail">البريد (اختياري)</label><input type="email" id="bookClientEmail"></div>
         <div class="form-group"><label data-i18n="payment">طريقة الدفع</label><select id="bookPayment"><option value="cash">دفع نقدي</option></select></div>
         <div class="form-group"><label>حجز متكرر</label><select id="bookRecurring"><option value="none">مرة واحدة</option><option value="weekly">أسبوعياً</option><option value="monthly">شهرياً</option></select></div>
         <div class="form-group"><label data-i18n="notes">ملاحظات</label><textarea id="bookNotes"></textarea></div>
+        
         <button type="submit" class="btn-gold" style="width:100%;padding:0.5rem;"><i class="fas fa-check-circle"></i> تأكيد الحجز</button>
     </form>
 </div></div>
@@ -2659,13 +2696,139 @@ function closeModal(id) {
     }
 }
 
+// ============================================================
+// نظام تطبيق الكوبونات في الحجز
+// ============================================================
+
+let appliedCoupon = null;
+let originalTotal = 0;
+
+// ✅ تطبيق الكوبون
+async function applyCoupon() {
+    const code = document.getElementById('bookCouponCode').value.trim();
+    if (!code) {
+        showToast('❌ الرجاء إدخال كود الكوبون', 'error');
+        return;
+    }
+
+    const salonId = bookingSalonId;
+    if (!salonId) {
+        showToast('❌ الرجاء اختيار صالون أولاً', 'error');
+        return;
+    }
+
+    // ✅ حساب السعر الإجمالي الحالي
+    const select = document.getElementById('bookService');
+    const selectedOptions = Array.from(select.selectedOptions);
+    let total = 0;
+    selectedOptions.forEach(opt => {
+        total += parseInt(opt.dataset.price) || 0;
+    });
+
+    if (total === 0) {
+        showToast('❌ الرجاء اختيار خدمة أولاً', 'error');
+        return;
+    }
+
+    originalTotal = total;
+
+    try {
+        const res = await fetch(`${API_BASE}/coupons/validate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                code, 
+                salonId, 
+                total 
+            })
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.valid) {
+            appliedCoupon = data.coupon;
+            
+            // ✅ عرض الخصم
+            document.getElementById('bookTotalPrice').value = `${total} دج`;
+            document.getElementById('bookDiscountAmount').value = `- ${data.discount} دج`;
+            document.getElementById('bookFinalPrice').value = `${data.newTotal} دج`;
+            
+            document.getElementById('discountDisplay').style.display = 'block';
+            document.getElementById('finalPriceDisplay').style.display = 'block';
+            document.getElementById('removeCouponBtn').style.display = 'inline-block';
+            document.getElementById('couponFeedback').innerHTML = `
+                <span style="color:var(--success);">
+                    ✅ تم تطبيق الكوبون "${data.coupon.code}" - خصم ${data.discount} دج
+                </span>
+            `;
+            
+            showToast(`✅ تم تطبيق الخصم بنجاح!`, 'success');
+        } else {
+            showToast(`❌ ${data.message || 'كوبون غير صالح'}`, 'error');
+            document.getElementById('couponFeedback').innerHTML = `
+                <span style="color:var(--danger);">
+                    ❌ ${data.message || 'كوبون غير صالح'}
+                </span>
+            `;
+        }
+    } catch (error) {
+        console.error('❌ فشل التحقق من الكوبون:', error);
+        showToast('❌ فشل الاتصال بالخادم', 'error');
+    }
+}
+
+// ✅ إلغاء الكوبون
+function removeCoupon() {
+    appliedCoupon = null;
+    document.getElementById('discountDisplay').style.display = 'none';
+    document.getElementById('finalPriceDisplay').style.display = 'none';
+    document.getElementById('removeCouponBtn').style.display = 'none';
+    document.getElementById('couponFeedback').innerHTML = '';
+    document.getElementById('bookCouponCode').value = '';
+    
+    // ✅ إعادة حساب السعر الإجمالي
+    updateTotalPrice();
+    showToast('✅ تم إلغاء الكوبون', 'info');
+}
+
+// ✅ تحديث الدالة updateTotalPrice لتشمل الكوبون
+// استبدل دالة updateTotalPrice الحالية بهذه النسخة المحسنة
 function updateTotalPrice() {
     const select = document.getElementById('bookService');
     let total = 0;
     for (let option of select.options) {
-        if (option.selected) total += parseInt(option.dataset.price) || 0;
+        if (option.selected) {
+            total += parseInt(option.dataset.price) || 0;
+        }
     }
-    document.getElementById('bookTotalPrice').value = total ? `${total} دج` : '';
+    
+    // ✅ إذا كان هناك كوبون مطبق، احسب الخصم
+    if (appliedCoupon && total > 0) {
+        let discount = 0;
+        if (appliedCoupon.type === 'percentage') {
+            discount = (total * appliedCoupon.value) / 100;
+            if (appliedCoupon.maxDiscount > 0) {
+                discount = Math.min(discount, appliedCoupon.maxDiscount);
+            }
+        } else {
+            discount = appliedCoupon.value;
+        }
+        
+        const newTotal = Math.max(0, total - discount);
+        document.getElementById('bookTotalPrice').value = `${total} دج`;
+        document.getElementById('bookDiscountAmount').value = `- ${Math.round(discount)} دج`;
+        document.getElementById('bookFinalPrice').value = `${Math.round(newTotal)} دج`;
+        
+        document.getElementById('discountDisplay').style.display = 'block';
+        document.getElementById('finalPriceDisplay').style.display = 'block';
+        document.getElementById('removeCouponBtn').style.display = 'inline-block';
+    } else {
+        document.getElementById('bookTotalPrice').value = total ? `${total} دج` : '';
+        // ✅ إذا كان هناك كوبون سابق ولكن تم تغيير الخدمات، ألغِ الكوبون
+        if (appliedCoupon) {
+            removeCoupon();
+        }
+    }
 }
 
 function showConfirm(msg, onConfirm) {
@@ -4092,7 +4255,29 @@ document.getElementById('bookingForm').addEventListener('submit', async (e) => {
     const select = document.getElementById('bookService');
     const selectedOptions = Array.from(select.selectedOptions);
     const services = selectedOptions.map(opt => ({ name: opt.value, price: parseInt(opt.dataset.price) || 0 }));
-    const totalPrice = services.reduce((s, item) => s + item.price, 0);
+    
+    // ✅ حساب السعر مع الخصم
+    let originalPrice = services.reduce((s, item) => s + item.price, 0);
+    let totalPrice = originalPrice;
+    let discountAmount = 0;
+    let couponId = null;
+    let couponCode = null;
+    
+    if (appliedCoupon) {
+        if (appliedCoupon.type === 'percentage') {
+            discountAmount = (originalPrice * appliedCoupon.value) / 100;
+            if (appliedCoupon.maxDiscount > 0) {
+                discountAmount = Math.min(discountAmount, appliedCoupon.maxDiscount);
+            }
+        } else {
+            discountAmount = appliedCoupon.value;
+        }
+        discountAmount = Math.round(discountAmount);
+        totalPrice = Math.max(0, originalPrice - discountAmount);
+        couponId = appliedCoupon._id;
+        couponCode = appliedCoupon.code;
+    }
+    
     const staff = document.getElementById('bookStaff').value;
     const date = document.getElementById('bookDate').value;
     const time = document.getElementById('bookTime').value;
@@ -4115,7 +4300,13 @@ document.getElementById('bookingForm').addEventListener('submit', async (e) => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 salonId, customerId, clientName, clientPhone, clientEmail,
-                services, totalPrice, staff, date, time, payment, notes, recurring
+                services, 
+                totalPrice,        // ✅ السعر بعد الخصم
+                originalPrice,     // ✅ السعر الأصلي
+                discountAmount,    // ✅ قيمة الخصم
+                couponId,          // ✅ معرف الكوبون المطبق
+                couponCode,        // ✅ كود الكوبون
+                staff, date, time, payment, notes, recurring
             })
         });
         const data = await res.json();
@@ -4126,6 +4317,11 @@ document.getElementById('bookingForm').addEventListener('submit', async (e) => {
             closeModal('bookingModal');
             document.getElementById('bookingForm').reset();
             document.getElementById('bookTotalPrice').value = '';
+            document.getElementById('discountDisplay').style.display = 'none';
+            document.getElementById('finalPriceDisplay').style.display = 'none';
+            document.getElementById('removeCouponBtn').style.display = 'none';
+            document.getElementById('couponFeedback').innerHTML = '';
+            appliedCoupon = null;
             refreshNotifications();
             if (localStorage.getItem('token')) loadDashboard();
         } else {
