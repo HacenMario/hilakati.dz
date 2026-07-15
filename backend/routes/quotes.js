@@ -86,5 +86,17 @@ router.put('/:id/reject', auth, async (req, res) => {
         res.status(500).json({ message: 'فشل رفض عرض السعر' });
     }
 });
+// ✅ تحديث طلب عرض سعر
+router.put('/:id', async (req, res) => {
+    try {
+        const quote = await QuoteRequest.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        if (!quote) {
+            return res.status(404).json({ message: '❌ الطلب غير موجود' });
+        }
+        res.json({ message: '✅ تم تحديث الطلب', quote });
+    } catch (error) {
+        res.status(500).json({ message: 'فشل تحديث الطلب' });
+    }
+});
 
 module.exports = router;
