@@ -1816,6 +1816,40 @@
     <button class="btn-gold btn-sm" onclick="openCouponModal()"><i class="fas fa-plus"></i> إنشاء كوبون</button>
     <div id="couponsList" style="margin-top:0.5rem;"></div>
 </div>
+<!-- ===== نافذة تعديل كوبون ===== -->
+<div class="modal-overlay" id="editCouponModal">
+    <div class="modal-box">
+        <button class="modal-close" onclick="closeModal('editCouponModal')">&times;</button>
+        <h2><i class="fas fa-edit"></i> تعديل الكوبون</h2>
+        <form id="editCouponForm">
+            <input type="hidden" id="editCouponId">
+            <div class="form-group"><label>كود الكوبون</label><input type="text" id="editCouponCode" required></div>
+            <div class="form-group"><label>النوع</label>
+                <select id="editCouponType">
+                    <option value="percentage">نسبة مئوية (%)</option>
+                    <option value="fixed">قيمة ثابتة (دج)</option>
+                </select>
+            </div>
+            <div class="form-group"><label>القيمة</label><input type="number" id="editCouponValue" required min="1"></div>
+            <div class="form-group"><label>الحد الأدنى للطلب (دج)</label><input type="number" id="editCouponMinOrder" min="0"></div>
+            <div class="form-group"><label>أقصى خصم (دج) - للكوبونات النسبية</label><input type="number" id="editCouponMaxDiscount" min="0"></div>
+            <div class="form-row">
+                <div class="form-group"><label>تاريخ البدء</label><input type="date" id="editCouponValidFrom" required></div>
+                <div class="form-group"><label>تاريخ الانتهاء</label><input type="date" id="editCouponValidUntil" required></div>
+            </div>
+            <div class="form-group"><label>عدد مرات الاستخدام</label><input type="number" id="editCouponUsageLimit" min="1"></div>
+            <div class="form-group"><label>الوصف</label><textarea id="editCouponDescription"></textarea></div>
+            <div class="form-group">
+                <label>الحالة</label>
+                <select id="editCouponStatus">
+                    <option value="true">✅ مفعل</option>
+                    <option value="false">❌ معطل</option>
+                </select>
+            </div>
+            <button type="submit" class="btn-gold" style="width:100%;padding:0.5rem;">💾 حفظ التغييرات</button>
+        </form>
+    </div>
+</div>
 <!-- ===== طلبات عروض الأسعار ===== -->
 <div id="dashQuotes" class="hidden">
     <h3 style="color:var(--gold);margin-bottom:0.6rem;font-size:1rem;"><i class="fas fa-file-invoice"></i> طلبات عروض الأسعار</h3>
@@ -5310,6 +5344,7 @@ async function loadCoupons() {
                 <div style="display:flex;gap:0.3rem;flex-wrap:wrap;">
                     <div style="display:flex;gap:0.3rem;flex-wrap:wrap;">
                     <button class="btn-primary btn-sm" onclick="editCoupon('${c._id}')"><i class="fas fa-edit"></i></button>
+                    <button class="btn-${c.isActive ? 'warning' : 'success'} btn-sm" onclick="toggleCouponStatus('${c._id}', ${!c.isActive})">${c.isActive ? '🔴 تعطيل' : '🟢 تفعيل'}</button>
                     <button class="btn-danger btn-sm" onclick="deleteCoupon('${c._id}')"><i class="fas fa-trash"></i></button>
                     </div>
             </div>
@@ -5662,37 +5697,105 @@ async function editInventory(itemId) {
     }
 }
 
-// ✅ تعديل كوبون (بسيط - تغيير الحالة فقط)
+// ✅ تعديل كوبون (جميع البيانات)
 async function editCoupon(couponId) {
-    if (!confirm('⚠️ هل تريد تفعيل/تعطيل هذا الكوبون؟')) return;
     const token = localStorage.getItem('token');
     try {
-        // جلب الكوبون
         const res = await fetch(`${API_BASE}/coupons/${couponId}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const coupon = await res.json();
         
-        // تغيير الحالة
-        const updateRes = await fetch(`${API_BASE}/coupons/${couponId}`, {
+        // ✅ تعبئة النموذج بالبيانات الحالية
+        document.getElementById('editCouponId').value = coupon._id;
+        document.getElementById('editCouponCode').value = coupon.code || '';
+        document.getElementById('editCouponType').value = coupon.type || 'percentage';
+        document.getElementById('editCouponValue').value = coupon.value || 0;
+        document.getElementById('editCouponMinOrder').value = coupon.minOrder || 0;
+        document.getElementById('editCouponMaxDiscount').value = coupon.maxDiscount || 0;
+        document.getElementById('editCouponValidFrom').value = coupon.validFrom ? new Date(coupon.validFrom).toISOString().split('T')[0] : '';
+        document.getElementById('editCouponValidUntil').value = coupon.validUntil ? new Date(coupon.validUntil).toISOString().split('T')[0] : '';
+        document.getElementById('editCouponUsageLimit').value = coupon.usageLimit || 1;
+        document.getElementById('editCouponDescription').value = coupon.description || '';
+        document.getElementById('editCouponStatus').value = coupon.isActive ? 'true' : 'false';
+        
+        openModal('editCouponModal');
+    } catch (error) {
+        console.error('❌ فشل جلب بيانات الكوبون:', error);
+        showToast('❌ فشل تحميل بيانات الكوبون', 'error');
+    }
+}
+
+// ✅ معالج تعديل الكوبون
+document.getElementById('editCouponForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const token = localStorage.getItem('token');
+    const couponId = document.getElementById('editCouponId').value;
+    
+    const code = document.getElementById('editCouponCode').value.trim();
+    const type = document.getElementById('editCouponType').value;
+    const value = parseFloat(document.getElementById('editCouponValue').value);
+    const minOrder = parseFloat(document.getElementById('editCouponMinOrder').value) || 0;
+    const maxDiscount = parseFloat(document.getElementById('editCouponMaxDiscount').value) || 0;
+    const validFrom = new Date(document.getElementById('editCouponValidFrom').value);
+    const validUntil = new Date(document.getElementById('editCouponValidUntil').value);
+    const usageLimit = parseInt(document.getElementById('editCouponUsageLimit').value) || 1;
+    const description = document.getElementById('editCouponDescription').value.trim();
+    const isActive = document.getElementById('editCouponStatus').value === 'true';
+    
+    if (validFrom > validUntil) {
+        showToast('❌ تاريخ البدء يجب أن يكون قبل تاريخ الانتهاء', 'error');
+        return;
+    }
+    
+    try {
+        const res = await fetch(`${API_BASE}/coupons/${couponId}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({ 
-                isActive: !coupon.isActive
+            body: JSON.stringify({
+                code, type, value, minOrder, maxDiscount,
+                validFrom, validUntil, usageLimit, description,
+                isActive
             })
         });
         
-        if (updateRes.ok) {
-            showToast(`✅ تم ${coupon.isActive ? 'تعطيل' : 'تفعيل'} الكوبون`, 'success');
+        if (res.ok) {
+            showToast('✅ تم تحديث الكوبون', 'success');
+            closeModal('editCouponModal');
             loadCoupons();
         } else {
-            showToast('❌ فشل التحديث', 'error');
+            const data = await res.json();
+            showToast(`❌ ${data.message}`, 'error');
         }
     } catch (error) {
-        console.error('❌ فشل تعديل الكوبون:', error);
+        console.error('❌ فشل تحديث الكوبون:', error);
+        showToast('❌ فشل الاتصال', 'error');
+    }
+});
+// ✅ تبديل حالة الكوبون (تفعيل/تعطيل سريع)
+async function toggleCouponStatus(couponId, newStatus) {
+    if (!confirm(`⚠️ هل تريد ${newStatus ? 'تفعيل' : 'تعطيل'} هذا الكوبون؟`)) return;
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`${API_BASE}/coupons/${couponId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ isActive: newStatus })
+        });
+        if (res.ok) {
+            showToast(`✅ تم ${newStatus ? 'تفعيل' : 'تعطيل'} الكوبون`, 'success');
+            loadCoupons();
+        } else {
+            const data = await res.json();
+            showToast(`❌ ${data.message}`, 'error');
+        }
+    } catch (error) {
         showToast('❌ فشل الاتصال', 'error');
     }
 }
