@@ -1300,8 +1300,7 @@
         <span id="customerNameDisplay" style="display:none;color:var(--gold);font-weight:500;font-size:0.7rem;"></span>
         <!-- ✅ زر تثبيت PWA (دائم) -->
         <button class="btn-gold btn-sm" onclick="installPWA()" id="pwaInstallBtn" style="display:inline-block;"><i class="fas fa-download"></i> تثبيت التطبيق</button>
-        <!-- ✅ زر المشاركة (لـ iOS) --><button class="btn-outline btn-sm" onclick="shareApp()" id="shareBtn" style="display:inline-block;"><i class="fas fa-share-alt"></i> مشاركة</button>
-
+        
         <!-- ===== زر الإشعارات ===== -->
         <div class="notif-bell" id="notifBell" style="position:relative;display:inline-block;cursor:pointer;margin-left:0.5rem;">
             <i class="fas fa-bell" style="font-size:1.2rem;color:var(--text-color);"></i>
@@ -2063,7 +2062,7 @@ function showInstallInstructions() {
 }
     
 // ============================================================
-// PWA - تثبيت التطبيق (نسخة محسنة للهواتف)
+// PWA - تثبيت التطبيق (نسخة مبسطة وفعالة)
 // ============================================================
 
 let deferredPrompt = null;
@@ -2073,25 +2072,13 @@ window.addEventListener('beforeinstallprompt', (e) => {
     console.log('✅ تم اكتشاف حدث beforeinstallprompt');
     e.preventDefault();
     deferredPrompt = e;
-    
-    const installBtn = document.getElementById('pwaInstallBtn');
-    if (installBtn) {
-        installBtn.style.display = 'inline-block';
-        installBtn.textContent = '📲 تثبيت التطبيق';
-    }
 });
 
-// ✅ تثبيت التطبيق (نسخة محسنة)
+// ✅ تثبيت التطبيق (نسخة مبسطة)
 async function installPWA() {
-    console.log('🔄 محاولة تثبيت التطبيق...');
-    
     // ✅ 1. إذا كان التطبيق مثبتاً بالفعل
     if (window.matchMedia('(display-mode: standalone)').matches) {
         showToast('✅ التطبيق مثبت بالفعل!', 'success');
-        const installBtn = document.getElementById('pwaInstallBtn');
-        if (installBtn) {
-            installBtn.style.display = 'none';
-        }
         return;
     }
     
@@ -2102,13 +2089,8 @@ async function installPWA() {
             const result = await deferredPrompt.userChoice;
             console.log(`✅ نتيجة التثبيت: ${result.outcome}`);
             deferredPrompt = null;
-            
             if (result.outcome === 'accepted') {
-                showToast('✅ تم تثبيت التطبيق بنجاح!', 'success');
-                const installBtn = document.getElementById('pwaInstallBtn');
-                if (installBtn) {
-                    installBtn.style.display = 'none';
-                }
+                showToast('✅ تم تثبيت التطبيق!', 'success');
             }
             return;
         } catch (error) {
@@ -2116,131 +2098,76 @@ async function installPWA() {
         }
     }
     
-    // ✅ 3. للهواتف - استخدام الطريقة المناسبة
+    // ✅ 3. حل بسيط للجميع: فتح قائمة المشاركة أو عرض تعليمات
+    showInstallHelp();
+}
+
+// ✅ عرض مساعدة التثبيت (تعمل على جميع الأجهزة)
+function showInstallHelp() {
     const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
     const isAndroid = /Android/i.test(navigator.userAgent);
+    const isMobile = isIOS || isAndroid;
     
-    // ✅ 3a. iOS - استخدام navigator.share مع تعليمات
-    if (isIOS) {
-        try {
-            if (navigator.share) {
-                await navigator.share({
-                    title: 'حلاقتي',
-                    text: 'احجز موعدك بسهولة مع أفضل الصالونات في الجزائر',
-                    url: window.location.href
-                });
-                showToast('✅ اختر "إضافة إلى الشاشة الرئيسية" من القائمة', 'success');
-                return;
-            }
-        } catch (error) {
-            console.log('⚠️ تم إلغاء المشاركة');
-        }
-        showIOSInstructions();
-        return;
-    }
-    
-    // ✅ 3b. Android - محاولة تشغيل التثبيت عبر المتصفح مباشرة
-    if (isAndroid) {
-        // ✅ محاولة 1: استخدام navigator.share
-        if (navigator.share) {
-            try {
-                await navigator.share({
-                    title: 'حلاقتي',
-                    text: 'احجز موعدك بسهولة مع أفضل الصالونات في الجزائر',
-                    url: window.location.href
-                });
-                showToast('✅ اختر "إضافة إلى الشاشة الرئيسية" من القائمة', 'success');
-                return;
-            } catch (error) {
-                console.log('⚠️ تم إلغاء المشاركة');
-            }
-        }
-        
-        // ✅ محاولة 2: استخدام beforeinstallprompt (إذا كان متاحاً)
-        if (deferredPrompt) {
-            try {
-                deferredPrompt.prompt();
-                const result = await deferredPrompt.userChoice;
-                console.log(`✅ نتيجة التثبيت: ${result.outcome}`);
-                deferredPrompt = null;
-                if (result.outcome === 'accepted') {
-                    showToast('✅ تم التثبيت!', 'success');
-                }
-                return;
-            } catch (error) {
-                console.error('❌ فشل التثبيت:', error);
-            }
-        }
-        
-        // ✅ محاولة 3: فتح تعليمات Android
-        showAndroidInstructions();
-        return;
-    }
-    
-    // ✅ 4. للحاسوب
-    showDesktopInstructions();
-}
-
-// ✅ تعليمات iOS
-function showIOSInstructions() {
-    alert(
-        '📱 لإضافة التطبيق إلى شاشتك الرئيسية:\n\n' +
-        '1️⃣ اضغط على زر المشاركة ⬆️\n' +
-        '   (في أسفل الشاشة)\n\n' +
-        '2️⃣ اختر "إضافة إلى الشاشة الرئيسية"\n' +
-        '   (🔍 ابحث عنه في القائمة)\n\n' +
-        '3️⃣ اضغط على "إضافة" ✅'
-    );
-}
-
-// ✅ تعليمات Android (مع تمييز الخيار)
-function showAndroidInstructions() {
-    const isChrome = /Chrome/i.test(navigator.userAgent);
-    
-    if (isChrome) {
-        alert(
-            '📱 لإضافة التطبيق إلى شاشتك الرئيسية:\n\n' +
-            '1️⃣ اضغط على زر القائمة ⋮\n' +
-            '   (في أعلى الشاشة)\n\n' +
-            '2️⃣ اختر "إضافة إلى الشاشة الرئيسية"\n' +
-            '   أو "Install App"\n\n' +
-            '3️⃣ اضغط على "إضافة" ✅'
-        );
-    } else {
-        alert(
-            '📱 لإضافة التطبيق إلى شاشتك الرئيسية:\n\n' +
-            '1️⃣ اضغط على زر القائمة (⋮ أو ⬆️)\n' +
-            '2️⃣ اختر "إضافة إلى الشاشة الرئيسية"\n' +
-            '3️⃣ اضغط على "إضافة" ✅'
-        );
-    }
-}
-
-// ✅ تعليمات للحاسوب
-function showDesktopInstructions() {
-    alert(
-        '💻 لتثبيت التطبيق على جهازك:\n\n' +
-        '1️⃣ اضغط على زر القائمة ⋮\n' +
-        '2️⃣ اختر "تثبيت التطبيق"\n' +
-        '3️⃣ اضغط "تثبيت" ✅'
-    );
-}
-
-// ✅ زر بديل: فتح قائمة المشاركة
-function shareApp() {
-    if (navigator.share) {
+    // ✅ إذا كان جهازاً محمولاً، حاول فتح قائمة المشاركة
+    if (isMobile && navigator.share) {
         navigator.share({
             title: 'حلاقتي - منصة حجز صالونات الحلاقة والتجميل',
             text: 'احجز موعدك بسهولة مع أفضل الصالونات في الجزائر',
             url: window.location.href
+        }).catch(() => {
+            // ✅ إذا فشل المشاركة، عرض التعليمات
+            showInstructions();
+        });
+        return;
+    }
+    
+    // ✅ عرض التعليمات المناسبة للجهاز
+    showInstructions();
+}
+
+// ✅ عرض التعليمات حسب الجهاز
+function showInstructions() {
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    
+    let message = '';
+    
+    if (isIOS) {
+        message = 
+            '📱 إضافة التطبيق إلى الشاشة الرئيسية:\n\n' +
+            '1️⃣ اضغط على زر المشاركة ⬆️\n' +
+            '2️⃣ اختر "إضافة إلى الشاشة الرئيسية"\n' +
+            '   (🔍 ابحث عنه في القائمة)\n' +
+            '3️⃣ اضغط "إضافة" ✅';
+    } else if (isAndroid) {
+        message = 
+            '📱 إضافة التطبيق إلى الشاشة الرئيسية:\n\n' +
+            '1️⃣ اضغط على زر القائمة ⋮\n' +
+            '2️⃣ اختر "إضافة إلى الشاشة الرئيسية"\n' +
+            '   أو "Install App"\n' +
+            '3️⃣ اضغط "إضافة" ✅';
+    } else {
+        message = 
+            '💻 تثبيت التطبيق على الحاسوب:\n\n' +
+            '1️⃣ اضغط على زر القائمة ⋮\n' +
+            '2️⃣ اختر "تثبيت التطبيق"\n' +
+            '   أو "Install App"\n' +
+            '3️⃣ اضغط "تثبيت" ✅';
+    }
+    
+    alert(message);
+}
+
+// ✅ زر المشاركة المباشر (بديل)
+function shareApp() {
+    if (navigator.share) {
+        navigator.share({
+            title: 'حلاقتي',
+            text: 'احجز موعدك بسهولة مع أفضل الصالونات في الجزائر',
+            url: window.location.href
         }).catch(() => {});
     } else {
-        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-        if (isIOS) {
-            showIOSInstructions();
-        } else {
-            showAndroidInstructions();
-        }
+        showInstructions();
     }
 }
 
@@ -2256,10 +2183,6 @@ function dismissInstallBanner() {
 window.addEventListener('appinstalled', () => {
     console.log('✅ تم تثبيت التطبيق بنجاح!');
     showToast('🎉 شكراً لتثبيت تطبيق حلاقتي!', 'success');
-    const installBtn = document.getElementById('pwaInstallBtn');
-    if (installBtn) {
-        installBtn.style.display = 'none';
-    }
 });
 
 // ✅ التحقق من وضع العرض عند التحميل
@@ -2267,20 +2190,6 @@ if (window.matchMedia('(display-mode: standalone)').matches) {
     const installBtn = document.getElementById('pwaInstallBtn');
     if (installBtn) {
         installBtn.style.display = 'none';
-    }
-}
-
-// ✅ كشف نوع الجهاز لعرض الزر المناسب
-const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-const isAndroid = /Android/i.test(navigator.userAgent);
-const installBtn = document.getElementById('pwaInstallBtn');
-if (installBtn) {
-    if (isIOS) {
-        installBtn.innerHTML = '<i class="fas fa-share-alt"></i> إضافة للشاشة';
-    } else if (isAndroid) {
-        installBtn.innerHTML = '<i class="fas fa-download"></i> تثبيت التطبيق';
-    } else {
-        installBtn.innerHTML = '<i class="fas fa-download"></i> تثبيت التطبيق';
     }
 }
     
