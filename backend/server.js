@@ -165,7 +165,8 @@ function authMiddleware(req, res, next) {
         req.userId = decoded.id;
         next();
     } catch (err) {
-        res.status(401).json({ message: '❌ توكن غير صالح' });
+        console.error('❌ خطأ في التوكن:', err.message);
+        return res.status(401).json({ message: '❌ توكن غير صالح' });
     }
 }
 
