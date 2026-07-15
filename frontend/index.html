@@ -1259,7 +1259,28 @@
     </style>
 </head>
 <body>
-
+<!-- ===== إشعار تثبيت التطبيق (PWA) ===== -->
+<div id="installBanner" style="display:none;position:fixed;bottom:0;left:0;right:0;background:linear-gradient(135deg, var(--primary), var(--secondary));color:#fff;padding:0.8rem 1rem;z-index:9999;box-shadow:0 -4px 20px rgba(0,0,0,0.3);border-top:3px solid var(--gold);">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem;max-width:700px;margin:0 auto;">
+        <div style="display:flex;align-items:center;gap:0.8rem;">
+            <div style="width:48px;height:48px;border-radius:12px;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:1.5rem;color:var(--dark);flex-shrink:0;">
+                <i class="fas fa-cut"></i>
+            </div>
+            <div>
+                <div style="font-weight:700;font-size:0.95rem;">حلاقتي</div>
+                <div style="font-size:0.75rem;opacity:0.8;">أضف إلى الشاشة الرئيسية للوصول السريع</div>
+            </div>
+        </div>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
+            <button onclick="installApp()" style="background:var(--gold);border:none;padding:0.4rem 1.2rem;border-radius:50px;font-weight:700;color:var(--dark);font-size:0.8rem;cursor:pointer;transition:all 0.3s ease;">
+                <i class="fas fa-download"></i> تثبيت
+            </button>
+            <button onclick="dismissInstallBanner()" style="background:transparent;border:none;color:#fff;font-size:1.2rem;cursor:pointer;padding:0 0.5rem;opacity:0.6;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+</div>
 <!-- ===== الهيدر ===== -->
 <header class="header" id="mainHeader">
     <div class="logo"><i class="fas fa-cut"></i> حلاقتي <span>🇩🇿</span></div>
@@ -4369,25 +4390,6 @@ function filterAppointments() {
     renderAppointments(filtered);
 }
 
-// ===== إلغاء جميع فلاتر الصالونات =====
-function resetFilters() {
-    // ✅ تعيين القيم الافتراضية لعناصر الفلتر (مع التحقق من وجودها)
-    const searchInput = document.getElementById('searchSalon');
-    const citySelect = document.getElementById('filterCity');
-    const typeSelect = document.getElementById('filterSalonType');
-    const sortSelect = document.getElementById('filterSort');
-    
-    if (searchInput) searchInput.value = '';
-    if (citySelect) citySelect.value = '';
-    if (typeSelect) typeSelect.value = '';
-    if (sortSelect) sortSelect.value = 'rating';
-    
-    // ✅ إعادة تحميل القائمة الكاملة
-    loadSalons();
-    
-    showToast('✅ تم إلغاء الفلاتر', 'success');
-}
-
 // ===== إلغاء فلاتر الصالونات (الصفحة الرئيسية) =====
 function resetSalonFilters() {
     const searchInput = document.getElementById('searchSalon');
@@ -4843,28 +4845,6 @@ function sendContactMessage(e) {
         showToast('❌ فشل الإرسال، حاول مرة أخرى', 'error');
     });
 }
-<!-- ===== إشعار تثبيت التطبيق (PWA) ===== -->
-<div id="installBanner" style="display:none;position:fixed;bottom:0;left:0;right:0;background:linear-gradient(135deg, var(--primary), var(--secondary));color:#fff;padding:0.8rem 1rem;z-index:9999;box-shadow:0 -4px 20px rgba(0,0,0,0.3);border-top:3px solid var(--gold);">
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem;max-width:700px;margin:0 auto;">
-        <div style="display:flex;align-items:center;gap:0.8rem;">
-            <div style="width:48px;height:48px;border-radius:12px;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:1.5rem;color:var(--dark);flex-shrink:0;">
-                <i class="fas fa-cut"></i>
-            </div>
-            <div>
-                <div style="font-weight:700;font-size:0.95rem;">حلاقتي</div>
-                <div style="font-size:0.75rem;opacity:0.8;">أضف إلى الشاشة الرئيسية للوصول السريع</div>
-            </div>
-        </div>
-        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
-            <button onclick="installApp()" style="background:var(--gold);border:none;padding:0.4rem 1.2rem;border-radius:50px;font-weight:700;color:var(--dark);font-size:0.8rem;cursor:pointer;transition:all 0.3s ease;">
-                <i class="fas fa-download"></i> تثبيت
-            </button>
-            <button onclick="dismissInstallBanner()" style="background:transparent;border:none;color:#fff;font-size:1.2rem;cursor:pointer;padding:0 0.5rem;opacity:0.6;">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-    </div>
-</div>
 
 init();
 </script>
