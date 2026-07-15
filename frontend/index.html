@@ -2161,10 +2161,24 @@ function initSocket() {
 }
 
 // ===== Utilities =====
-function showToast(msg) {
+// ===== Toast =====
+function showToast(message, type = 'success') {
     const toast = document.getElementById('toast');
-    document.getElementById('toastMsg').textContent = msg;
-    toast.classList.add('show');
+    const toastMsg = document.getElementById('toastMsg');
+    if (!toast || !toastMsg) return;
+    
+    toastMsg.textContent = message;
+    toast.className = 'toast show';
+    
+    // ✅ تغيير اللون حسب نوع الرسالة
+    if (type === 'error') {
+        toast.style.borderRightColor = '#e74c3c';
+    } else if (type === 'info') {
+        toast.style.borderRightColor = '#3498db';
+    } else {
+        toast.style.borderRightColor = '#2ecc71'; // success
+    }
+    
     clearTimeout(toast._timer);
     toast._timer = setTimeout(() => toast.classList.remove('show'), 4000);
 }
@@ -2209,32 +2223,33 @@ window.addEventListener('scroll', () => {
 function navigateTo(page) {
     document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
     const target = document.getElementById(`page-${page}`);
-    if (!target) { showToast('❌ الصفحة غير موجودة'); return; }
+    if (!target) { 
+        showToast('❌ الصفحة غير موجودة', 'error'); 
+        return; 
+    }
     target.classList.remove('hidden');
+    
     document.querySelectorAll('.nav-links a').forEach(l => l.classList.remove('active'));
     const navLink = document.querySelector(`.nav-links a[data-page="${page}"]`);
     if (navLink) navLink.classList.add('active');
     
-    // تحديث الصفحات الخاصة
     if (page === 'dashboard') { 
         if (!localStorage.getItem('token')) { 
-            showToast('❌ يرجى تسجيل الدخول كصالون'); 
+            showToast('❌ يرجى تسجيل الدخول كصالون', 'error'); 
             navigateTo('home'); 
             return; 
         } 
         loadDashboard(); 
-    }
-    if (page === 'admin') { 
+    } else if (page === 'admin') { 
         if (!localStorage.getItem('adminToken')) { 
-            showToast('❌ يرجى تسجيل الدخول كAdmin'); 
+            showToast('❌ يرجى تسجيل الدخول كAdmin', 'error'); 
             navigateTo('home'); 
             return; 
         } 
         loadAdminDashboard(); 
-    }
-    if (page === 'customer-dashboard') { 
+    } else if (page === 'customer-dashboard') { 
         if (!localStorage.getItem('customerToken')) { 
-            showToast('❌ يرجى تسجيل الدخول كعميل'); 
+            showToast('❌ يرجى تسجيل الدخول كعميل', 'error'); 
             navigateTo('home'); 
             return; 
         } 
