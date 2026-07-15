@@ -1,19 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const Coupon = require('../models/Coupon');
-const auth = require('../middleware/auth');
-
-const express = require('express');
-const router = express.Router();
-const Coupon = require('../models/Coupon');
-const Salon = require('../models/Salon'); // ✅ تأكد من استيراد نموذج الصالون
+const Salon = require('../models/Salon'); // ✅ استيراد نموذج الصالون
 const auth = require('../middleware/auth');
 
 // ============================================================
 // ✅ توليد كود كوبون بناءً على اسم الصالون
 // ============================================================
 function generateCouponCode(salonName) {
-    // تنظيف الاسم
+    // تنظيف الاسم: إزالة المسافات والأحرف الخاصة
     const cleanName = salonName.replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, '').substring(0, 6);
     // 4 أحرف عشوائية
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -57,7 +52,7 @@ router.post('/', auth, async (req, res) => {
 });
 
 // ============================================================
-// ✅ 3. تحديث كوبون
+// ✅ تحديث كوبون
 // ============================================================
 router.put('/:id', auth, async (req, res) => {
     try {
@@ -73,7 +68,7 @@ router.put('/:id', auth, async (req, res) => {
 });
 
 // ============================================================
-// ✅ 4. استخدام كوبون (زيادة عدد الاستخدامات)
+// ✅ استخدام كوبون (زيادة عدد الاستخدامات)
 // ============================================================
 router.put('/use/:id', auth, async (req, res) => {
     try {
@@ -93,7 +88,7 @@ router.put('/use/:id', auth, async (req, res) => {
 });
 
 // ============================================================
-// ✅ 5. التحقق من صلاحية الكوبون
+// ✅ التحقق من صلاحية الكوبون
 // ============================================================
 router.post('/validate', async (req, res) => {
     try {
@@ -140,7 +135,7 @@ router.post('/validate', async (req, res) => {
 });
 
 // ============================================================
-// ✅ 6. حذف كوبون
+// ✅ حذف كوبون
 // ============================================================
 router.delete('/:id', auth, async (req, res) => {
     try {
@@ -154,17 +149,5 @@ router.delete('/:id', auth, async (req, res) => {
         res.status(500).json({ message: 'فشل حذف الكوبون' });
     }
 });
-
-// ============================================================
-// ✅ دالة مساعدة: توليد كود كوبون عشوائي
-// ============================================================
-function generateCouponCode() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let code = '';
-    for (let i = 0; i < 8; i++) {
-        code += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return code;
-}
 
 module.exports = router;
