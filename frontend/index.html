@@ -1696,15 +1696,15 @@
 <!-- الصالونات -->
 <section class="section hidden" id="page-salons">
     <h2 class="section-title">جميع <span class="highlight">الصالونات</span></h2>
-    <div class="filter-section">
-        <input type="text" id="searchSalon" placeholder="🔍 ابحث باسم الصالون..." />
-        <select id="filterSort">
-    <option value="rating">جميع الخيارات</option>        
-    <option value="rating">الأعلى تقييماً</option>
-    <option value="price">الأقل سعراً</option>
-    <option value="distance">الأقرب</option>
-</select>
-        <select id="filterCity">
+<div class="filter-section">
+    <input type="text" id="searchSalon" placeholder="🔍 ابحث باسم الصالون..." />
+    <select id="filterSort">
+        <option value="rating">جميع الخيارات</option>        
+        <option value="rating">الأعلى تقييماً</option>
+        <option value="price">الأقل سعراً</option>
+        <option value="distance">الأقرب</option>
+    </select>
+    <select id="filterCity">
             <option value="">جميع الولايات</option>
             <option value="أدرار">أدرار</option><option value="الشلف">الشلف</option><option value="الأغواط">الأغواط</option>
             <option value="أم البواقي">أم البواقي</option><option value="باتنة">باتنة</option><option value="بجاية">بجاية</option>
@@ -1728,14 +1728,21 @@
             <option value="تقرت">تقرت</option><option value="جانت">جانت</option>
             <option value="المغير">المغير</option><option value="المنيعة">المنيعة</option>
             <option value="قصر الشلالة ">قصر الشلالة</option>
-        </select>
-        <select id="filterSalonType">
-            <option value="">جميع الأنواع</option>
-            <option value="male">رجالي</option><option value="female">نسائي</option><option value="children">أطفال</option><option value="mixed">مختلط</option>
-        </select>
-        <button class="btn-primary btn-sm" onclick="applyFilters()"><i class="fas fa-filter"></i> فلتر</button>
-        <button class="btn-gold btn-sm" onclick="getNearbySalons()"><i class="fas fa-map-marker-alt"></i> القريبة</button>
-    </div>
+    </select>
+    <select id="filterSalonType">
+        <option value="">جميع الأنواع</option>
+        <option value="male">رجالي</option>
+        <option value="female">نسائي</option>
+        <option value="children">أطفال</option>
+        <option value="mixed">مختلط</option>
+    </select>
+    <button class="btn-primary btn-sm" onclick="applyFilters()"><i class="fas fa-filter"></i> فلتر</button>
+    <button class="btn-gold btn-sm" onclick="getNearbySalons()"><i class="fas fa-map-marker-alt"></i> القريبة</button>
+    <!-- ✅ زر إلغاء الفلتر -->
+    <button class="btn-outline btn-sm" onclick="resetFilters()">
+        <i class="fas fa-undo"></i> إلغاء الفلتر
+    </button>
+</div>
     <div id="salonsResultCount" style="text-align:center;color:var(--text-color);opacity:0.4;margin-bottom:0.4rem;font-size:0.8rem;"></div>
     <div id="salonsLoading" class="grid-3">
         <div class="skeleton-card skeleton"><div class="skeleton-cover"></div><div class="skeleton-line medium"></div><div class="skeleton-line short"></div><div class="skeleton-line" style="width:40%"></div></div>
@@ -1987,6 +1994,7 @@ const EMAILJS_PUBLIC_KEY = 'zYIcaJnLsBBaPgfdi';
 const API_BASE = 'https://halakati-project.onrender.com/api';
 const SOCKET_URL = 'https://halakati-project.onrender.com';
 let allSalons = [];
+let originalSalons = []; // ✅ نسخة احتياطية للصالونات الأصلية
 let currentLang = localStorage.getItem('lang') || 'ar';
 let currentTheme = localStorage.getItem('theme') || 'dark';
 let socket = null;
@@ -4226,7 +4234,7 @@ adminContent.innerHTML = `
             <option value="completed">مكتملة</option>
             <option value="cancelled">ملغية</option>
         </select>
-        <button class="btn-primary btn-sm" onclick="filterAppointments()">فلتر</button>
+        <button class="btn-outline btn-sm" onclick="resetFilters()"><i class="fas fa-undo"></i> إلغاء الفلتر</button>
         <button class="btn-outline btn-sm" onclick="resetFilters()">إعادة تعيين</button>
     </div>
     <div id="adminAppointmentsList"></div>
@@ -4295,6 +4303,20 @@ function resetFilters() {
     document.getElementById('filterDate').value = '';
     document.getElementById('filterStatus').value = '';
     renderAppointments(allAppointments || []);
+}
+
+// ===== إلغاء جميع فلاتر الصالونات والعودة للقائمة الكاملة =====
+function resetSalonFilters() {
+    // ✅ إعادة تعيين حقول الفلتر
+    document.getElementById('searchSalon').value = '';
+    document.getElementById('filterCity').value = '';
+    document.getElementById('filterSalonType').value = '';
+    document.getElementById('filterSort').value = 'rating';
+    
+    // ✅ إعادة تحميل القائمة الكاملة
+    loadSalons();
+    
+    showToast('✅ تم إلغاء الفلاتر', 'success');
 }
 
 function loadAllAppointments() {
