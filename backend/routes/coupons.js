@@ -1,16 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const Coupon = require('../models/Coupon');
-const Salon = require('../models/Salon'); // ✅ استيراد نموذج الصالون
+const Salon = require('../models/Salon');
 const auth = require('../middleware/auth');
 
 // ============================================================
 // ✅ توليد كود كوبون بناءً على اسم الصالون
 // ============================================================
 function generateCouponCode(salonName) {
-    // تنظيف الاسم: إزالة المسافات والأحرف الخاصة
     const cleanName = salonName.replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, '').substring(0, 6);
-    // 4 أحرف عشوائية
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let random = '';
     for (let i = 0; i < 4; i++) {
@@ -20,7 +18,23 @@ function generateCouponCode(salonName) {
 }
 
 // ============================================================
-// ✅ جلب جميع كوبونات صالون
+// ✅ 1. جلب كوبون واحد للتعديل (يأتي أولاً)
+// ============================================================
+router.get('/:id', auth, async (req, res) => {
+    try {
+        const coupon = await Coupon.findById(req.params.id);
+        if (!coupon) {
+            return res.status(404).json({ message: '❌ الكوبون غير موجود' });
+        }
+        res.json(coupon);
+    } catch (error) {
+        console.error('❌ فشل جلب الكوبون:', error);
+        res.status(500).json({ message: 'فشل جلب الكوبون' });
+    }
+});
+
+// ============================================================
+// ✅ 2. جلب جميع كوبونات صالون
 // ============================================================
 router.get('/:salonId', auth, async (req, res) => {
     try {
@@ -33,11 +47,10 @@ router.get('/:salonId', auth, async (req, res) => {
 });
 
 // ============================================================
-// ✅ إنشاء كوبون جديد (مع توليد كود حسب اسم الصالون)
+// ✅ 3. إنشاء كوبون جديد
 // ============================================================
 router.post('/', auth, async (req, res) => {
     try {
-        // ✅ إذا لم يتم توفير كود، قم بتوليده بناءً على اسم الصالون
         if (!req.body.code) {
             const salon = await Salon.findById(req.body.salonId).select('name');
             req.body.code = generateCouponCode(salon ? salon.name : 'SALON');
@@ -52,7 +65,7 @@ router.post('/', auth, async (req, res) => {
 });
 
 // ============================================================
-// ✅ تحديث كوبون
+// ✅ 4. تحديث كوبون
 // ============================================================
 router.put('/:id', auth, async (req, res) => {
     try {
@@ -68,7 +81,7 @@ router.put('/:id', auth, async (req, res) => {
 });
 
 // ============================================================
-// ✅ استخدام كوبون (زيادة عدد الاستخدامات)
+// ✅ 5. استخدام كوبون
 // ============================================================
 router.put('/use/:id', auth, async (req, res) => {
     try {
@@ -88,7 +101,7 @@ router.put('/use/:id', auth, async (req, res) => {
 });
 
 // ============================================================
-// ✅ التحقق من صلاحية الكوبون
+// ✅ 6. التحقق من صلاحية الكوبون
 // ============================================================
 router.post('/validate', async (req, res) => {
     try {
@@ -135,7 +148,7 @@ router.post('/validate', async (req, res) => {
 });
 
 // ============================================================
-// ✅ حذف كوبون
+// ✅ 7. حذف كوبون
 // ============================================================
 router.delete('/:id', auth, async (req, res) => {
     try {
