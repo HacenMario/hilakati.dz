@@ -4299,23 +4299,50 @@ function filterAppointments() {
     renderAppointments(filtered);
 }
 
+// ===== إلغاء جميع فلاتر الصالونات =====
 function resetFilters() {
-    document.getElementById('filterDate').value = '';
-    document.getElementById('filterStatus').value = '';
-    renderAppointments(allAppointments || []);
-}
-
-// ===== إلغاء جميع فلاتر الصالونات والعودة للقائمة الكاملة =====
-function resetSalonFilters() {
-    // ✅ إعادة تعيين حقول الفلتر
-    document.getElementById('searchSalon').value = '';
-    document.getElementById('filterCity').value = '';
-    document.getElementById('filterSalonType').value = '';
-    document.getElementById('filterSort').value = 'rating';
+    // ✅ تعيين القيم الافتراضية لعناصر الفلتر (مع التحقق من وجودها)
+    const searchInput = document.getElementById('searchSalon');
+    const citySelect = document.getElementById('filterCity');
+    const typeSelect = document.getElementById('filterSalonType');
+    const sortSelect = document.getElementById('filterSort');
+    
+    if (searchInput) searchInput.value = '';
+    if (citySelect) citySelect.value = '';
+    if (typeSelect) typeSelect.value = '';
+    if (sortSelect) sortSelect.value = 'rating';
     
     // ✅ إعادة تحميل القائمة الكاملة
     loadSalons();
     
+    showToast('✅ تم إلغاء الفلاتر', 'success');
+}
+
+// ===== إلغاء فلاتر الصالونات (الصفحة الرئيسية) =====
+function resetSalonFilters() {
+    const searchInput = document.getElementById('searchSalon');
+    const citySelect = document.getElementById('filterCity');
+    const typeSelect = document.getElementById('filterSalonType');
+    const sortSelect = document.getElementById('filterSort');
+    
+    if (searchInput) searchInput.value = '';
+    if (citySelect) citySelect.value = '';
+    if (typeSelect) typeSelect.value = '';
+    if (sortSelect) sortSelect.value = 'rating';
+    
+    loadSalons();
+    showToast('✅ تم إلغاء الفلاتر', 'success');
+}
+
+// ===== إلغاء فلاتر الحجوزات (لوحة Admin) =====
+function resetAppointmentFilters() {
+    const dateInput = document.getElementById('filterDate');
+    const statusSelect = document.getElementById('filterStatus');
+    
+    if (dateInput) dateInput.value = '';
+    if (statusSelect) statusSelect.value = '';
+    
+    renderAppointments(allAppointments || []);
     showToast('✅ تم إلغاء الفلاتر', 'success');
 }
 
