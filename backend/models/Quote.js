@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const QuoteRequestSchema = new mongoose.Schema({
+const QuoteSchema = new mongoose.Schema({
     salonId: { type: mongoose.Schema.Types.ObjectId, ref: 'Salon', required: true },
     customerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer' },
     customerName: { type: String, required: true },
@@ -19,4 +19,4 @@ const QuoteRequestSchema = new mongoose.Schema({
     createdAt: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model('QuoteRequest', QuoteRequestSchema);
+module.exports = mongoose.model('Quote', QuoteSchema);
