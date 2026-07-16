@@ -2420,18 +2420,18 @@ document.getElementById('quoteRequestForm').addEventListener('submit', async (e)
     }
     
     // ✅ جلب معرف العميل (إذا كان مسجلاً)
-    const customerToken = localStorage.getItem('customerToken');
     let customerId = localStorage.getItem('customerId') || null;
     
     // ✅ عرض رسالة انتظار
     showToast('⏳ جاري إرسال الطلب...', 'info');
     
-        const res = await fetch(`${API_BASE}/quotes/request`, {  // تغيير المسار هنا
+    try {
+        const res = await fetch(`${API_BASE}/quotes/request`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 salonId,
-                customerId: customerId || null,
+                customerId: customerId,
                 customerName,
                 customerEmail,
                 customerPhone,
