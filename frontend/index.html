@@ -2568,8 +2568,10 @@ async function loadCustomerQuotes() {
     } catch (error) {
         console.error('❌ فشل جلب الطلبات:', error);
         showToast('❌ فشل جلب الطلبات', 'error');
-        
-   / ✅ قبول عرض السعر من قبل الزبون
+    }
+}
+
+// ✅ قبول عرض السعر من قبل الزبون
 async function acceptCustomerQuote(quoteId) {
     if (!confirm('✅ هل أنت متأكد من قبول هذا العرض؟')) return;
     
@@ -2641,6 +2643,7 @@ async function rejectCustomerQuote(quoteId) {
         showToast('❌ فشل الاتصال بالخادم', 'error');
     }
 }
+
 // ============================================================
 // نظام طلبات عروض الأسعار (Quotes) - جانب العميل
 // ============================================================
