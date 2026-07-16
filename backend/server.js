@@ -1,4 +1,6 @@
 require('dotenv').config();
+console.log('🔑 JWT_CUSTOMER_SECRET:', process.env.JWT_CUSTOMER_SECRET ? '✅ موجود' : '❌ غير موجود');
+console.log('🔑 القيمة:', process.env.JWT_CUSTOMER_SECRET);
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
