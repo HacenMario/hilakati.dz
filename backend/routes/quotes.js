@@ -296,7 +296,7 @@ router.delete('/:id', auth, async (req, res) => {
 // ============================================================
 router.get('/customer/:customerId', customerAuthMiddleware, async (req, res) => {
     try {
-        // التأكد من أن العميل يطلب بياناته الخاصة فقط
+        // ✅ التحقق من أن العميل يطلب بياناته الخاصة
         if (req.params.customerId !== req.customerId) {
             return res.status(403).json({ message: '❌ غير مصرح لك بعرض طلبات عميل آخر' });
         }
