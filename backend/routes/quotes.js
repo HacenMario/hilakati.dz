@@ -292,16 +292,21 @@ router.delete('/:id', auth, async (req, res) => {
 });
 
 // ============================================================
-// ✅ جلب طلبات عروض الأسعار الخاصة بعميل معين (للعميل نفسه)
+// ✅ جلب طلبات عروض الأسعار الخاصة بالعميل (مسار عام)
 // ============================================================
-router.get('/customer/:customerId', customerAuthMiddleware, async (req, res) => {
+router.get('/customer/:customerId', async (req, res) => {
     try {
-        // ✅ التحقق من أن العميل يطلب بياناته الخاصة
-        if (req.params.customerId !== req.customerId) {
-            return res.status(403).json({ message: '❌ غير مصرح لك بعرض طلبات عميل آخر' });
+        const customerId = req.params.customerId;
+        
+        // ✅ تحقق بسيط: هل العميل موجود في قاعدة البيانات؟
+        const Customer = require('../models/Customer');
+        const customer = await Customer.findById(customerId);
+        if (!customer) {
+            return res.status(404).json({ message: '❌ العميل غير موجود' });
         }
 
-        const quotes = await QuoteRequest.find({ customerId: req.params.customerId })
+        // ✅ جلب الطلبات الخاصة بهذا العميل فقط
+        const quotes = await QuoteRequest.find({ customerId: customerId })
             .sort({ createdAt: -1 });
             
         res.json(quotes);
