@@ -2228,6 +2228,21 @@ app.delete('/api/delete-coupon/:id', authMiddleware, async (req, res) => {
     }
 });
 
+// ============================================================
+// ✅ جلب تفاصيل طلب عرض سعر واحد (لصالون)
+// ============================================================
+app.get('/api/quotes/:id', authMiddleware, async (req, res) => {
+    try {
+        const quote = await QuoteRequest.findById(req.params.id);
+        if (!quote) {
+            return res.status(404).json({ message: '❌ الطلب غير موجود' });
+        }
+        res.json(quote);
+    } catch (error) {
+        console.error('❌ فشل جلب تفاصيل الطلب:', error);
+        res.status(500).json({ message: '❌ فشل جلب التفاصيل' });
+    }
+});
 
 // ============================================================
 // تشغيل الخادم
