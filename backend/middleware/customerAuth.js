@@ -1,7 +1,9 @@
 const jwt = require('jsonwebtoken');
 
+// ✅ مفتاح ثابت (نفس المفتاح المستخدم في server.js)
+const CUSTOMER_JWT_SECRET = 'another_secret_for_customers';
+
 module.exports = (req, res, next) => {
-    // ✅ استخراج التوكن من رأس Authorization
     const token = req.header('Authorization')?.replace('Bearer ', '');
     
     if (!token) {
@@ -10,27 +12,15 @@ module.exports = (req, res, next) => {
     }
 
     try {
-        // ✅ استخدام المفتاح السري من المتغيرات البيئية مع مفتاح احتياطي
-        const secret = process.env.JWT_CUSTOMER_SECRET || 'customer_secret_key';
-        
-        // ✅ تسجيل المفتاح المستخدم للتحقق (للتأكد من التطابق)
-        console.log(`🔑 customerAuth: المفتاح المستخدم للتحقق: "${secret}"`);
-        
-        // ✅ التحقق من صحة التوكن
-        const decoded = jwt.verify(token, secret);
+        console.log(`🔑 customerAuth: التحقق بالمفتاح الثابت: "${CUSTOMER_JWT_SECRET}"`);
+        const decoded = jwt.verify(token, CUSTOMER_JWT_SECRET);
         req.customerId = decoded.id;
-        
         console.log(`✅ customerAuth: تم التحقق من العميل ${req.customerId}`);
         next();
     } catch (error) {
         console.error('❌ customerAuth: فشل التحقق:', error.message);
-        
-        // ✅ رسائل خطأ محددة حسب نوع الخطأ
         if (error.name === 'TokenExpiredError') {
             return res.status(401).json({ message: '❌ انتهت صلاحية التوكن' });
-        }
-        if (error.name === 'JsonWebTokenError') {
-            return res.status(401).json({ message: '❌ توكن غير صالح (تنسيق أو توقيع)' });
         }
         return res.status(401).json({ message: '❌ توكن غير صالح' });
     }
