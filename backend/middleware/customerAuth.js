@@ -22,6 +22,9 @@ module.exports = (req, res, next) => {
         if (error.name === 'TokenExpiredError') {
             return res.status(401).json({ message: '❌ انتهت صلاحية التوكن' });
         }
+        if (error.name === 'JsonWebTokenError') {
+            return res.status(401).json({ message: '❌ توكن غير صالح (تنسيق أو توقيع)' });
+        }
         return res.status(401).json({ message: '❌ توكن غير صالح' });
     }
 };
