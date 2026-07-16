@@ -2429,17 +2429,18 @@ document.getElementById('quoteRequestForm').addEventListener('submit', async (e)
         const res = await fetch(`${API_BASE}/quotes/request`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                salonId,
-                customerId: customerId,
-                customerName,
-                customerEmail,
-                customerPhone,
-                eventDate,
-                guests,
-                serviceType,
-                details
-            })
+body: JSON.stringify({
+    salonId,
+    customerId: customerId || null,
+    customerName,
+    customerEmail,
+    customerPhone,
+    eventDate,
+    guests,
+    serviceType,
+    description: details,  // ← إرسال details تحت اسم description
+    details: details       // ← أو الاحتفاظ بكليهما
+})
         });
 
         const data = await res.json();
