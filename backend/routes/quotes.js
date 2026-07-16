@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const QuoteRequest = require('../models/QuoteRequest');
+const QuoteRequest = require('../models/Quote');
 const auth = require('../middleware/auth');
 
 // ✅ جلب طلبات عرض السعر (للصالون)
