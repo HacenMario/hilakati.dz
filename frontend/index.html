@@ -1530,6 +1530,60 @@
 </div>
 
 <!-- ===== النوافذ المنبثقة ===== -->
+<!-- ===== نافذة اختيار تاريخ ووقت الحجز ===== -->
+<div class="modal-overlay" id="quoteDateTimeModal">
+    <div class="modal-box" style="max-width:450px;">
+        <h2 style="color:var(--gold);text-align:center;margin-bottom:0.5rem;">
+            <i class="fas fa-calendar-check"></i> اختر تاريخ ووقت الحجز
+        </h2>
+        <p style="text-align:center;color:var(--text-color);opacity:0.7;font-size:0.9rem;margin-bottom:1rem;">
+            حدد التاريخ والوقت المناسبين للحجز
+        </p>
+        
+        <div class="form-group">
+            <label>📅 التاريخ</label>
+            <input type="date" id="quoteBookingDate" class="form-control" style="width:100%;padding:0.5rem;border-radius:8px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--text-color);">
+        </div>
+        
+        <div class="form-group">
+            <label>🕐 الوقت</label>
+            <select id="quoteBookingTime" class="form-control" style="width:100%;padding:0.5rem;border-radius:8px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--text-color);">
+                <option value="09:00">09:00</option>
+                <option value="09:30">09:30</option>
+                <option value="10:00" selected>10:00</option>
+                <option value="10:30">10:30</option>
+                <option value="11:00">11:00</option>
+                <option value="11:30">11:30</option>
+                <option value="12:00">12:00</option>
+                <option value="12:30">12:30</option>
+                <option value="13:00">13:00</option>
+                <option value="13:30">13:30</option>
+                <option value="14:00">14:00</option>
+                <option value="14:30">14:30</option>
+                <option value="15:00">15:00</option>
+                <option value="15:30">15:30</option>
+                <option value="16:00">16:00</option>
+                <option value="16:30">16:30</option>
+                <option value="17:00">17:00</option>
+                <option value="17:30">17:30</option>
+                <option value="18:00">18:00</option>
+                <option value="18:30">18:30</option>
+                <option value="19:00">19:00</option>
+            </select>
+        </div>
+        
+        <input type="hidden" id="quoteBookingQuoteId">
+        
+        <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
+            <button class="btn-gold" onclick="confirmQuoteBooking()" style="flex:1;padding:0.5rem;border-radius:50px;font-weight:700;">
+                <i class="fas fa-check"></i> تأكيد الحجز
+            </button>
+            <button class="btn-outline" onclick="closeModal('quoteDateTimeModal')" style="padding:0.5rem 1.5rem;border-radius:50px;">
+                إلغاء
+            </button>
+        </div>
+    </div>
+</div>
 <!-- ===== نافذة عرض تفاصيل طلب عرض سعر ===== -->
 <div class="modal-overlay" id="quoteDetailsModal">
     <div class="modal-box" style="max-width:550px;">
@@ -2922,23 +2976,48 @@ async function loadCustomerQuotesTable() {
 // ============================================================
 // ✅ قبول عرض السعر من قبل الزبون
 // ============================================================
+// ✅ متغير لحفظ معرف الطلب مؤقتاً
+let pendingQuoteId = null;
 async function acceptCustomerQuote(quoteId) {
-    // ✅ طلب التاريخ والوقت من العميل
-    const date = prompt('📅 أدخل تاريخ الحجز (YYYY-MM-DD):', new Date().toISOString().split('T')[0]);
-    if (!date) return;
-    const time = prompt('🕐 أدخل وقت الحجز (HH:MM):', '10:00');
-    if (!time) return;
+    // ✅ حفظ معرف الطلب
+    pendingQuoteId = quoteId;
+    
+    // ✅ تعيين الحد الأدنى للتاريخ (اليوم)
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('quoteBookingDate').setAttribute('min', today);
+    document.getElementById('quoteBookingDate').value = today;
+    
+    // ✅ تعيين معرف الطلب في النافذة
+    document.getElementById('quoteBookingQuoteId').value = quoteId;
+    
+    // ✅ فتح النافذة
+    openModal('quoteDateTimeModal');
+}
 
-    if (!confirm(`✅ هل أنت متأكد من قبول هذا العرض في ${date} الساعة ${time}؟`)) return;
-
+// ✅ دالة تأكيد الحجز من النافذة
+async function confirmQuoteBooking() {
+    const quoteId = document.getElementById('quoteBookingQuoteId').value;
+    const date = document.getElementById('quoteBookingDate').value;
+    const time = document.getElementById('quoteBookingTime').value;
+    
+    if (!date || !time) {
+        showToast('❌ الرجاء اختيار التاريخ والوقت', 'error');
+        return;
+    }
+    
+    if (!confirm(`✅ هل أنت متأكد من قبول هذا العرض في ${date} الساعة ${time}؟`)) {
+        return;
+    }
+    
     const token = localStorage.getItem('customerToken');
     if (!token) {
         showToast('❌ يرجى تسجيل الدخول', 'error');
         return;
     }
-
+    
     try {
         showToast('⏳ جاري قبول العرض...', 'info');
+        closeModal('quoteDateTimeModal');
 
         const res = await fetch(`${API_BASE}/quotes/${quoteId}/accept-by-customer`, {
             method: 'PUT',
