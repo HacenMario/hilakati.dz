@@ -2426,27 +2426,25 @@ document.getElementById('quoteRequestForm').addEventListener('submit', async (e)
     // ✅ عرض رسالة انتظار
     showToast('⏳ جاري إرسال الطلب...', 'info');
     
-    try {
-        const res = await fetch(`${API_BASE}/quotes`, {
+        const res = await fetch(`${API_BASE}/quotes/request`, {  // تغيير المسار هنا
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 salonId,
-                customerId,
+                customerId: customerId || null,
                 customerName,
                 customerEmail,
                 customerPhone,
                 eventDate,
                 guests,
                 serviceType,
-                details,
-                status: 'pending'
+                details
             })
         });
-        
+
         const data = await res.json();
         console.log('📨 رد الخادم:', data);
-        
+
         if (res.ok) {
             showToast('✅ تم إرسال طلب عرض السعر بنجاح!', 'success');
             closeModal('quoteRequestModal');
