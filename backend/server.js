@@ -522,7 +522,7 @@ app.post('/api/auth/login', async (req, res) => {
         const valid = await bcrypt.compare(password, salon.password);
         if (!valid) return res.status(400).json({ message: 'بيانات الدخول غير صحيحة' });
         
-        const token = jwt.sign(
+const token = jwt.sign(
     { id: customer._id },
     process.env.JWT_CUSTOMER_SECRET || 'customer_secret_key',
     { expiresIn: '7d' }
@@ -568,7 +568,11 @@ app.post('/api/customer/auth/register', async (req, res) => {
         const customer = new Customer({ name, email, phone, password: hashedPassword });
         await customer.save();
 
-        const token = jwt.sign({ id: customer._id }, process.env.JWT_CUSTOMER_SECRET || 'customer_secret_key', { expiresIn: '7d' });
+const token = jwt.sign(
+    { id: customer._id },
+    process.env.JWT_CUSTOMER_SECRET || 'customer_secret_key',
+    { expiresIn: '7d' }
+);
         res.status(201).json({ token, customerId: customer._id, name: customer.name });
     } catch (err) {
         res.status(500).json({ message: 'فشل التسجيل' });
@@ -582,7 +586,11 @@ app.post('/api/customer/auth/login', async (req, res) => {
         if (!customer) return res.status(400).json({ message: 'بيانات الدخول غير صحيحة' });
         const valid = await bcrypt.compare(password, customer.password);
         if (!valid) return res.status(400).json({ message: 'بيانات الدخول غير صحيحة' });
-        const token = jwt.sign({ id: customer._id }, process.env.JWT_CUSTOMER_SECRET || 'customer_secret_key', { expiresIn: '7d' });
+const token = jwt.sign(
+    { id: customer._id },
+    process.env.JWT_CUSTOMER_SECRET || 'customer_secret_key',
+    { expiresIn: '7d' }
+);
         res.json({ token, customerId: customer._id, name: customer.name });
     } catch (err) {
         res.status(500).json({ message: 'فشل تسجيل الدخول' });
@@ -711,11 +719,11 @@ app.get('/api/auth/google/callback',
     }),
     (req, res) => {
         // ✅ نجاح تسجيل الدخول - إنشاء JWT وإعادة التوجيه
-        const token = jwt.sign(
-            { id: req.user._id }, 
-            process.env.JWT_CUSTOMER_SECRET || 'customer_secret_key', 
-            { expiresIn: '7d' }
-        );
+const token = jwt.sign(
+    { id: customer._id },
+    process.env.JWT_CUSTOMER_SECRET || 'customer_secret_key',
+    { expiresIn: '7d' }
+);
         
         const name = encodeURIComponent(req.user.name);
         
