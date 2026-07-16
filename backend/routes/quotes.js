@@ -167,7 +167,7 @@ router.put('/:id/reject', auth, async (req, res) => {
 // ============================================================
 // ✅ قبول عرض السعر من قبل الزبون (مع إنشاء حجز تلقائي)
 // ============================================================
-router.put('/:id/accept-by-customer', customerAuthMiddleware, async (req, res) => {
+router.put('/:id/accept-by-customer', async (req, res) => {
     try {
         const quote = await QuoteRequest.findById(req.params.id);
         if (!quote) {
@@ -271,7 +271,7 @@ router.put('/:id/accept-by-customer', customerAuthMiddleware, async (req, res) =
 // ============================================================
 // ✅ رفض عرض السعر من قبل الزبون
 // ============================================================
-router.put('/:id/reject-by-customer', customerAuthMiddleware, async (req, res) => {
+router.put('/:id/reject-by-customer', async (req, res) => {
     try {
         const quote = await QuoteRequest.findById(req.params.id);
         if (!quote) {
