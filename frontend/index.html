@@ -1530,6 +1530,74 @@
 </div>
 
 <!-- ===== النوافذ المنبثقة ===== -->
+<!-- ===== نافذة طلب عرض سعر ===== -->
+<div class="modal-overlay" id="quoteRequestModal">
+    <div class="modal-box" style="max-width:550px;">
+        <button class="modal-close" onclick="closeModal('quoteRequestModal')">&times;</button>
+        <h2 style="color:var(--gold);text-align:center;margin-bottom:0.5rem;">
+            <i class="fas fa-file-invoice"></i> طلب عرض سعر
+        </h2>
+        <p style="text-align:center;color:var(--text-color);opacity:0.7;font-size:0.9rem;margin-bottom:1rem;">
+            احصل على عرض سعر مخصص لخدمات الزفاف أو المناسبات الخاصة
+        </p>
+        
+        <form id="quoteRequestForm">
+            <input type="hidden" id="quoteSalonId">
+            
+            <div class="form-group">
+                <label>👤 الاسم الكامل</label>
+                <input type="text" id="quoteCustomerName" required placeholder="أدخل اسمك">
+            </div>
+            
+            <div class="form-group">
+                <label>📧 البريد الإلكتروني</label>
+                <input type="email" id="quoteCustomerEmail" required placeholder="example@email.com">
+            </div>
+            
+            <div class="form-group">
+                <label>📞 رقم الهاتف</label>
+                <input type="tel" id="quoteCustomerPhone" required placeholder="05xx-xx-xx-xx">
+            </div>
+            
+            <div class="form-group">
+                <label>📅 تاريخ المناسبة</label>
+                <input type="date" id="quoteEventDate" required>
+            </div>
+            
+            <div class="form-group">
+                <label>👥 عدد الضيوف (تقريبي)</label>
+                <input type="number" id="quoteGuests" min="1" placeholder="مثال: 50">
+            </div>
+            
+            <div class="form-group">
+                <label>📋 نوع الخدمة المطلوبة</label>
+                <select id="quoteServiceType" required>
+                    <option value="">اختر نوع الخدمة</option>
+                    <option value="bridal">💄 مكياج عروس</option>
+                    <option value="hair">💇‍♀️ تسريحة عروس</option>
+                    <option value="full">👰 حزمة كاملة (مكياج + تسريحة)</option>
+                    <option value="bridal_party">👩‍👧‍👧 مكياج للعروس والضيوف</option>
+                    <option value="groom">💈 حلاقة عريس</option>
+                    <option value="other">📌 خدمات أخرى (اذكر في الملاحظات)</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>📝 تفاصيل إضافية (اختياري)</label>
+                <textarea id="quoteDetails" rows="4" placeholder="اكتب تفاصيل طلبك هنا..."></textarea>
+            </div>
+            
+            <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.5rem;">
+                <button type="submit" class="btn-gold" style="flex:1;padding:0.6rem;border-radius:50px;font-weight:700;">
+                    <i class="fas fa-paper-plane"></i> إرسال الطلب
+                </button>
+                <button type="button" class="btn-outline" onclick="closeModal('quoteRequestModal')" style="padding:0.6rem 1.5rem;border-radius:50px;">
+                    إلغاء
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <!-- تسجيل صالون -->
 <div class="modal-overlay" id="registerModal"><div class="modal-box">
@@ -2293,6 +2361,105 @@
 </section>
 
 <script>
+// ============================================================
+// نظام طلبات عروض الأسعار (Quotes) - جانب العميل
+// ============================================================
+
+// ✅ فتح نافذة طلب عرض سعر
+function openQuoteRequest(salonId) {
+    console.log('📋 فتح طلب عرض سعر للصالون:', salonId);
+    
+    // ✅ تخزين معرف الصالون
+    document.getElementById('quoteSalonId').value = salonId;
+    
+    // ✅ تعبئة بيانات العميل إذا كان مسجلاً
+    const customerToken = localStorage.getItem('customerToken');
+    if (customerToken) {
+        fetch(`${API_BASE}/customer/auth/profile`, {
+            headers: { 'Authorization': `Bearer ${customerToken}` }
+        })
+        .then(res => res.json())
+        .then(profile => {
+            if (profile) {
+                document.getElementById('quoteCustomerName').value = profile.name || '';
+                document.getElementById('quoteCustomerEmail').value = profile.email || '';
+                document.getElementById('quoteCustomerPhone').value = profile.phone || '';
+            }
+        })
+        .catch(err => console.error('❌ فشل جلب بيانات العميل:', err));
+    }
+    
+    // ✅ تعيين الحد الأدنى للتاريخ (اليوم)
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('quoteEventDate').setAttribute('min', today);
+    document.getElementById('quoteEventDate').value = today;
+    
+    // ✅ فتح النافذة
+    openModal('quoteRequestModal');
+}
+
+// ✅ معالج إرسال طلب عرض السعر
+document.getElementById('quoteRequestForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    console.log('🟢 محاولة إرسال طلب عرض سعر...');
+    
+    // ✅ قراءة البيانات
+    const salonId = document.getElementById('quoteSalonId').value;
+    const customerName = document.getElementById('quoteCustomerName').value.trim();
+    const customerEmail = document.getElementById('quoteCustomerEmail').value.trim();
+    const customerPhone = document.getElementById('quoteCustomerPhone').value.trim();
+    const eventDate = document.getElementById('quoteEventDate').value;
+    const guests = parseInt(document.getElementById('quoteGuests').value) || 0;
+    const serviceType = document.getElementById('quoteServiceType').value;
+    const details = document.getElementById('quoteDetails').value.trim();
+    
+    // ✅ التحقق من الحقول المطلوبة
+    if (!salonId || !customerName || !customerEmail || !customerPhone || !eventDate || !serviceType) {
+        showToast('❌ الرجاء ملء جميع الحقول المطلوبة', 'error');
+        return;
+    }
+    
+    // ✅ جلب معرف العميل (إذا كان مسجلاً)
+    const customerToken = localStorage.getItem('customerToken');
+    let customerId = localStorage.getItem('customerId') || null;
+    
+    // ✅ عرض رسالة انتظار
+    showToast('⏳ جاري إرسال الطلب...', 'info');
+    
+    try {
+        const res = await fetch(`${API_BASE}/quotes`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                salonId,
+                customerId,
+                customerName,
+                customerEmail,
+                customerPhone,
+                eventDate,
+                guests,
+                serviceType,
+                details,
+                status: 'pending'
+            })
+        });
+        
+        const data = await res.json();
+        console.log('📨 رد الخادم:', data);
+        
+        if (res.ok) {
+            showToast('✅ تم إرسال طلب عرض السعر بنجاح!', 'success');
+            closeModal('quoteRequestModal');
+            document.getElementById('quoteRequestForm').reset();
+        } else {
+            showToast(`❌ ${data.message || 'فشل الإرسال'}`, 'error');
+        }
+    } catch (error) {
+        console.error('❌ فشل إرسال الطلب:', error);
+        showToast('❌ فشل الاتصال بالخادم', 'error');
+    }
+});
+    
 // ✅ تثبيت التطبيق (نسخة محسنة)
 async function installPWA() {
     console.log('🔄 محاولة تثبيت التطبيق...');
@@ -3599,11 +3766,11 @@ function createSalonCard(salon) {
                 <div class="price-info">${minPrice > 0 ? `💰 يبدأ من ${minPrice} دج` : 'اتصل للاستفسار'}</div>
                 
                 <!-- ===== أزرار الإجراءات ===== -->
-                <button class="btn-book" onclick="event.stopPropagation();openBooking('${salon._id}')">
-                    <i class="fas fa-calendar-plus"></i> احجز الآن
-                <button class="btn-success btn-sm" onclick="event.stopPropagation();quickBooking('${salon._id}')" style="margin-top:0.3rem;width:100%;">
-                    <i class="fas fa-bolt"></i> حجز سريع
+                <button class="btn-book" onclick="event.stopPropagation();openBooking('${salon._id}')"><i class="fas fa-calendar-plus"></i> احجز الآن
+                <button class="btn-success btn-sm" onclick="event.stopPropagation();quickBooking('${salon._id}')" style="margin-top:0.3rem;width:100%;"><i class="fas fa-bolt"></i> حجز سريع
+                <button class="btn-outline btn-sm" onclick="event.stopPropagation();openQuoteRequest('${salon._id}')" style="flex:1;min-width:80px;border-color:var(--gold);color:var(--gold);"><i class="fas fa-file-invoice"></i> عرض سعر
                 </button>
+                </div>
             </div>
         </div>
     `;
