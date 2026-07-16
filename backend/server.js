@@ -270,7 +270,6 @@ function translateServiceType(type) {
 // ============================================================
 // ✅ مسار عام لتقديم طلب عرض سعر (لا يحتاج مصادقة)
 // ============================================================
-console.log('📊 البيانات المستلمة:', { salonId, customerName, budget, guests, serviceType });
 app.post('/api/quotes/request', async (req, res) => {
     try {
         const { 
@@ -284,6 +283,7 @@ app.post('/api/quotes/request', async (req, res) => {
             serviceType, 
             details 
         } = req.body;
+        console.log('📊 البيانات المستلمة:', { salonId, customerName, budget, guests, serviceType });
 
         // التحقق من الحقول المطلوبة
         if (!salonId || !customerName || !customerEmail || !customerPhone || !eventDate || !serviceType) {
