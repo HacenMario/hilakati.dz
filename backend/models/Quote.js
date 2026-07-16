@@ -7,7 +7,7 @@ const QuoteRequestSchema = new mongoose.Schema({
     customerPhone: { type: String, required: true },
     customerEmail: { type: String },
     serviceType: { type: String, required: true },
-    description: { type: String, required: true },
+    description: { type: String, required: false }
     budget: { type: Number, default: 0 },
     eventDate: { type: Date },
     images: [{ type: String }],
