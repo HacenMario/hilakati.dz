@@ -2519,23 +2519,20 @@ function openQuoteRequest(salonId) {
     openModal('quoteRequestModal');
 }
 
-// ✅ معالج إرسال طلب عرض السعر
 document.getElementById('quoteRequestForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     console.log('🟢 محاولة إرسال طلب عرض سعر...');
     
-    // ✅ قراءة البيانات
     const salonId = document.getElementById('quoteSalonId').value;
     const customerName = document.getElementById('quoteCustomerName').value.trim();
     const customerEmail = document.getElementById('quoteCustomerEmail').value.trim();
     const customerPhone = document.getElementById('quoteCustomerPhone').value.trim();
     const eventDate = document.getElementById('quoteEventDate').value;
     const guests = parseInt(document.getElementById('quoteGuests').value) || 0;
-    const budget = parseFloat(document.getElementById('quoteBudget').value) || 0;
+    const budget = parseFloat(document.getElementById('quoteBudget').value) || 0; // ✅ تأكد من هذا السطر
     const serviceType = document.getElementById('quoteServiceType').value;
     const details = document.getElementById('quoteDetails').value.trim();
     
-    // ✅ التحقق من الحقول المطلوبة
     if (!salonId || !customerName || !customerEmail || !customerPhone || !eventDate || !serviceType) {
         showToast('❌ الرجاء ملء جميع الحقول المطلوبة', 'error');
         return;
@@ -2556,7 +2553,7 @@ document.getElementById('quoteRequestForm').addEventListener('submit', async (e)
                 customerPhone,
                 eventDate,
                 guests,
-                budget,
+                budget,          // ✅ تأكد من وجود هذا السطر
                 serviceType,
                 description: details
             })
