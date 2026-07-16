@@ -2483,6 +2483,165 @@ async function showQuoteDetails(quoteId) {
 }
 
 // ============================================================
+// ✅ جلب طلبات عروض الأسعار الخاصة بالعميل
+// ============================================================
+async function loadCustomerQuotes() {
+    const token = localStorage.getItem('customerToken');
+    if (!token) {
+        showToast('❌ يرجى تسجيل الدخول كعميل', 'error');
+        return;
+    }
+    
+    try {
+        const res = await fetch(`${API_BASE}/quotes/customer/${localStorage.getItem('customerId')}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (!res.ok) {
+            showToast('❌ فشل جلب الطلبات', 'error');
+            return;
+        }
+        
+        const quotes = await res.json();
+        console.log('📋 طلبات عروض الأسعار الخاصة بي:', quotes);
+        
+        // ✅ عرض الطلبات في نافذة منبثقة
+        let html = '<div style="max-height:400px;overflow-y:auto;">';
+        
+        if (!quotes || quotes.length === 0) {
+            html += '<p style="text-align:center;color:var(--text-color);opacity:0.5;">لا توجد طلبات</p>';
+        } else {
+            quotes.forEach(q => {
+                const statusMap = {
+                    'pending': '⏳ قيد الانتظار',
+                    'quoted': '📩 عرض سعر',
+                    'accepted': '✅ مقبول',
+                    'rejected': '❌ مرفوض',
+                    'expired': '⏰ منتهي'
+                };
+                const statusAr = statusMap[q.status] || q.status;
+                const serviceTypeAr = serviceTypeTranslations[q.serviceType] || q.serviceType;
+                
+                html += `
+                    <div style="background:rgba(255,255,255,0.02);padding:0.8rem;border-radius:10px;margin-bottom:0.5rem;border-right:3px solid ${q.status === 'accepted' ? 'var(--success)' : q.status === 'quoted' ? 'var(--info)' : q.status === 'rejected' ? 'var(--danger)' : 'var(--warning)'};">
+                        <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:0.3rem;">
+                            <div>
+                                <strong style="color:var(--gold);">${serviceTypeAr}</strong>
+                                <span style="font-size:0.8rem;margin-right:0.5rem;">${statusAr}</span>
+                            </div>
+                            <div style="font-size:0.8rem;opacity:0.5;">${q.eventDate || ''}</div>
+                        </div>
+                        <div style="font-size:0.85rem;opacity:0.7;">💰 ${q.budget ? q.budget + ' دج' : 'بدون ميزانية'}</div>
+                        ${q.quotePrice ? `<div style="color:var(--gold);font-weight:700;">عرض السعر: ${q.quotePrice} دج</div>` : ''}
+                        ${q.quoteMessage ? `<div style="font-size:0.8rem;opacity:0.6;">📝 ${q.quoteMessage}</div>` : ''}
+                        
+                        <!-- ✅ أزرار القبول/الرفض للزبون (تظهر فقط عندما تكون الحالة "quoted") -->
+                        ${q.status === 'quoted' ? `
+                            <div style="display:flex;gap:0.3rem;margin-top:0.5rem;">
+                                <button class="btn-success btn-sm" onclick="acceptCustomerQuote('${q._id}')">
+                                    <i class="fas fa-check"></i> قبول العرض
+                                </button>
+                                <button class="btn-danger btn-sm" onclick="rejectCustomerQuote('${q._id}')">
+                                    <i class="fas fa-times"></i> رفض العرض
+                                </button>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            });
+        }
+        
+        html += '</div>';
+        
+        // ✅ عرض في نافذة مؤقتة
+        const tempDiv = document.createElement('div');
+        tempDiv.className = 'modal-overlay active';
+        tempDiv.innerHTML = `
+            <div class="modal-box" style="max-width:600px;">
+                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">&times;</button>
+                <h2 style="color:var(--gold);"><i class="fas fa-file-invoice"></i> طلبات عروض الأسعار</h2>
+                ${html}
+            </div>
+        `;
+        document.body.appendChild(tempDiv);
+        
+    } catch (error) {
+        console.error('❌ فشل جلب الطلبات:', error);
+        showToast('❌ فشل جلب الطلبات', 'error');
+        
+   / ✅ قبول عرض السعر من قبل الزبون
+async function acceptCustomerQuote(quoteId) {
+    if (!confirm('✅ هل أنت متأكد من قبول هذا العرض؟')) return;
+    
+    const token = localStorage.getItem('customerToken');
+    if (!token) {
+        showToast('❌ يرجى تسجيل الدخول', 'error');
+        return;
+    }
+    
+    try {
+        const res = await fetch(`${API_BASE}/quotes/${quoteId}/accept-by-customer`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await res.json();
+        
+        if (res.ok) {
+            showToast('✅ تم قبول عرض السعر بنجاح!', 'success');
+            // ✅ إغلاق النافذة وإعادة تحميل الطلبات
+            const modal = document.querySelector('.modal-overlay.active');
+            if (modal) modal.remove();
+            loadCustomerQuotes();
+            refreshNotifications();
+        } else {
+            showToast(`❌ ${data.message}`, 'error');
+        }
+    } catch (error) {
+        console.error('❌ فشل قبول العرض:', error);
+        showToast('❌ فشل الاتصال بالخادم', 'error');
+    }
+}
+
+// ✅ رفض عرض السعر من قبل الزبون
+async function rejectCustomerQuote(quoteId) {
+    if (!confirm('❌ هل أنت متأكد من رفض هذا العرض؟')) return;
+    
+    const token = localStorage.getItem('customerToken');
+    if (!token) {
+        showToast('❌ يرجى تسجيل الدخول', 'error');
+        return;
+    }
+    
+    try {
+        const res = await fetch(`${API_BASE}/quotes/${quoteId}/reject-by-customer`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await res.json();
+        
+        if (res.ok) {
+            showToast('❌ تم رفض عرض السعر', 'info');
+            const modal = document.querySelector('.modal-overlay.active');
+            if (modal) modal.remove();
+            loadCustomerQuotes();
+            refreshNotifications();
+        } else {
+            showToast(`❌ ${data.message}`, 'error');
+        }
+    } catch (error) {
+        console.error('❌ فشل رفض العرض:', error);
+        showToast('❌ فشل الاتصال بالخادم', 'error');
+    }
+}
+// ============================================================
 // نظام طلبات عروض الأسعار (Quotes) - جانب العميل
 // ============================================================
 
@@ -5618,6 +5777,7 @@ async function loadCustomerDashboard() {
                 <h3>📅 حجوزاتي</h3>
                 <div id="customerBookingsList">${bookings.length ? bookings.map(b => `<div style="background:rgba(255,255,255,0.02);padding:0.4rem;border-radius:10px;margin-bottom:0.3rem;border-right:3px solid ${b.status === 'confirmed' ? 'var(--success)' : b.status === 'pending' ? 'var(--warning)' : 'var(--danger)'};"><div><strong style="color:var(--gold);">${b.salonId?.name || 'صالون'}</strong> <span class="status ${b.status}">${b.status}</span></div><div>${b.services?.map(s => s.name).join(', ') || b.service} | ${b.staff} | ${b.date} ${b.time}</div></div>`).join('') : '<p>لا توجد حجوزات</p>'}</div>
                 <hr>
+                <button class="btn-gold btn-sm" onclick="loadCustomerQuotes()" style="margin-top:0.5rem;"><i class="fas fa-file-invoice"></i> طلبات عروض الأسعار</button>
                 <button class="btn-danger btn-sm" onclick="deleteCustomerAccount()"><i class="fas fa-user-slash"></i> حذف حسابي</button>
             </div>
         `;
