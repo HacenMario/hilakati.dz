@@ -2946,7 +2946,7 @@ async function acceptCustomerQuote(quoteId) {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ date, time })  // ✅ إرسال التاريخ والوقت
+            body: JSON.stringify({ date, time })
         });
 
         const data = await res.json();
@@ -6366,78 +6366,6 @@ function showCustomerSection(section, data) {
                 }
             });
         }
-    }
-}
-
-// ============================================================
-// ✅ قبول عرض السعر من قبل الزبون
-// ============================================================
-async function acceptCustomerQuote(quoteId) {
-    if (!confirm('✅ هل أنت متأكد من قبول هذا العرض؟')) return;
-
-    const token = localStorage.getItem('customerToken');
-    if (!token) {
-        showToast('❌ يرجى تسجيل الدخول', 'error');
-        return;
-    }
-
-    try {
-        const res = await fetch(`${API_BASE}/quotes/${quoteId}/accept-by-customer`, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-
-        const data = await res.json();
-
-        if (res.ok) {
-            showToast('✅ تم قبول عرض السعر بنجاح!', 'success');
-            loadCustomerQuotesTable();
-            refreshNotifications();
-        } else {
-            showToast(`❌ ${data.message}`, 'error');
-        }
-    } catch (error) {
-        console.error('❌ فشل قبول العرض:', error);
-        showToast('❌ فشل الاتصال بالخادم', 'error');
-    }
-}
-
-// ============================================================
-// ✅ رفض عرض السعر من قبل الزبون
-// ============================================================
-async function rejectCustomerQuote(quoteId) {
-    if (!confirm('❌ هل أنت متأكد من رفض هذا العرض؟')) return;
-
-    const token = localStorage.getItem('customerToken');
-    if (!token) {
-        showToast('❌ يرجى تسجيل الدخول', 'error');
-        return;
-    }
-
-    try {
-        const res = await fetch(`${API_BASE}/quotes/${quoteId}/reject-by-customer`, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-
-        const data = await res.json();
-
-        if (res.ok) {
-            showToast('❌ تم رفض عرض السعر', 'info');
-            loadCustomerQuotesTable();
-            refreshNotifications();
-        } else {
-            showToast(`❌ ${data.message}`, 'error');
-        }
-    } catch (error) {
-        console.error('❌ فشل رفض العرض:', error);
-        showToast('❌ فشل الاتصال بالخادم', 'error');
     }
 }
 
