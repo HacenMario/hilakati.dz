@@ -1530,6 +1530,17 @@
 </div>
 
 <!-- ===== النوافذ المنبثقة ===== -->
+<!-- ===== نافذة عرض تفاصيل طلب عرض سعر ===== -->
+<div class="modal-overlay" id="quoteDetailsModal">
+    <div class="modal-box" style="max-width:550px;">
+        <button class="modal-close" onclick="closeModal('quoteDetailsModal')">&times;</button>
+        <h2 style="color:var(--gold);text-align:center;margin-bottom:0.5rem;">
+            <i class="fas fa-file-invoice"></i> تفاصيل طلب عرض سعر
+        </h2>
+        <div id="quoteDetailsContent" style="line-height:2;"></div>
+    </div>
+</div>
+
 <!-- ===== نافذة طلب عرض سعر ===== -->
 <div class="modal-overlay" id="quoteRequestModal">
     <div class="modal-box" style="max-width:550px;">
@@ -2361,6 +2372,102 @@
 </section>
 
 <script>
+// ✅ عرض تفاصيل طلب عرض سعر
+async function showQuoteDetails(quoteId) {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        showToast('❌ يرجى تسجيل الدخول', 'error');
+        return;
+    }
+    
+    try {
+        const res = await fetch(`${API_BASE}/quotes/${quoteId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (!res.ok) {
+            showToast('❌ فشل جلب التفاصيل', 'error');
+            return;
+        }
+        
+        const q = await res.json();
+        console.log('📋 تفاصيل الطلب:', q);
+        
+        // ✅ ترجمة نوع الخدمة
+        const serviceTypeAr = serviceTypeTranslations[q.serviceType] || q.serviceType;
+        
+        // ✅ حالة الطلب بالعربية
+        const statusMap = {
+            'pending': '⏳ قيد الانتظار',
+            'quoted': '📩 عرض سعر',
+            'accepted': '✅ مقبول',
+            'rejected': '❌ مرفوض',
+            'expired': '⏰ منتهي'
+        };
+        const statusAr = statusMap[q.status] || q.status;
+        
+        // ✅ تنسيق التاريخ
+        const formatDate = (dateStr) => {
+            if (!dateStr) return 'غير محدد';
+            try {
+                const d = new Date(dateStr);
+                return d.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
+            } catch {
+                return dateStr;
+            }
+        };
+        
+        const content = document.getElementById('quoteDetailsContent');
+        content.innerHTML = `
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
+                <div><strong>👤 العميل:</strong></div>
+                <div>${q.customerName}</div>
+                
+                <div><strong>📧 البريد:</strong></div>
+                <div>${q.customerEmail || 'غير موجود'}</div>
+                
+                <div><strong>📞 الهاتف:</strong></div>
+                <div>${q.customerPhone}</div>
+                
+                <div><strong>📋 نوع الخدمة:</strong></div>
+                <div>${serviceTypeAr}</div>
+                
+                <div><strong>📅 تاريخ المناسبة:</strong></div>
+                <div>${formatDate(q.eventDate)}</div>
+                
+                <div><strong>👥 عدد الضيوف:</strong></div>
+                <div>${q.guests || 'غير محدد'}</div>
+                
+                <div><strong>💰 الميزانية المقترحة:</strong></div>
+                <div>${q.budget ? q.budget + ' دج' : 'غير محدد'}</div>
+                
+                <div><strong>📝 الملاحظات:</strong></div>
+                <div style="grid-column:span 2;background:var(--input-bg);padding:0.3rem 0.5rem;border-radius:8px;">${q.description || 'لا توجد ملاحظات'}</div>
+                
+                <div><strong>📌 الحالة:</strong></div>
+                <div style="color:${q.status === 'pending' ? 'var(--warning)' : q.status === 'quoted' ? 'var(--info)' : q.status === 'accepted' ? 'var(--success)' : 'var(--danger)'};">${statusAr}</div>
+                
+                ${q.quotePrice ? `
+                    <div><strong>💰 عرض السعر:</strong></div>
+                    <div style="color:var(--gold);font-weight:700;">${q.quotePrice} دج</div>
+                    
+                    <div><strong>📝 رسالة العرض:</strong></div>
+                    <div style="grid-column:span 2;background:var(--input-bg);padding:0.3rem 0.5rem;border-radius:8px;">${q.quoteMessage || 'لا توجد رسالة'}</div>
+                ` : ''}
+                
+                <div><strong>📅 تاريخ الطلب:</strong></div>
+                <div>${new Date(q.createdAt).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+            </div>
+        `;
+        
+        openModal('quoteDetailsModal');
+        
+    } catch (error) {
+        console.error('❌ فشل جلب التفاصيل:', error);
+        showToast('❌ فشل جلب التفاصيل', 'error');
+    }
+}
+
 // ============================================================
 // نظام طلبات عروض الأسعار (Quotes) - جانب العميل
 // ============================================================
@@ -2704,6 +2811,16 @@ function cleanPhoneNumber(phone) {
 }
 
 // ===== الترجمة =====
+// ===== ترجمة أنواع الخدمات =====
+const serviceTypeTranslations = {
+    'bridal': '💄 مكياج عروس',
+    'hair': '💇‍♀️ تسريحة عروس',
+    'full': '👰 حزمة كاملة (مكياج + تسريحة)',
+    'bridal_party': '👩‍👧‍👧 مكياج للعروس والضيوف',
+    'groom': '💈 حلاقة عريس',
+    'other': '📌 خدمات أخرى'
+};
+    
 const translations = {
     ar: {
         home: 'الرئيسية', salons: 'الصالونات', dashboard: 'لوحة التحكم', admin: 'لوحة Admin',
@@ -6206,17 +6323,33 @@ async function loadQuotes() {
             container.innerHTML = '<p style="color:var(--text-color);opacity:0.5;">لا توجد طلبات</p>';
             return;
         }
-        container.innerHTML = quotes.map(q => `
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:0.3rem 0;border-bottom:1px solid var(--border-color);flex-wrap:wrap;gap:0.3rem;">
+        container.innerHTML = quotes.map(q => {
+            // ✅ ترجمة نوع الخدمة
+            const serviceTypeAr = serviceTypeTranslations[q.serviceType] || q.serviceType;
+            
+            // ✅ حالة الطلب بالعربية
+            const statusMap = {
+                'pending': '⏳ قيد الانتظار',
+                'quoted': '📩 عرض سعر',
+                'accepted': '✅ مقبول',
+                'rejected': '❌ مرفوض',
+                'expired': '⏰ منتهي'
+            };
+            const statusAr = statusMap[q.status] || q.status;
+            
+            return `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-bottom:1px solid var(--border-color);flex-wrap:wrap;gap:0.5rem;">
                 <div>
                     <strong>${q.customerName}</strong>
-                    <span style="font-size:0.7rem;opacity:0.5;">${q.serviceType}</span>
-                    <span style="font-size:0.7rem;color:${q.status === 'pending' ? 'var(--warning)' : q.status === 'quoted' ? 'var(--info)' : q.status === 'accepted' ? 'var(--success)' : 'var(--danger)'};">
-                        ${q.status === 'pending' ? '⏳ قيد الانتظار' : q.status === 'quoted' ? '📩 عرض سعر' : q.status === 'accepted' ? '✅ مقبول' : '❌ مرفوض'}
-                    </span>
-                    ${q.quotePrice ? `<span style="font-size:0.7rem;">💰 ${q.quotePrice} دج</span>` : ''}
+                    <span style="font-size:0.8rem;opacity:0.7;margin-right:0.5rem;">${serviceTypeAr}</span>
+                    <span style="font-size:0.8rem;color:${q.status === 'pending' ? 'var(--warning)' : q.status === 'quoted' ? 'var(--info)' : q.status === 'accepted' ? 'var(--success)' : 'var(--danger)'};">${statusAr}</span>
+                    ${q.quotePrice ? `<span style="font-size:0.8rem;color:var(--gold);">💰 ${q.quotePrice} دج</span>` : ''}
                 </div>
                 <div style="display:flex;gap:0.3rem;flex-wrap:wrap;">
+                    <!-- ✅ زر عرض التفاصيل (جديد) -->
+                    <button class="btn-info btn-sm" onclick="showQuoteDetails('${q._id}')" style="background:var(--info);color:#fff;border-radius:50px;padding:0.2rem 0.8rem;border:none;cursor:pointer;">
+                        <i class="fas fa-eye"></i> تفاصيل
+                    </button>
                     ${q.status === 'pending' ? `
                         <button class="btn-gold btn-sm" onclick="openQuoteForm('${q._id}')"><i class="fas fa-file-invoice"></i> عرض سعر</button>
                     ` : ''}
@@ -6227,7 +6360,7 @@ async function loadQuotes() {
                     <button class="btn-danger btn-sm" onclick="deleteQuote('${q._id}')"><i class="fas fa-trash"></i></button>
                 </div>
             </div>
-        `).join('');
+        `}).join('');
     } catch (error) {
         console.error('❌ فشل جلب الطلبات:', error);
     }
