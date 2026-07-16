@@ -2531,7 +2531,7 @@ document.getElementById('quoteRequestForm').addEventListener('submit', async (e)
     const customerPhone = document.getElementById('quoteCustomerPhone').value.trim();
     const eventDate = document.getElementById('quoteEventDate').value;
     const guests = parseInt(document.getElementById('quoteGuests').value) || 0;
-    const budget = parseFloat(document.getElementById('quoteBudget').value) || 0; // ✅ أضف هذا السطر
+    const budget = parseFloat(document.getElementById('quoteBudget').value) || 0;
     const serviceType = document.getElementById('quoteServiceType').value;
     const details = document.getElementById('quoteDetails').value.trim();
     
@@ -2556,7 +2556,7 @@ document.getElementById('quoteRequestForm').addEventListener('submit', async (e)
                 customerPhone,
                 eventDate,
                 guests,
-                budget,          // ✅ أضف هذا السطر
+                budget,
                 serviceType,
                 description: details
             })
