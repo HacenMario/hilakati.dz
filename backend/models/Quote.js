@@ -9,6 +9,7 @@ const QuoteRequestSchema = new mongoose.Schema({
     serviceType: { type: String, required: true },
     description: { type: String, required: false },
     budget: { type: Number, default: 0 },
+    guests: { type: Number, default: 0 },
     eventDate: { type: Date },
     images: [{ type: String }],
     status: { type: String, enum: ['pending', 'quoted', 'accepted', 'rejected', 'expired'], default: 'pending' },
