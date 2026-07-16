@@ -1,6 +1,7 @@
 require('dotenv').config();
 console.log('🔑 JWT_CUSTOMER_SECRET:', process.env.JWT_CUSTOMER_SECRET ? '✅ موجود' : '❌ غير موجود');
 console.log('🔑 القيمة:', process.env.JWT_CUSTOMER_SECRET);
+console.log(`🔑 إنشاء توكن عميل بالمفتاح: "${process.env.JWT_CUSTOMER_SECRET || 'customer_secret_key'}"`);
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
