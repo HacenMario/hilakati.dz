@@ -284,7 +284,7 @@ app.post('/api/quotes/request', async (req, res) => {
         }
 
         // إنشاء طلب جديد
-        const Quote = require('./models/QuoteRequest');
+        const Quote = require('./models/Quote');
         const newQuote = new Quote({
             salonId,
             customerId: customerId || null,
