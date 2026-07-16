@@ -428,7 +428,7 @@ const quoteRoutes = require('./routes/quotes');
 app.use('/api/staff', authMiddleware, staffRoutes);
 app.use('/api/inventory', authMiddleware, inventoryRoutes);
 app.use('/api/coupons', authMiddleware, couponRoutes);
-app.use('/api/quotes', authMiddleware, quoteRoutes);
+app.use('/api/quotes', quoteRoutes);
 
 // ============================================================
 // مسارات المصادقة (صالون)
