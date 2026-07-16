@@ -98,5 +98,36 @@ router.put('/:id', async (req, res) => {
         res.status(500).json({ message: 'فشل تحديث الطلب' });
     }
 });
+// ============================================================
+// ✅ جلب تفاصيل طلب عرض سعر واحد (لصالون)
+// ============================================================
+router.get('/:id', auth, async (req, res) => {
+    try {
+        const quote = await QuoteRequest.findById(req.params.id);
+        if (!quote) {
+            return res.status(404).json({ message: '❌ الطلب غير موجود' });
+        }
+        res.json(quote);
+    } catch (error) {
+        console.error('❌ فشل جلب تفاصيل الطلب:', error);
+        res.status(500).json({ message: '❌ فشل جلب التفاصيل' });
+    }
+});
+
+// ============================================================
+// ✅ حذف طلب عرض سعر
+// ============================================================
+router.delete('/:id', auth, async (req, res) => {
+    try {
+        const quote = await QuoteRequest.findByIdAndDelete(req.params.id);
+        if (!quote) {
+            return res.status(404).json({ message: '❌ الطلب غير موجود' });
+        }
+        res.json({ message: '✅ تم حذف الطلب بنجاح' });
+    } catch (error) {
+        console.error('❌ فشل حذف الطلب:', error);
+        res.status(500).json({ message: '❌ فشل حذف الطلب' });
+    }
+});
 
 module.exports = router;
