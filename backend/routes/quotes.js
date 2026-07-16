@@ -159,6 +159,98 @@ router.put('/:id/reject', auth, async (req, res) => {
 });
 
 // ============================================================
+// ✅ قبول عرض السعر من قبل الزبون
+// ============================================================
+router.put('/:id/accept-by-customer', customerAuthMiddleware, async (req, res) => {
+    try {
+        const quote = await QuoteRequest.findById(req.params.id);
+        if (!quote) {
+            return res.status(404).json({ message: '❌ الطلب غير موجود' });
+        }
+        
+        // ✅ التحقق من أن الزبون هو صاحب الطلب
+        if (quote.customerId && quote.customerId.toString() !== req.customerId) {
+            return res.status(403).json({ message: '❌ غير مصرح لك بقبول هذا العرض' });
+        }
+        
+        // ✅ التحقق من أن الحالة مناسبة
+        if (quote.status !== 'quoted') {
+            return res.status(400).json({ message: '❌ لا يمكن قبول هذا العرض لأنه ليس في حالة "quoted"' });
+        }
+        
+        quote.status = 'accepted';
+        await quote.save();
+        
+        // ✅ إشعار للصالون
+        try {
+            const Notification = require('../models/Notification');
+            const notification = new Notification({
+                userId: quote.salonId,
+                userType: 'salon',
+                title: '✅ تم قبول عرض السعر',
+                message: `قام العميل ${quote.customerName} بقبول عرض السعر الخاص بك`,
+                read: false,
+                createdAt: new Date()
+            });
+            await notification.save();
+        } catch (notifError) {
+            console.error('❌ فشل إرسال الإشعار:', notifError);
+        }
+        
+        res.json({ message: '✅ تم قبول عرض السعر بنجاح', quote });
+    } catch (error) {
+        console.error('❌ فشل قبول عرض السعر:', error);
+        res.status(500).json({ message: 'فشل قبول عرض السعر' });
+    }
+});
+
+// ============================================================
+// ✅ رفض عرض السعر من قبل الزبون
+// ============================================================
+router.put('/:id/reject-by-customer', customerAuthMiddleware, async (req, res) => {
+    try {
+        const quote = await QuoteRequest.findById(req.params.id);
+        if (!quote) {
+            return res.status(404).json({ message: '❌ الطلب غير موجود' });
+        }
+        
+        // ✅ التحقق من أن الزبون هو صاحب الطلب
+        if (quote.customerId && quote.customerId.toString() !== req.customerId) {
+            return res.status(403).json({ message: '❌ غير مصرح لك برفض هذا العرض' });
+        }
+        
+        // ✅ التحقق من أن الحالة مناسبة
+        if (quote.status !== 'quoted') {
+            return res.status(400).json({ message: '❌ لا يمكن رفض هذا العرض لأنه ليس في حالة "quoted"' });
+        }
+        
+        quote.status = 'rejected';
+        await quote.save();
+        
+        // ✅ إشعار للصالون
+        try {
+            const Notification = require('../models/Notification');
+            const notification = new Notification({
+                userId: quote.salonId,
+                userType: 'salon',
+                title: '❌ تم رفض عرض السعر',
+                message: `قام العميل ${quote.customerName} برفض عرض السعر الخاص بك`,
+                read: false,
+                createdAt: new Date()
+            });
+            await notification.save();
+        } catch (notifError) {
+            console.error('❌ فشل إرسال الإشعار:', notifError);
+        }
+        
+        res.json({ message: '❌ تم رفض عرض السعر', quote });
+    } catch (error) {
+        console.error('❌ فشل رفض عرض السعر:', error);
+        res.status(500).json({ message: 'فشل رفض عرض السعر' });
+    }
+});
+
+// ============================================================
 // ✅ تحديث طلب عرض سعر (بيانات عامة)
 // ============================================================
 router.put('/:id', async (req, res) => {
