@@ -2372,6 +2372,7 @@
 </section>
 
 <script>
+    
 // ✅ عرض تفاصيل طلب عرض سعر
 async function showQuoteDetails(quoteId) {
     const token = localStorage.getItem('token');
@@ -2406,17 +2407,22 @@ async function showQuoteDetails(quoteId) {
         };
         const statusAr = statusMap[q.status] || q.status;
         
-        // ✅ تنسيق التاريخ
-        const formatDate = (dateStr) => {
+        // ✅ تنسيق التاريخ (YYYY-MM-DD)
+        const formatDateSimple = (dateStr) => {
             if (!dateStr) return 'غير محدد';
             try {
                 const d = new Date(dateStr);
-                return d.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
+                if (isNaN(d.getTime())) return dateStr;
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
             } catch {
                 return dateStr;
             }
         };
         
+        // ✅ عرض المحتوى (هذا هو المكان الصحيح للكود!)
         const content = document.getElementById('quoteDetailsContent');
         content.innerHTML = `
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
@@ -2433,16 +2439,16 @@ async function showQuoteDetails(quoteId) {
                 <div>${serviceTypeAr}</div>
                 
                 <div><strong>📅 تاريخ المناسبة:</strong></div>
-                <div>${formatDate(q.eventDate)}</div>
+                <div>${formatDateSimple(q.eventDate)}</div>
                 
                 <div><strong>👥 عدد الضيوف:</strong></div>
-                <div>${q.guests || 'غير محدد'}</div>
+                <div>${q.guests && q.guests > 0 ? q.guests : 'غير محدد'}</div>
                 
                 <div><strong>💰 الميزانية المقترحة:</strong></div>
                 <div>${q.budget ? q.budget + ' دج' : 'غير محدد'}</div>
                 
                 <div><strong>📝 الملاحظات:</strong></div>
-                <div style="grid-column:span 2;background:var(--input-bg);padding:0.3rem 0.5rem;border-radius:8px;">${q.description || 'لا توجد ملاحظات'}</div>
+                <div style="grid-column:span 2;background:var(--input-bg);padding:0.3rem 0.5rem;border-radius:8px;">${q.description || q.details || 'لا توجد ملاحظات'}</div>
                 
                 <div><strong>📌 الحالة:</strong></div>
                 <div style="color:${q.status === 'pending' ? 'var(--warning)' : q.status === 'quoted' ? 'var(--info)' : q.status === 'accepted' ? 'var(--success)' : 'var(--danger)'};">${statusAr}</div>
@@ -2456,10 +2462,11 @@ async function showQuoteDetails(quoteId) {
                 ` : ''}
                 
                 <div><strong>📅 تاريخ الطلب:</strong></div>
-                <div>${new Date(q.createdAt).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                <div>${formatDateSimple(q.createdAt)}</div>
             </div>
         `;
         
+        // ✅ فتح النافذة
         openModal('quoteDetailsModal');
         
     } catch (error) {
