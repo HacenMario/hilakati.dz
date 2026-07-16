@@ -297,7 +297,7 @@ app.post('/api/quotes/request', async (req, res) => {
 
         // إنشاء طلب جديد
         const Quote = require('./models/Quote');
-        const newQuote = new QuoteRequest({
+        const newQuote = new Quote({
             salonId,
             customerId: customerId || null,
             customerName,
@@ -2246,7 +2246,7 @@ app.delete('/api/delete-coupon/:id', authMiddleware, async (req, res) => {
 // ============================================================
 app.get('/api/quotes/:id', authMiddleware, async (req, res) => {
     try {
-        const quote = await QuoteRequest.findById(req.params.id);
+        const quote = await Quote.findById(req.params.id);
         if (!quote) {
             return res.status(404).json({ message: '❌ الطلب غير موجود' });
         }
