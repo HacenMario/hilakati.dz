@@ -256,6 +256,86 @@ app.post('/api/coupons/validate', async (req, res) => {
 });
 
 // ============================================================
+// ✅ مسار عام لتقديم طلب عرض سعر (لا يحتاج مصادقة)
+// ============================================================
+app.post('/api/quotes/request', async (req, res) => {
+    try {
+        const { 
+            salonId, 
+            customerId, 
+            customerName, 
+            customerEmail, 
+            customerPhone, 
+            eventDate, 
+            guests, 
+            serviceType, 
+            details 
+        } = req.body;
+
+        // التحقق من الحقول المطلوبة
+        if (!salonId || !customerName || !customerEmail || !customerPhone || !eventDate || !serviceType) {
+            return res.status(400).json({ message: 'جميع الحقول المطلوبة فارغة' });
+        }
+
+        // التحقق من وجود الصالون
+        const salon = await Salon.findById(salonId);
+        if (!salon) {
+            return res.status(404).json({ message: 'الصالون غير موجود' });
+        }
+
+        // إنشاء طلب جديد
+        const Quote = require('./models/Quote'); // تأكد من استيراد النموذج
+        const newQuote = new Quote({
+            salonId,
+            customerId: customerId || null,
+            customerName,
+            customerEmail,
+            customerPhone,
+            eventDate,
+            guests: guests || 0,
+            serviceType,
+            details: details || '',
+            status: 'pending'
+        });
+
+        await newQuote.save();
+
+        // إشعار للصالون (اختياري)
+        try {
+            const Notification = require('./models/Notification');
+            const notification = new Notification({
+                userId: salonId,
+                userType: 'salon',
+                title: '📩 طلب عرض سعر جديد',
+                message: `طلب جديد من ${customerName} لخدمة "${serviceType}" في ${eventDate}`,
+                read: false,
+                createdAt: new Date()
+            });
+            await notification.save();
+
+            const io = req.app.get('io');
+            if (io) {
+                io.to(`salon-${salonId}`).emit('new-notification', {
+                    title: '📩 طلب عرض سعر جديد',
+                    message: `طلب جديد من ${customerName} لخدمة "${serviceType}"`
+                });
+            }
+        } catch (notifError) {
+            console.error('❌ فشل إرسال الإشعار:', notifError);
+        }
+
+        res.status(201).json({ 
+            message: '✅ تم إرسال طلب عرض السعر بنجاح!', 
+            quote: newQuote 
+        });
+
+    } catch (error) {
+        console.error('❌ فشل إنشاء طلب عرض سعر:', error);
+        res.status(500).json({ message: '❌ فشل إنشاء الطلب: ' + error.message });
+    }
+});
+
+// ============================================================
 // Middleware للمصادقة
 // ============================================================
 function authMiddleware(req, res, next) {
