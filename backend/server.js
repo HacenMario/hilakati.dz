@@ -278,7 +278,8 @@ app.post('/api/quotes/request', async (req, res) => {
             customerName, 
             customerEmail, 
             customerPhone, 
-            eventDate, 
+            eventDate,
+            budget,
             guests, 
             serviceType, 
             details 
@@ -305,6 +306,7 @@ app.post('/api/quotes/request', async (req, res) => {
             customerEmail,
             customerPhone,
             eventDate,
+            budget: budget || 0,
             guests: guests ?? 0,
             serviceType,
             details: details || '',
