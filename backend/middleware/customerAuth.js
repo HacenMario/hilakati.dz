@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 
-// ✅ مفتاح ثابت (نفس المفتاح المستخدم في server.js)
+// ✅ مفتاح ثابت (يجب أن يكون مطابقاً لما في server.js)
 const CUSTOMER_JWT_SECRET = 'another_secret_for_customers';
 
 module.exports = (req, res, next) => {
