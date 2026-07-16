@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const QuoteRequest = require('../models/Quote');
 const auth = require('../middleware/auth');
+// ✅ إضافة customerAuthMiddleware
 const customerAuthMiddleware = require('../middleware/customerAuth');
 
 // ============================================================
@@ -168,14 +169,14 @@ router.put('/:id/reject', auth, async (req, res) => {
 // ============================================================
 // ✅ قبول عرض السعر من قبل الزبون (مع إنشاء حجز تلقائي)
 // ============================================================
-router.put('/:id/accept-by-customer', async (req, res) => {
+router.put('/:id/accept-by-customer', customerAuthMiddleware, async (req, res) => {
     try {
         const quote = await QuoteRequest.findById(req.params.id);
         if (!quote) {
             return res.status(404).json({ message: '❌ الطلب غير موجود' });
         }
         
-        // ✅ التحقق من أن الزبون هو صاحب الطلب
+        // ✅ التحقق من أن الزبون هو صاحب الطلب (باستخدام req.customerId من التوكن)
         if (quote.customerId && quote.customerId.toString() !== req.customerId) {
             return res.status(403).json({ message: '❌ غير مصرح لك بقبول هذا العرض' });
         }
@@ -272,14 +273,14 @@ router.put('/:id/accept-by-customer', async (req, res) => {
 // ============================================================
 // ✅ رفض عرض السعر من قبل الزبون
 // ============================================================
-router.put('/:id/reject-by-customer', async (req, res) => {
+router.put('/:id/reject-by-customer', customerAuthMiddleware, async (req, res) => {
     try {
         const quote = await QuoteRequest.findById(req.params.id);
         if (!quote) {
             return res.status(404).json({ message: '❌ الطلب غير موجود' });
         }
         
-        // ✅ التحقق من أن الزبون هو صاحب الطلب
+        // ✅ التحقق من أن الزبون هو صاحب الطلب (باستخدام req.customerId من التوكن)
         if (quote.customerId && quote.customerId.toString() !== req.customerId) {
             return res.status(403).json({ message: '❌ غير مصرح لك برفض هذا العرض' });
         }
