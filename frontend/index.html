@@ -2926,14 +2926,16 @@ async function acceptCustomerQuote(quoteId) {
     if (!confirm('✅ هل أنت متأكد من قبول هذا العرض؟')) return;
 
     const token = localStorage.getItem('customerToken');
-    const customerId = localStorage.getItem('customerId');  // ✅ تأكد من وجود هذا السطر
+    const customerId = localStorage.getItem('customerId');
 
-    if (!token) {
+    if (!token || !customerId) {
         showToast('❌ يرجى تسجيل الدخول', 'error');
         return;
     }
 
     try {
+        showToast('⏳ جاري قبول العرض...', 'info');
+
         const res = await fetch(`${API_BASE}/quotes/${quoteId}/accept-by-customer`, {
             method: 'PUT',
             headers: {
@@ -2941,7 +2943,7 @@ async function acceptCustomerQuote(quoteId) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                customerId: customerId  // ✅ تأكد من إرسال customerId
+                customerId: customerId  // ✅ يجب أن يكون موجوداً
             })
         });
 
@@ -2951,8 +2953,11 @@ async function acceptCustomerQuote(quoteId) {
             showToast('✅ تم قبول عرض السعر بنجاح!', 'success');
             loadCustomerQuotesTable();
             refreshNotifications();
+            if (typeof loadCustomerDashboard === 'function') {
+                loadCustomerDashboard();
+            }
         } else {
-            showToast(`❌ ${data.message}`, 'error');
+            showToast(`❌ ${data.message || 'فشل قبول العرض'}`, 'error');
         }
     } catch (error) {
         console.error('❌ فشل قبول العرض:', error);
@@ -2967,14 +2972,16 @@ async function rejectCustomerQuote(quoteId) {
     if (!confirm('❌ هل أنت متأكد من رفض هذا العرض؟')) return;
 
     const token = localStorage.getItem('customerToken');
-    const customerId = localStorage.getItem('customerId');  // ✅ تأكد من وجود هذا السطر
+    const customerId = localStorage.getItem('customerId');
 
-    if (!token) {
+    if (!token || !customerId) {
         showToast('❌ يرجى تسجيل الدخول', 'error');
         return;
     }
 
     try {
+        showToast('⏳ جاري رفض العرض...', 'info');
+
         const res = await fetch(`${API_BASE}/quotes/${quoteId}/reject-by-customer`, {
             method: 'PUT',
             headers: {
@@ -2982,7 +2989,7 @@ async function rejectCustomerQuote(quoteId) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                customerId: customerId  // ✅ تأكد من إرسال customerId
+                customerId: customerId  // ✅ يجب أن يكون موجوداً
             })
         });
 
@@ -2992,8 +2999,11 @@ async function rejectCustomerQuote(quoteId) {
             showToast('❌ تم رفض عرض السعر', 'info');
             loadCustomerQuotesTable();
             refreshNotifications();
+            if (typeof loadCustomerDashboard === 'function') {
+                loadCustomerDashboard();
+            }
         } else {
-            showToast(`❌ ${data.message}`, 'error');
+            showToast(`❌ ${data.message || 'فشل رفض العرض'}`, 'error');
         }
     } catch (error) {
         console.error('❌ فشل رفض العرض:', error);
