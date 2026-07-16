@@ -1579,6 +1579,11 @@
                 <label>👥 عدد الضيوف (تقريبي)</label>
                 <input type="number" id="quoteGuests" min="1" placeholder="مثال: 50">
             </div>
+            div class="form-group">
+    <label>💰 الميزانية المقترحة (دج - اختياري)</label>
+    <input type="number" id="quoteBudget" min="0" placeholder="مثال: 50000" style="width:100%;padding:0.5rem 0.8rem;border-radius:8px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--text-color);font-size:0.85rem;">
+    <small style="color:var(--text-color);opacity:0.5;font-size:0.7rem;">أدخل الميزانية التي ترغب بها (اختياري)</small>
+</div>
             
             <div class="form-group">
                 <label>📋 نوع الخدمة المطلوبة</label>
@@ -2516,7 +2521,7 @@ function openQuoteRequest(salonId) {
 document.getElementById('quoteRequestForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     console.log('🟢 محاولة إرسال طلب عرض سعر...');
-    
+   
     // ✅ قراءة البيانات
     const salonId = document.getElementById('quoteSalonId').value;
     const customerName = document.getElementById('quoteCustomerName').value.trim();
@@ -2524,9 +2529,10 @@ document.getElementById('quoteRequestForm').addEventListener('submit', async (e)
     const customerPhone = document.getElementById('quoteCustomerPhone').value.trim();
     const eventDate = document.getElementById('quoteEventDate').value;
     const guests = parseInt(document.getElementById('quoteGuests').value) || 0;
+    const budget = parseFloat(document.getElementById('quoteBudget').value) || 0
     const serviceType = document.getElementById('quoteServiceType').value;
     const details = document.getElementById('quoteDetails').value.trim();
-    
+        
     // ✅ التحقق من الحقول المطلوبة
     if (!salonId || !customerName || !customerEmail || !customerPhone || !eventDate || !serviceType) {
         showToast('❌ الرجاء ملء جميع الحقول المطلوبة', 'error');
@@ -2551,6 +2557,7 @@ body: JSON.stringify({
     customerPhone,
     eventDate,
     guests,
+    budget,
     serviceType,
     description: details   // ← إرسال details كـ description
 })
