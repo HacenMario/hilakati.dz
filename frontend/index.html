@@ -2926,6 +2926,8 @@ async function acceptCustomerQuote(quoteId) {
     if (!confirm('✅ هل أنت متأكد من قبول هذا العرض؟')) return;
 
     const token = localStorage.getItem('customerToken');
+    const customerId = localStorage.getItem('customerId');  // ✅ تأكد من وجود هذا السطر
+
     if (!token) {
         showToast('❌ يرجى تسجيل الدخول', 'error');
         return;
@@ -2937,7 +2939,10 @@ async function acceptCustomerQuote(quoteId) {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
-            }
+            },
+            body: JSON.stringify({
+                customerId: customerId  // ✅ تأكد من إرسال customerId
+            })
         });
 
         const data = await res.json();
@@ -2962,6 +2967,8 @@ async function rejectCustomerQuote(quoteId) {
     if (!confirm('❌ هل أنت متأكد من رفض هذا العرض؟')) return;
 
     const token = localStorage.getItem('customerToken');
+    const customerId = localStorage.getItem('customerId');  // ✅ تأكد من وجود هذا السطر
+
     if (!token) {
         showToast('❌ يرجى تسجيل الدخول', 'error');
         return;
@@ -2973,7 +2980,10 @@ async function rejectCustomerQuote(quoteId) {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
-            }
+            },
+            body: JSON.stringify({
+                customerId: customerId  // ✅ تأكد من إرسال customerId
+            })
         });
 
         const data = await res.json();
@@ -2990,7 +3000,7 @@ async function rejectCustomerQuote(quoteId) {
         showToast('❌ فشل الاتصال بالخادم', 'error');
     }
 }
-
+    
 // ============================================================
 // نظام طلبات عروض الأسعار (Quotes) - جانب العميل
 // ============================================================
