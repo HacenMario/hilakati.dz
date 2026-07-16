@@ -2644,39 +2644,60 @@ function showCustomerSection(section, data) {
             `;
             break;
 
-        case 'quotes':
-            html = `
-                <h3 style="color:var(--gold);margin-bottom:0.6rem;font-size:1rem;">
-                    <i class="fas fa-file-invoice"></i> طلبات عروض الأسعار
-                </h3>
-                <div id="customerQuotesList">
-                    ${quotes.length ? quotes.map(q => `
-                        <div style="background:rgba(255,255,255,0.02);padding:0.5rem;border-radius:10px;margin-bottom:0.5rem;border-right:3px solid ${q.status === 'accepted' ? 'var(--success)' : q.status === 'quoted' ? 'var(--info)' : q.status === 'rejected' ? 'var(--danger)' : 'var(--warning)'};">
-                            <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:0.3rem;">
-                                <strong>${serviceTypeTranslations[q.serviceType] || q.serviceType}</strong>
-                                <span style="font-size:0.8rem;">${q.status === 'pending' ? '⏳ قيد الانتظار' : q.status === 'quoted' ? '📩 عرض سعر' : q.status === 'accepted' ? '✅ مقبول' : '❌ مرفوض'}</span>
-                            </div>
-                            <div>💰 ${q.budget || 0} دج</div>
-                            ${q.quotePrice ? `<div style="color:var(--gold);font-weight:700;">عرض السعر: ${q.quotePrice} دج</div>` : ''}
-                            ${q.quoteMessage ? `<div style="font-size:0.8rem;opacity:0.6;">📝 ${q.quoteMessage}</div>` : ''}
-                            ${q.status === 'quoted' ? `
-                                <div style="display:flex;gap:0.3rem;margin-top:0.3rem;flex-wrap:wrap;">
-                                    <button class="btn-success btn-sm" onclick="acceptCustomerQuote('${q._id}')">
-                                        <i class="fas fa-check"></i> قبول
-                                    </button>
-                                    <button class="btn-danger btn-sm" onclick="rejectCustomerQuote('${q._id}')">
-                                        <i class="fas fa-times"></i> رفض
-                                    </button>
-                                </div>
-                            ` : ''}
+case 'quotes':
+    html = `
+        <h3 style="color:var(--gold);margin-bottom:0.6rem;font-size:1rem;">
+            <i class="fas fa-file-invoice"></i> طلبات عروض الأسعار
+        </h3>
+        <div id="customerQuotesList">
+            ${quotes.length ? quotes.map(q => {
+                const statusMap = {
+                    'pending': '⏳ قيد الانتظار',
+                    'quoted': '📩 عرض سعر',
+                    'accepted': '✅ مقبول',
+                    'rejected': '❌ مرفوض',
+                    'expired': '⏰ منتهي'
+                };
+                const statusAr = statusMap[q.status] || q.status;
+                const serviceTypeAr = serviceTypeTranslations[q.serviceType] || q.serviceType;
+                
+                let borderColor = 'var(--warning)';
+                if (q.status === 'accepted') borderColor = 'var(--success)';
+                else if (q.status === 'quoted') borderColor = 'var(--info)';
+                else if (q.status === 'rejected') borderColor = 'var(--danger)';
+                
+                return `
+                <div style="background:rgba(255,255,255,0.02);padding:0.5rem;border-radius:10px;margin-bottom:0.5rem;border-right:3px solid ${borderColor};">
+                    <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:0.3rem;">
+                        <strong style="color:var(--gold);">${serviceTypeAr}</strong>
+                        <span style="font-size:0.8rem;color:${q.status === 'pending' ? 'var(--warning)' : q.status === 'quoted' ? 'var(--info)' : q.status === 'accepted' ? 'var(--success)' : 'var(--danger)'};">${statusAr}</span>
+                    </div>
+                    <div style="font-size:0.85rem;opacity:0.7;">
+                        💰 ${q.budget ? q.budget + ' دج' : 'بدون ميزانية'}
+                        ${q.eventDate ? ` | 📅 ${q.eventDate}` : ''}
+                    </div>
+                    ${q.quotePrice ? `<div style="color:var(--gold);font-weight:700;margin-top:0.2rem;">عرض السعر: ${q.quotePrice} دج</div>` : ''}
+                    ${q.quoteMessage ? `<div style="font-size:0.8rem;opacity:0.6;margin-top:0.2rem;">📝 ${q.quoteMessage}</div>` : ''}
+                    
+                    <!-- ✅ أزرار القبول/الرفض (تظهر فقط عندما تكون الحالة "quoted") -->
+                    ${q.status === 'quoted' ? `
+                        <div style="display:flex;gap:0.3rem;margin-top:0.5rem;flex-wrap:wrap;">
+                            <button class="btn-success btn-sm" onclick="acceptCustomerQuote('${q._id}')" style="padding:0.3rem 1rem;border-radius:50px;border:none;cursor:pointer;background:var(--success);color:#fff;font-weight:600;">
+                                <i class="fas fa-check"></i> قبول العرض
+                            </button>
+                            <button class="btn-danger btn-sm" onclick="rejectCustomerQuote('${q._id}')" style="padding:0.3rem 1rem;border-radius:50px;border:none;cursor:pointer;background:var(--danger);color:#fff;font-weight:600;">
+                                <i class="fas fa-times"></i> رفض العرض
+                            </button>
                         </div>
-                    `).join('') : '<p style="color:var(--text-color);opacity:0.5;">لا توجد طلبات</p>'}
+                    ` : ''}
                 </div>
-                <button class="btn-gold btn-sm" onclick="loadCustomerQuotesTable()" style="margin-top:0.5rem;">
-                    <i class="fas fa-sync"></i> تحديث
-                </button>
-            `;
-            break;
+            `}).join('') : '<p style="color:var(--text-color);opacity:0.5;">لا توجد طلبات</p>'}
+        </div>
+        <button class="btn-gold btn-sm" onclick="loadCustomerQuotesTable()" style="margin-top:0.5rem;">
+            <i class="fas fa-sync"></i> تحديث
+        </button>
+    `;
+    break;
 
         case 'settings':
             html = `
@@ -2826,7 +2847,6 @@ async function loadCustomerQuotesTable() {
     if (!token) return;
     
     try {
-        // ✅ استخدام المسار الجديد (بدون Authorization)
         const res = await fetch(`${API_BASE}/quotes/customer-quotes/${localStorage.getItem('customerId')}`);
         
         if (!res.ok) {
@@ -2847,27 +2867,48 @@ async function loadCustomerQuotesTable() {
             return;
         }
         
-        container.innerHTML = quotes.map(q => `
-            <div style="background:rgba(255,255,255,0.02);padding:0.5rem;border-radius:10px;margin-bottom:0.5rem;border-right:3px solid ${q.status === 'accepted' ? 'var(--success)' : q.status === 'quoted' ? 'var(--info)' : q.status === 'rejected' ? 'var(--danger)' : 'var(--warning)'};">
+        container.innerHTML = quotes.map(q => {
+            const statusMap = {
+                'pending': '⏳ قيد الانتظار',
+                'quoted': '📩 عرض سعر',
+                'accepted': '✅ مقبول',
+                'rejected': '❌ مرفوض',
+                'expired': '⏰ منتهي'
+            };
+            const statusAr = statusMap[q.status] || q.status;
+            const serviceTypeAr = serviceTypeTranslations[q.serviceType] || q.serviceType;
+            
+            let borderColor = 'var(--warning)';
+            if (q.status === 'accepted') borderColor = 'var(--success)';
+            else if (q.status === 'quoted') borderColor = 'var(--info)';
+            else if (q.status === 'rejected') borderColor = 'var(--danger)';
+            
+            return `
+            <div style="background:rgba(255,255,255,0.02);padding:0.5rem;border-radius:10px;margin-bottom:0.5rem;border-right:3px solid ${borderColor};">
                 <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:0.3rem;">
-                    <strong>${serviceTypeTranslations[q.serviceType] || q.serviceType}</strong>
-                    <span style="font-size:0.8rem;">${q.status === 'pending' ? '⏳ قيد الانتظار' : q.status === 'quoted' ? '📩 عرض سعر' : q.status === 'accepted' ? '✅ مقبول' : '❌ مرفوض'}</span>
+                    <strong style="color:var(--gold);">${serviceTypeAr}</strong>
+                    <span style="font-size:0.8rem;color:${q.status === 'pending' ? 'var(--warning)' : q.status === 'quoted' ? 'var(--info)' : q.status === 'accepted' ? 'var(--success)' : 'var(--danger)'};">${statusAr}</span>
                 </div>
-                <div>💰 ${q.budget || 0} دج</div>
-                ${q.quotePrice ? `<div style="color:var(--gold);font-weight:700;">عرض السعر: ${q.quotePrice} دج</div>` : ''}
-                ${q.quoteMessage ? `<div style="font-size:0.8rem;opacity:0.6;">📝 ${q.quoteMessage}</div>` : ''}
+                <div style="font-size:0.85rem;opacity:0.7;">
+                    💰 ${q.budget ? q.budget + ' دج' : 'بدون ميزانية'}
+                    ${q.eventDate ? ` | 📅 ${q.eventDate}` : ''}
+                </div>
+                ${q.quotePrice ? `<div style="color:var(--gold);font-weight:700;margin-top:0.2rem;">عرض السعر: ${q.quotePrice} دج</div>` : ''}
+                ${q.quoteMessage ? `<div style="font-size:0.8rem;opacity:0.6;margin-top:0.2rem;">📝 ${q.quoteMessage}</div>` : ''}
+                
+                <!-- ✅ أزرار القبول/الرفض (تظهر فقط عندما تكون الحالة "quoted") -->
                 ${q.status === 'quoted' ? `
-                    <div style="display:flex;gap:0.3rem;margin-top:0.3rem;flex-wrap:wrap;">
-                        <button class="btn-success btn-sm" onclick="acceptCustomerQuote('${q._id}')">
-                            <i class="fas fa-check"></i> قبول
+                    <div style="display:flex;gap:0.3rem;margin-top:0.5rem;flex-wrap:wrap;">
+                        <button class="btn-success btn-sm" onclick="acceptCustomerQuote('${q._id}')" style="padding:0.3rem 1rem;border-radius:50px;border:none;cursor:pointer;background:var(--success);color:#fff;font-weight:600;">
+                            <i class="fas fa-check"></i> قبول العرض
                         </button>
-                        <button class="btn-danger btn-sm" onclick="rejectCustomerQuote('${q._id}')">
-                            <i class="fas fa-times"></i> رفض
+                        <button class="btn-danger btn-sm" onclick="rejectCustomerQuote('${q._id}')" style="padding:0.3rem 1rem;border-radius:50px;border:none;cursor:pointer;background:var(--danger);color:#fff;font-weight:600;">
+                            <i class="fas fa-times"></i> رفض العرض
                         </button>
                     </div>
                 ` : ''}
             </div>
-        `).join('');
+        `}).join('');
         
     } catch (error) {
         console.error('❌ فشل جلب الطلبات:', error);
