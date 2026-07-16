@@ -5776,6 +5776,13 @@ async function loadCustomerDashboard() {
                     <button type="submit" class="btn-gold btn-sm"><i class="fas fa-save"></i> تحديث</button>
                     <button type="button" class="btn-gold btn-sm" onclick="openModal('customerChangePasswordModal')"><i class="fas fa-key"></i> تغيير كلمة المرور</button>
                 </form>
+    <hr>
+    <h3>📋 طلبات عروض الأسعار</h3>
+    <div id="customerQuotesList"></div>
+    <button class="btn-gold btn-sm" onclick="loadCustomerQuotesTable()">
+        <i class="fas fa-sync"></i> تحديث
+    </button>
+`;
                 <hr>
                 <h3>📅 حجوزاتي</h3>
                 <div id="customerBookingsList">${bookings.length ? bookings.map(b => `<div style="background:rgba(255,255,255,0.02);padding:0.4rem;border-radius:10px;margin-bottom:0.3rem;border-right:3px solid ${b.status === 'confirmed' ? 'var(--success)' : b.status === 'pending' ? 'var(--warning)' : 'var(--danger)'};"><div><strong style="color:var(--gold);">${b.salonId?.name || 'صالون'}</strong> <span class="status ${b.status}">${b.status}</span></div><div>${b.services?.map(s => s.name).join(', ') || b.service} | ${b.staff} | ${b.date} ${b.time}</div></div>`).join('') : '<p>لا توجد حجوزات</p>'}</div>
@@ -5784,6 +5791,43 @@ async function loadCustomerDashboard() {
                 <button class="btn-danger btn-sm" onclick="deleteCustomerAccount()"><i class="fas fa-user-slash"></i> حذف حسابي</button>
             </div>
         `;
+async function loadCustomerQuotesTable() {
+    const token = localStorage.getItem('customerToken');
+    if (!token) return;
+    
+    try {
+        const res = await fetch(`${API_BASE}/quotes/customer/${localStorage.getItem('customerId')}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const quotes = await res.json();
+        const container = document.getElementById('customerQuotesList');
+        
+        if (!quotes || quotes.length === 0) {
+            container.innerHTML = '<p style="color:var(--text-color);opacity:0.5;">لا توجد طلبات</p>';
+            return;
+        }
+        
+        container.innerHTML = quotes.map(q => `
+            <div style="background:rgba(255,255,255,0.02);padding:0.5rem;border-radius:10px;margin-bottom:0.5rem;border-right:3px solid ${q.status === 'accepted' ? 'var(--success)' : q.status === 'quoted' ? 'var(--info)' : 'var(--warning)'};">
+                <div style="display:flex;justify-content:space-between;">
+                    <strong>${serviceTypeTranslations[q.serviceType] || q.serviceType}</strong>
+                    <span>${q.status === 'pending' ? '⏳ قيد الانتظار' : q.status === 'quoted' ? '📩 عرض سعر' : q.status === 'accepted' ? '✅ مقبول' : '❌ مرفوض'}</span>
+                </div>
+                <div>💰 ${q.budget || 0} دج</div>
+                ${q.quotePrice ? `<div style="color:var(--gold);">عرض السعر: ${q.quotePrice} دج</div>` : ''}
+                ${q.status === 'quoted' ? `
+                    <div style="display:flex;gap:0.3rem;margin-top:0.3rem;">
+                        <button class="btn-success btn-sm" onclick="acceptCustomerQuote('${q._id}')">قبول</button>
+                        <button class="btn-danger btn-sm" onclick="rejectCustomerQuote('${q._id}')">رفض</button>
+                    </div>
+                ` : ''}
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('❌ فشل جلب الطلبات:', error);
+    }
+}
+                
 document.getElementById('customerProfileForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     
