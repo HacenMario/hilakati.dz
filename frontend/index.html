@@ -5753,157 +5753,265 @@ async function sendBroadcast() {
     }
 }
 
+// ============================================================
+// ✅ لوحة تحكم العميل المتكاملة (مثل الصالون)
+// ============================================================
 // ===== Customer Dashboard =====
 async function loadCustomerDashboard() {
     const token = localStorage.getItem('customerToken');
-    if (!token) { 
-        showToast('❌ يرجى تسجيل الدخول كعميل', 'error'); 
-        return; 
+    if (!token) {
+        showToast('❌ يرجى تسجيل الدخول كعميل', 'error');
+        return;
     }
-    
+
     try {
-        const profileRes = await fetch(`${API_BASE}/customer/auth/profile`, { 
-            headers: { 'Authorization': `Bearer ${token}` } 
-        });
+        // جلب البيانات
+        const [profileRes, bookingsRes, quotesRes] = await Promise.all([
+            fetch(`${API_BASE}/customer/auth/profile`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            }),
+            fetch(`${API_BASE}/appointments/my`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            }),
+            fetch(`${API_BASE}/quotes/customer/${localStorage.getItem('customerId')}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            }).catch(() => ({ ok: false, json: () => [] }))
+        ]);
+
         const profile = await profileRes.json();
-        
-        const bookingsRes = await fetch(`${API_BASE}/appointments/my`, { 
-            headers: { 'Authorization': `Bearer ${token}` } 
-        });
         const bookings = await bookingsRes.json();
-        
-        // ✅ بناء المحتوى الكامل
+        let quotes = [];
+        if (quotesRes.ok) {
+            quotes = await quotesRes.json();
+        }
+
+        // ===== بناء واجهة متكاملة مع قائمة جانبية =====
         document.getElementById('customerDashboardContent').innerHTML = `
-            <div style="max-width:600px;margin:0 auto;">
-                <!-- ===== معلومات العميل ===== -->
-                <h3>👤 معلوماتي</h3>
-                <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
-                    <div style="width:70px;height:70px;border-radius:50%;background:var(--input-bg);display:flex;align-items:center;justify-content:center;font-size:2.5rem;border:2px solid var(--gold);">👤</div>
-                    <div>
-                        <strong>${profile.name}</strong>
-                        <br>
-                        <span style="opacity:0.5;">${profile.email}</span>
+            <div style="display:grid;grid-template-columns:200px 1fr;gap:1.2rem;max-width:1400px;margin:0 auto;">
+                <!-- ===== القائمة الجانبية ===== -->
+                <aside style="background:var(--card-bg);border-radius:16px;padding:1rem;border:1px solid var(--border-color);height:fit-content;position:sticky;top:80px;box-shadow:var(--shadow);">
+                    <div style="text-align:center;padding-bottom:0.8rem;border-bottom:1px solid var(--border-color);">
+                        <div style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg, var(--accent), var(--gold));display:flex;align-items:center;justify-content:center;font-size:1.5rem;margin:0 auto 0.4rem;box-shadow:0 4px 15px rgba(233,69,96,0.3);">👤</div>
+                        <h4 style="color:var(--gold);font-size:0.9rem;">${profile.name}</h4>
+                        <p style="color:var(--text-color);opacity:0.5;font-size:0.75rem;">${profile.email}</p>
+                    </div>
+                    <div style="margin-top:0.8rem;">
+                        <a href="#" class="customer-dash-link active" data-section="overview" style="display:flex;align-items:center;gap:8px;padding:0.5rem 0.7rem;border-radius:8px;color:var(--text-color);transition:all 0.3s ease;margin-bottom:0.2rem;font-size:0.8rem;opacity:0.7;cursor:pointer;">
+                            <i class="fas fa-chart-pie" style="width:18px;"></i> نظرة عامة
+                        </a>
+                        <a href="#" class="customer-dash-link" data-section="bookings" style="display:flex;align-items:center;gap:8px;padding:0.5rem 0.7rem;border-radius:8px;color:var(--text-color);transition:all 0.3s ease;margin-bottom:0.2rem;font-size:0.8rem;opacity:0.7;cursor:pointer;">
+                            <i class="fas fa-calendar-alt" style="width:18px;"></i> حجوزاتي
+                        </a>
+                        <a href="#" class="customer-dash-link" data-section="quotes" style="display:flex;align-items:center;gap:8px;padding:0.5rem 0.7rem;border-radius:8px;color:var(--text-color);transition:all 0.3s ease;margin-bottom:0.2rem;font-size:0.8rem;opacity:0.7;cursor:pointer;">
+                            <i class="fas fa-file-invoice" style="width:18px;"></i> عروض الأسعار
+                        </a>
+                        <a href="#" class="customer-dash-link" data-section="settings" style="display:flex;align-items:center;gap:8px;padding:0.5rem 0.7rem;border-radius:8px;color:var(--text-color);transition:all 0.3s ease;margin-bottom:0.2rem;font-size:0.8rem;opacity:0.7;cursor:pointer;">
+                            <i class="fas fa-cog" style="width:18px;"></i> الإعدادات
+                        </a>
+                    </div>
+                </aside>
+
+                <!-- ===== المحتوى الرئيسي ===== -->
+                <div style="background:var(--card-bg);border-radius:16px;padding:1rem;border:1px solid var(--border-color);min-height:350px;box-shadow:var(--shadow);">
+                    <div id="customerDashContent">
+                        <!-- سيتم تحميل المحتوى حسب القسم المختار -->
                     </div>
                 </div>
-                
-                <!-- ===== نموذج تحديث الملف الشخصي ===== -->
-                <form id="customerProfileForm">
-                    <div class="form-group">
-                        <label>الاسم</label>
-                        <input type="text" id="custProfileName" value="${profile.name}">
-                    </div>
-                    <div class="form-group">
-                        <label>البريد</label>
-                        <input type="email" id="custProfileEmail" value="${profile.email}">
-                    </div>
-                    <div class="form-group">
-                        <label>الهاتف</label>
-                        <input type="tel" id="custProfilePhone" value="${profile.phone}">
-                    </div>
-                    <button type="submit" class="btn-gold btn-sm">
-                        <i class="fas fa-save"></i> تحديث
-                    </button>
-                    <button type="button" class="btn-gold btn-sm" onclick="openModal('customerChangePasswordModal')">
-                        <i class="fas fa-key"></i> تغيير كلمة المرور
-                    </button>
-                </form>
-                
-                <hr>
-                
-                <!-- ===== قسم طلبات عروض الأسعار ===== -->
-                <h3>📋 طلبات عروض الأسعار</h3>
-                <div id="customerQuotesList">
-                    <p style="color:var(--text-color);opacity:0.5;">جاري التحميل...</p>
-                </div>
-                <button class="btn-gold btn-sm" onclick="loadCustomerQuotesTable()">
-                    <i class="fas fa-sync"></i> تحديث
-                </button>
-                
-                <hr>
-                
-                <!-- ===== قسم الحجوزات ===== -->
-                <h3>📅 حجوزاتي</h3>
-                <div id="customerBookingsList">
-                    ${bookings.length ? bookings.map(b => `
-                        <div style="background:rgba(255,255,255,0.02);padding:0.4rem;border-radius:10px;margin-bottom:0.3rem;border-right:3px solid ${b.status === 'confirmed' ? 'var(--success)' : b.status === 'pending' ? 'var(--warning)' : 'var(--danger)'};">
-                            <div>
-                                <strong style="color:var(--gold);">${b.salonId?.name || 'صالون'}</strong>
-                                <span class="status ${b.status}">${b.status}</span>
-                            </div>
-                            <div>${b.services?.map(s => s.name).join(', ') || b.service} | ${b.staff} | ${b.date} ${b.time}</div>
-                        </div>
-                    `).join('') : '<p>لا توجد حجوزات</p>'}
-                </div>
-                
-                <hr>
-                
-                <!-- ===== أزرار إضافية ===== -->
-                <button class="btn-danger btn-sm" onclick="deleteCustomerAccount()">
-                    <i class="fas fa-user-slash"></i> حذف حسابي
-                </button>
             </div>
         `;
-        
-        // ✅ تحميل طلبات عروض الأسعار تلقائياً
-        loadCustomerQuotesTable();
-        
-        // ✅ معالج تحديث الملف الشخصي
-        document.getElementById('customerProfileForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const nameInput = document.getElementById('custProfileName');
-            const emailInput = document.getElementById('custProfileEmail');
-            const phoneInput = document.getElementById('custProfilePhone');
 
-            if (!nameInput || !emailInput || !phoneInput) {
-                showToast('❌ حدث خطأ في النموذج، حاول تحديث الصفحة', 'error');
-                return;
-            }
+        // ===== عرض القسم الافتراضي (نظرة عامة) =====
+        showCustomerSection('overview', { profile, bookings, quotes });
 
-            const name = nameInput.value.trim();
-            const email = emailInput.value.trim();
-            const phone = phoneInput.value.trim();
-            
-            try {
-                const res = await fetch(`${API_BASE}/customer/auth/profile`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ name, email, phone })
-                });
-                
-                if (res.ok) {
-                    showToast('✅ تم التحديث', 'success');
-                    loadCustomerDashboard();
-                } else {
-                    const data = await res.json();
-                    showToast(`❌ ${data.message}`, 'error');
-                }
-            } catch {
-                showToast('❌ فشل الاتصال', 'error');
-            }
+        // ===== ربط أحداث النقر على الروابط =====
+        document.querySelectorAll('.customer-dash-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                document.querySelectorAll('.customer-dash-link').forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+                const section = this.dataset.section;
+                showCustomerSection(section, { profile, bookings, quotes });
+            });
         });
-        
+
     } catch (error) {
-        console.error('❌ فشل في تحميل حسابي:', error);
-        showToast('❌ فشل في تحميل حسابي', 'error');
+        console.error('❌ فشل في تحميل لوحة التحكم:', error);
+        showToast('❌ فشل في تحميل لوحة التحكم', 'error');
     }
 }
 
 // ============================================================
-// ✅ جلب طلبات عروض الأسعار وعرضها في لوحة العميل
+// ✅ عرض القسم المطلوب في لوحة تحكم العميل
+// ============================================================
+function showCustomerSection(section, data) {
+    const container = document.getElementById('customerDashContent');
+    if (!container) return;
+
+    const { profile, bookings, quotes } = data;
+
+    let html = '';
+
+    switch (section) {
+        case 'overview':
+            const totalBookings = bookings.length;
+            const pendingBookings = bookings.filter(b => b.status === 'pending').length;
+            const confirmedBookings = bookings.filter(b => b.status === 'confirmed').length;
+            const totalQuotes = quotes.length;
+            const pendingQuotes = quotes.filter(q => q.status === 'pending').length;
+            const quotedQuotes = quotes.filter(q => q.status === 'quoted').length;
+
+            html = `
+                <h3 style="color:var(--gold);margin-bottom:0.6rem;font-size:1rem;">
+                    <i class="fas fa-chart-line"></i> نظرة عامة
+                </h3>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:0.8rem;margin-bottom:1.2rem;">
+                    <div style="background:var(--stat-bg);padding:0.8rem;border-radius:12px;text-align:center;border:1px solid var(--border-color);">
+                        <div style="font-size:1.5rem;font-weight:800;color:var(--gold);">${totalBookings}</div>
+                        <div style="color:var(--text-color);opacity:0.6;font-size:0.7rem;">إجمالي الحجوزات</div>
+                    </div>
+                    <div style="background:var(--stat-bg);padding:0.8rem;border-radius:12px;text-align:center;border:1px solid var(--border-color);">
+                        <div style="font-size:1.5rem;font-weight:800;color:var(--warning);">${pendingBookings}</div>
+                        <div style="color:var(--text-color);opacity:0.6;font-size:0.7rem;">قيد الانتظار</div>
+                    </div>
+                    <div style="background:var(--stat-bg);padding:0.8rem;border-radius:12px;text-align:center;border:1px solid var(--border-color);">
+                        <div style="font-size:1.5rem;font-weight:800;color:var(--success);">${confirmedBookings}</div>
+                        <div style="color:var(--text-color);opacity:0.6;font-size:0.7rem;">مؤكدة</div>
+                    </div>
+                    <div style="background:var(--stat-bg);padding:0.8rem;border-radius:12px;text-align:center;border:1px solid var(--border-color);">
+                        <div style="font-size:1.5rem;font-weight:800;color:var(--info);">${totalQuotes}</div>
+                        <div style="color:var(--text-color);opacity:0.6;font-size:0.7rem;">طلبات عروض الأسعار</div>
+                    </div>
+                    <div style="background:var(--stat-bg);padding:0.8rem;border-radius:12px;text-align:center;border:1px solid var(--border-color);">
+                        <div style="font-size:1.5rem;font-weight:800;color:var(--warning);">${pendingQuotes}</div>
+                        <div style="color:var(--text-color);opacity:0.6;font-size:0.7rem;">عروض قيد الانتظار</div>
+                    </div>
+                    <div style="background:var(--stat-bg);padding:0.8rem;border-radius:12px;text-align:center;border:1px solid var(--border-color);">
+                        <div style="font-size:1.5rem;font-weight:800;color:var(--gold);">${quotedQuotes}</div>
+                        <div style="color:var(--text-color);opacity:0.6;font-size:0.7rem;">عروض مستلمة</div>
+                    </div>
+                </div>
+                <div style="text-align:center;color:var(--text-color);opacity:0.5;font-size:0.8rem;">
+                    👋 مرحباً ${profile.name}! استعرض حجوزاتك وطلبات عروض الأسعار من القائمة الجانبية.
+                </div>
+            `;
+            break;
+
+        case 'bookings':
+            html = `
+                <h3 style="color:var(--gold);margin-bottom:0.6rem;font-size:1rem;">
+                    <i class="fas fa-calendar-alt"></i> حجوزاتي
+                </h3>
+                <div id="customerBookingsList">
+                    ${bookings.length ? bookings.map(b => `
+                        <div style="background:rgba(255,255,255,0.02);padding:0.4rem;border-radius:10px;margin-bottom:0.3rem;border-right:3px solid ${b.status === 'confirmed' ? 'var(--success)' : b.status === 'pending' ? 'var(--warning)' : 'var(--danger)'};">
+                            <div><strong style="color:var(--gold);">${b.salonId?.name || 'صالون'}</strong> <span class="status ${b.status}">${b.status}</span></div>
+                            <div>${b.services?.map(s => s.name).join(', ') || b.service} | ${b.staff} | ${b.date} ${b.time}</div>
+                        </div>
+                    `).join('') : '<p style="color:var(--text-color);opacity:0.5;">لا توجد حجوزات</p>'}
+                </div>
+            `;
+            break;
+
+        case 'quotes':
+            html = `
+                <h3 style="color:var(--gold);margin-bottom:0.6rem;font-size:1rem;">
+                    <i class="fas fa-file-invoice"></i> طلبات عروض الأسعار
+                </h3>
+                <div id="customerQuotesList">
+                    ${quotes.length ? quotes.map(q => `
+                        <div style="background:rgba(255,255,255,0.02);padding:0.5rem;border-radius:10px;margin-bottom:0.5rem;border-right:3px solid ${q.status === 'accepted' ? 'var(--success)' : q.status === 'quoted' ? 'var(--info)' : q.status === 'rejected' ? 'var(--danger)' : 'var(--warning)'};">
+                            <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:0.3rem;">
+                                <strong>${serviceTypeTranslations[q.serviceType] || q.serviceType}</strong>
+                                <span style="font-size:0.8rem;">${q.status === 'pending' ? '⏳ قيد الانتظار' : q.status === 'quoted' ? '📩 عرض سعر' : q.status === 'accepted' ? '✅ مقبول' : '❌ مرفوض'}</span>
+                            </div>
+                            <div>💰 ${q.budget || 0} دج</div>
+                            ${q.quotePrice ? `<div style="color:var(--gold);font-weight:700;">عرض السعر: ${q.quotePrice} دج</div>` : ''}
+                            ${q.quoteMessage ? `<div style="font-size:0.8rem;opacity:0.6;">📝 ${q.quoteMessage}</div>` : ''}
+                            ${q.status === 'quoted' ? `
+                                <div style="display:flex;gap:0.3rem;margin-top:0.3rem;flex-wrap:wrap;">
+                                    <button class="btn-success btn-sm" onclick="acceptCustomerQuote('${q._id}')">
+                                        <i class="fas fa-check"></i> قبول
+                                    </button>
+                                    <button class="btn-danger btn-sm" onclick="rejectCustomerQuote('${q._id}')">
+                                        <i class="fas fa-times"></i> رفض
+                                    </button>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `).join('') : '<p style="color:var(--text-color);opacity:0.5;">لا توجد طلبات</p>'}
+                </div>
+                <button class="btn-gold btn-sm" onclick="loadCustomerQuotesTable()" style="margin-top:0.5rem;">
+                    <i class="fas fa-sync"></i> تحديث
+                </button>
+            `;
+            break;
+
+        case 'settings':
+            html = `
+                <h3 style="color:var(--gold);margin-bottom:0.6rem;font-size:1rem;">
+                    <i class="fas fa-cog"></i> الإعدادات
+                </h3>
+                <form id="customerProfileForm">
+                    <div class="form-group"><label>الاسم</label><input type="text" id="custProfileName" value="${profile.name}"></div>
+                    <div class="form-group"><label>البريد</label><input type="email" id="custProfileEmail" value="${profile.email}"></div>
+                    <div class="form-group"><label>الهاتف</label><input type="tel" id="custProfilePhone" value="${profile.phone}"></div>
+                    <button type="submit" class="btn-gold btn-sm"><i class="fas fa-save"></i> تحديث</button>
+                    <button type="button" class="btn-gold btn-sm" onclick="openModal('customerChangePasswordModal')"><i class="fas fa-key"></i> تغيير كلمة المرور</button>
+                    <button type="button" class="btn-danger btn-sm" onclick="deleteCustomerAccount()"><i class="fas fa-user-slash"></i> حذف حسابي</button>
+                </form>
+            `;
+            break;
+    }
+
+    container.innerHTML = html;
+
+    // ✅ ربط معالج نموذج الإعدادات (إذا كان القسم هو settings)
+    if (section === 'settings') {
+        const form = document.getElementById('customerProfileForm');
+        if (form) {
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const token = localStorage.getItem('customerToken');
+                const name = document.getElementById('custProfileName').value.trim();
+                const email = document.getElementById('custProfileEmail').value.trim();
+                const phone = document.getElementById('custProfilePhone').value.trim();
+
+                try {
+                    const res = await fetch(`${API_BASE}/customer/auth/profile`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ name, email, phone })
+                    });
+                    if (res.ok) {
+                        showToast('✅ تم تحديث الملف الشخصي', 'success');
+                        loadCustomerDashboard();
+                    } else {
+                        const data = await res.json();
+                        showToast(`❌ ${data.message}`, 'error');
+                    }
+                } catch {
+                    showToast('❌ فشل الاتصال', 'error');
+                }
+            });
+        }
+    }
+}
+
+// ============================================================
+// ✅ جلب طلبات عروض الأسعار وتحديثها (للاستخدام اليدوي)
 // ============================================================
 async function loadCustomerQuotesTable() {
     const token = localStorage.getItem('customerToken');
     if (!token) return;
-    
+
     try {
         const res = await fetch(`${API_BASE}/quotes/customer/${localStorage.getItem('customerId')}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        
+
         if (!res.ok) {
             const container = document.getElementById('customerQuotesList');
             if (container) {
@@ -5911,17 +6019,16 @@ async function loadCustomerQuotesTable() {
             }
             return;
         }
-        
+
         const quotes = await res.json();
         const container = document.getElementById('customerQuotesList');
-        
         if (!container) return;
-        
+
         if (!quotes || quotes.length === 0) {
             container.innerHTML = '<p style="color:var(--text-color);opacity:0.5;">لا توجد طلبات</p>';
             return;
         }
-        
+
         container.innerHTML = quotes.map(q => `
             <div style="background:rgba(255,255,255,0.02);padding:0.5rem;border-radius:10px;margin-bottom:0.5rem;border-right:3px solid ${q.status === 'accepted' ? 'var(--success)' : q.status === 'quoted' ? 'var(--info)' : q.status === 'rejected' ? 'var(--danger)' : 'var(--warning)'};">
                 <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:0.3rem;">
@@ -5943,7 +6050,7 @@ async function loadCustomerQuotesTable() {
                 ` : ''}
             </div>
         `).join('');
-        
+
     } catch (error) {
         console.error('❌ فشل جلب الطلبات:', error);
         const container = document.getElementById('customerQuotesList');
@@ -5952,15 +6059,101 @@ async function loadCustomerQuotesTable() {
         }
     }
 }
-    
+
+// ============================================================
+// ✅ قبول عرض السعر من قبل الزبون
+// ============================================================
+async function acceptCustomerQuote(quoteId) {
+    if (!confirm('✅ هل أنت متأكد من قبول هذا العرض؟')) return;
+
+    const token = localStorage.getItem('customerToken');
+    if (!token) {
+        showToast('❌ يرجى تسجيل الدخول', 'error');
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/quotes/${quoteId}/accept-by-customer`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+            showToast('✅ تم قبول عرض السعر بنجاح!', 'success');
+            loadCustomerQuotesTable();
+            refreshNotifications();
+        } else {
+            showToast(`❌ ${data.message}`, 'error');
+        }
+    } catch (error) {
+        console.error('❌ فشل قبول العرض:', error);
+        showToast('❌ فشل الاتصال بالخادم', 'error');
+    }
+}
+
+// ============================================================
+// ✅ رفض عرض السعر من قبل الزبون
+// ============================================================
+async function rejectCustomerQuote(quoteId) {
+    if (!confirm('❌ هل أنت متأكد من رفض هذا العرض؟')) return;
+
+    const token = localStorage.getItem('customerToken');
+    if (!token) {
+        showToast('❌ يرجى تسجيل الدخول', 'error');
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/quotes/${quoteId}/reject-by-customer`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+            showToast('❌ تم رفض عرض السعر', 'info');
+            loadCustomerQuotesTable();
+            refreshNotifications();
+        } else {
+            showToast(`❌ ${data.message}`, 'error');
+        }
+    } catch (error) {
+        console.error('❌ فشل رفض العرض:', error);
+        showToast('❌ فشل الاتصال بالخادم', 'error');
+    }
+}
+
+// ============================================================
+// ✅ حذف حساب العميل
+// ============================================================
 async function deleteCustomerAccount() {
     showConfirm('هل أنت متأكد من حذف حسابك؟', async () => {
         const token = localStorage.getItem('customerToken');
         try {
-            const res = await fetch(`${API_BASE}/customer/auth/me`, { method:'DELETE', headers:{'Authorization':`Bearer ${token}`} });
-            if (res.ok) { showToast('✅ تم حذف حسابك'); customerLogout(); navigateTo('home'); }
-            else { const data = await res.json(); showToast(`❌ ${data.message}`); }
-        } catch { showToast('❌ فشل'); }
+            const res = await fetch(`${API_BASE}/customer/auth/me`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                showToast('✅ تم حذف حسابك', 'success');
+                customerLogout();
+                navigateTo('home');
+            } else {
+                const data = await res.json();
+                showToast(`❌ ${data.message}`, 'error');
+            }
+        } catch {
+            showToast('❌ فشل الاتصال', 'error');
+        }
     });
 }
 
