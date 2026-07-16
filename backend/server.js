@@ -254,6 +254,18 @@ app.post('/api/coupons/validate', async (req, res) => {
         });
     }
 });
+// دالة ترجمة نوع الخدمة
+function translateServiceType(type) {
+    const map = {
+        'bridal': '💄 مكياج عروس',
+        'hair': '💇‍♀️ تسريحة عروس',
+        'full': '👰 حزمة كاملة (مكياج + تسريحة)',
+        'bridal_party': '👩‍👧‍👧 مكياج للعروس والضيوف',
+        'groom': '💈 حلاقة عريس',
+        'other': '📌 خدمات أخرى'
+    };
+    return map[type] || type;
+}
 
 // ============================================================
 // ✅ مسار عام لتقديم طلب عرض سعر (لا يحتاج مصادقة)
@@ -285,14 +297,14 @@ app.post('/api/quotes/request', async (req, res) => {
 
         // إنشاء طلب جديد
         const Quote = require('./models/Quote');
-        const newQuote = new Quote({
+        const newQuote = new QuoteRequest({
             salonId,
             customerId: customerId || null,
             customerName,
             customerEmail,
             customerPhone,
             eventDate,
-            guests: guests || 0,
+            guests: guests ?? 0,
             serviceType,
             details: details || '',
             status: 'pending'
@@ -303,11 +315,12 @@ app.post('/api/quotes/request', async (req, res) => {
         // إشعار للصالون (اختياري)
         try {
             const Notification = require('./models/Notification');
+            const serviceTypeAr = translateServiceType(serviceType);
             const notification = new Notification({
                 userId: salonId,
                 userType: 'salon',
                 title: '📩 طلب عرض سعر جديد',
-                message: `طلب جديد من ${customerName} لخدمة "${serviceType}" في ${eventDate}`,
+                message: `طلب جديد من ${customerName} لخدمة "${serviceTypeAr}" في ${eventDate}`,
                 read: false,
                 createdAt: new Date()
             });
