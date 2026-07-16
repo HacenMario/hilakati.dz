@@ -291,4 +291,24 @@ router.delete('/:id', auth, async (req, res) => {
     }
 });
 
+// ============================================================
+// ✅ جلب طلبات عروض الأسعار الخاصة بعميل معين (للعميل نفسه)
+// ============================================================
+router.get('/customer/:customerId', customerAuthMiddleware, async (req, res) => {
+    try {
+        // التأكد من أن العميل يطلب بياناته الخاصة فقط
+        if (req.params.customerId !== req.customerId) {
+            return res.status(403).json({ message: '❌ غير مصرح لك بعرض طلبات عميل آخر' });
+        }
+
+        const quotes = await QuoteRequest.find({ customerId: req.params.customerId })
+            .sort({ createdAt: -1 });
+            
+        res.json(quotes);
+    } catch (error) {
+        console.error('❌ فشل جلب طلبات العميل:', error);
+        res.status(500).json({ message: 'فشل جلب الطلبات' });
+    }
+});
+
 module.exports = router;
