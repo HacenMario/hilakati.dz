@@ -2923,12 +2923,16 @@ async function loadCustomerQuotesTable() {
 // ✅ قبول عرض السعر من قبل الزبون
 // ============================================================
 async function acceptCustomerQuote(quoteId) {
-    if (!confirm('✅ هل أنت متأكد من قبول هذا العرض؟')) return;
+    // ✅ طلب التاريخ والوقت من العميل
+    const date = prompt('📅 أدخل تاريخ الحجز (YYYY-MM-DD):', new Date().toISOString().split('T')[0]);
+    if (!date) return;
+    const time = prompt('🕐 أدخل وقت الحجز (HH:MM):', '10:00');
+    if (!time) return;
+
+    if (!confirm(`✅ هل أنت متأكد من قبول هذا العرض في ${date} الساعة ${time}؟`)) return;
 
     const token = localStorage.getItem('customerToken');
-    const customerId = localStorage.getItem('customerId');
-
-    if (!token || !customerId) {
+    if (!token) {
         showToast('❌ يرجى تسجيل الدخول', 'error');
         return;
     }
@@ -2942,15 +2946,13 @@ async function acceptCustomerQuote(quoteId) {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                customerId: customerId  // ✅ يجب أن يكون موجوداً
-            })
+            body: JSON.stringify({ date, time })  // ✅ إرسال التاريخ والوقت
         });
 
         const data = await res.json();
 
         if (res.ok) {
-            showToast('✅ تم قبول عرض السعر بنجاح!', 'success');
+            showToast('✅ تم قبول عرض السعر وإنشاء الحجز بنجاح!', 'success');
             loadCustomerQuotesTable();
             refreshNotifications();
             if (typeof loadCustomerDashboard === 'function') {
