@@ -270,6 +270,7 @@ function translateServiceType(type) {
 // ============================================================
 // ✅ مسار عام لتقديم طلب عرض سعر (لا يحتاج مصادقة)
 // ============================================================
+console.log('📊 البيانات المستلمة:', { salonId, customerName, budget, guests, serviceType });
 app.post('/api/quotes/request', async (req, res) => {
     try {
         const { 
