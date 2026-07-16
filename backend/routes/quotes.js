@@ -19,12 +19,23 @@ router.get('/salon/:salonId', auth, async (req, res) => {
 });
 
 // ============================================================
-// ✅ جلب طلبات العميل
+// ✅ جلب طلبات عروض الأسعار الخاصة بالعميل (مسار عام - لا يحتاج مصادقة)
 // ============================================================
-router.get('/customer/:customerId', auth, async (req, res) => {
+router.get('/customer/:customerId', async (req, res) => {
     try {
-        const quotes = await QuoteRequest.find({ customerId: req.params.customerId })
+        const customerId = req.params.customerId;
+        
+        // ✅ التحقق من وجود العميل في قاعدة البيانات
+        const Customer = require('../models/Customer');
+        const customer = await Customer.findById(customerId);
+        if (!customer) {
+            return res.status(404).json({ message: '❌ العميل غير موجود' });
+        }
+
+        // ✅ جلب الطلبات الخاصة بهذا العميل فقط
+        const quotes = await QuoteRequest.find({ customerId: customerId })
             .sort({ createdAt: -1 });
+            
         res.json(quotes);
     } catch (error) {
         console.error('❌ فشل جلب طلبات العميل:', error);
@@ -116,7 +127,7 @@ router.put('/:id/quote', auth, async (req, res) => {
 });
 
 // ============================================================
-// ✅ قبول عرض السعر
+// ✅ قبول عرض السعر (من قبل الصالون)
 // ============================================================
 router.put('/:id/accept', auth, async (req, res) => {
     try {
@@ -138,7 +149,7 @@ router.put('/:id/accept', auth, async (req, res) => {
 });
 
 // ============================================================
-// ✅ رفض عرض السعر
+// ✅ رفض عرض السعر (من قبل الصالون)
 // ============================================================
 router.put('/:id/reject', auth, async (req, res) => {
     try {
@@ -288,31 +299,6 @@ router.delete('/:id', auth, async (req, res) => {
     } catch (error) {
         console.error('❌ فشل حذف الطلب:', error);
         res.status(500).json({ message: '❌ فشل حذف الطلب' });
-    }
-});
-
-// ============================================================
-// ✅ جلب طلبات عروض الأسعار الخاصة بالعميل (مسار عام)
-// ============================================================
-router.get('/customer/:customerId', async (req, res) => {
-    try {
-        const customerId = req.params.customerId;
-        
-        // ✅ التحقق من وجود العميل في قاعدة البيانات
-        const Customer = require('../models/Customer');
-        const customer = await Customer.findById(customerId);
-        if (!customer) {
-            return res.status(404).json({ message: '❌ العميل غير موجود' });
-        }
-
-        // ✅ جلب الطلبات الخاصة بهذا العميل فقط
-        const quotes = await QuoteRequest.find({ customerId: customerId })
-            .sort({ createdAt: -1 });
-            
-        res.json(quotes);
-    } catch (error) {
-        console.error('❌ فشل جلب طلبات العميل:', error);
-        res.status(500).json({ message: 'فشل جلب الطلبات' });
     }
 });
 
