@@ -171,32 +171,31 @@ router.put('/:id/reject', auth, async (req, res) => {
 // ============================================================
 router.put('/:id/accept-by-customer', customerAuthMiddleware, async (req, res) => {
     try {
+        const { date, time } = req.body;  // ✅ استقبال التاريخ والوقت
         const quote = await QuoteRequest.findById(req.params.id);
         if (!quote) {
             return res.status(404).json({ message: '❌ الطلب غير موجود' });
         }
         
-        // ✅ التحقق من أن الزبون هو صاحب الطلب (باستخدام req.customerId من التوكن)
         if (quote.customerId && quote.customerId.toString() !== req.customerId) {
             return res.status(403).json({ message: '❌ غير مصرح لك بقبول هذا العرض' });
         }
         
-        // ✅ التحقق من أن الحالة مناسبة
         if (quote.status !== 'quoted') {
             return res.status(400).json({ message: '❌ لا يمكن قبول هذا العرض لأنه ليس في حالة "quoted"' });
         }
         
-        // ✅ تحديث حالة الطلب إلى "accepted"
         quote.status = 'accepted';
         await quote.save();
         
+        // ✅ استخدام التاريخ والوقت المرسلين، أو القيم الافتراضية
+        const eventDate = date || (quote.eventDate ? new Date(quote.eventDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
+        const eventTime = time || '10:00';
+        
         // ============================================================
-        // ✅ إنشاء حجز (Appointment) تلقائياً بناءً على بيانات الطلب
+        // ✅ إنشاء حجز (Appointment) تلقائياً
         // ============================================================
         const Appointment = require('../models/Appointment');
-        
-        const eventDate = quote.eventDate ? new Date(quote.eventDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-        const defaultTime = '10:00';
         
         const newAppointment = new Appointment({
             salonId: quote.salonId,
@@ -211,7 +210,7 @@ router.put('/:id/accept-by-customer', customerAuthMiddleware, async (req, res) =
             totalPrice: quote.quotePrice || quote.budget || 0,
             staff: 'موظف رئيسي',
             date: eventDate,
-            time: defaultTime,
+            time: eventTime,
             status: 'pending',
             payment: 'cash',
             notes: `تم إنشاؤه من طلب عرض سعر: ${quote._id}`,
