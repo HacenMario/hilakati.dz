@@ -298,7 +298,7 @@ router.get('/customer/:customerId', async (req, res) => {
     try {
         const customerId = req.params.customerId;
         
-        // ✅ تحقق بسيط: هل العميل موجود في قاعدة البيانات؟
+        // ✅ التحقق من وجود العميل في قاعدة البيانات
         const Customer = require('../models/Customer');
         const customer = await Customer.findById(customerId);
         if (!customer) {
