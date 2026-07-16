@@ -282,9 +282,18 @@ app.post('/api/quotes/request', async (req, res) => {
             budget,
             guests, 
             serviceType, 
-            details 
+            description,    // ✅ تم إضافة description هنا
+            details         // ✅ الاحتفاظ بـ details كخيار احتياطي
         } = req.body;
-        console.log('📊 البيانات المستلمة:', { salonId, customerName, budget, guests, serviceType });
+
+        console.log('📊 البيانات المستلمة:', { 
+            salonId, 
+            customerName, 
+            budget, 
+            guests, 
+            serviceType,
+            description: description || details  // ✅ عرض الملاحظات في السجل
+        });
 
         // التحقق من الحقول المطلوبة
         if (!salonId || !customerName || !customerEmail || !customerPhone || !eventDate || !serviceType) {
@@ -295,6 +304,19 @@ app.post('/api/quotes/request', async (req, res) => {
         const salon = await Salon.findById(salonId);
         if (!salon) {
             return res.status(404).json({ message: 'الصالون غير موجود' });
+        }
+
+        // ✅ دالة ترجمة نوع الخدمة (إذا لم تكن موجودة)
+        function translateServiceType(type) {
+            const translations = {
+                'bridal': '💄 مكياج عروس',
+                'hair': '💇‍♀️ تسريحة عروس',
+                'full': '👰 حزمة كاملة (مكياج + تسريحة)',
+                'bridal_party': '👩‍👧‍👧 مكياج للعروس والضيوف',
+                'groom': '💈 حلاقة عريس',
+                'other': '📌 خدمات أخرى'
+            };
+            return translations[type] || type;
         }
 
         // إنشاء طلب جديد
@@ -309,13 +331,13 @@ app.post('/api/quotes/request', async (req, res) => {
             budget: budget || 0,
             guests: guests ?? 0,
             serviceType,
-            details: details || '',
+            description: description || details || '',  // ✅ حفظ الملاحظات في description
             status: 'pending'
         });
 
         await newQuote.save();
 
-        // إشعار للصالون (اختياري)
+        // إشعار للصالون
         try {
             const Notification = require('./models/Notification');
             const serviceTypeAr = translateServiceType(serviceType);
@@ -333,7 +355,7 @@ app.post('/api/quotes/request', async (req, res) => {
             if (io) {
                 io.to(`salon-${salonId}`).emit('new-notification', {
                     title: '📩 طلب عرض سعر جديد',
-                    message: `طلب جديد من ${customerName} لخدمة "${serviceType}"`
+                    message: `طلب جديد من ${customerName} لخدمة "${serviceTypeAr}"`
                 });
             }
         } catch (notifError) {
