@@ -522,7 +522,11 @@ app.post('/api/auth/login', async (req, res) => {
         const valid = await bcrypt.compare(password, salon.password);
         if (!valid) return res.status(400).json({ message: 'بيانات الدخول غير صحيحة' });
         
-        const token = jwt.sign({ id: salon._id }, process.env.JWT_SECRET || 'salon_secret_key', { expiresIn: '7d' });
+        const token = jwt.sign(
+    { id: customer._id },
+    process.env.JWT_CUSTOMER_SECRET || 'customer_secret_key',
+    { expiresIn: '7d' }
+);
         res.json({ token, salonId: salon._id, name: salon.name });
     } catch (err) {
         console.error('❌ فشل تسجيل الدخول:', err);
