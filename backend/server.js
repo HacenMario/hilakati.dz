@@ -557,6 +557,10 @@ app.put('/api/auth/change-password', authMiddleware, async (req, res) => {
 // ============================================================
 // مسارات المصادقة (عميل)
 // ============================================================
+
+// ✅ مفتاح ثابت لتوحيد التوقيع والتحقق (حل جذري لمشكلة invalid signature)
+const CUSTOMER_JWT_SECRET = 'another_secret_for_customers';
+
 app.post('/api/customer/auth/register', async (req, res) => {
     try {
         const { name, email, phone, password } = req.body;
@@ -571,13 +575,17 @@ app.post('/api/customer/auth/register', async (req, res) => {
         const customer = new Customer({ name, email, phone, password: hashedPassword });
         await customer.save();
 
-const token = jwt.sign(
-    { id: customer._id },
-    process.env.JWT_CUSTOMER_SECRET || 'customer_secret_key',
-    { expiresIn: '7d' }
-);
+        // ✅ استخدام المفتاح الثابت
+        const token = jwt.sign(
+            { id: customer._id },
+            CUSTOMER_JWT_SECRET,
+            { expiresIn: '7d' }
+        );
+        
+        console.log(`🔑 تسجيل عميل جديد - التوكن صدر بالمفتاح: "${CUSTOMER_JWT_SECRET}"`);
         res.status(201).json({ token, customerId: customer._id, name: customer.name });
     } catch (err) {
+        console.error('❌ فشل التسجيل:', err);
         res.status(500).json({ message: 'فشل التسجيل' });
     }
 });
@@ -589,13 +597,18 @@ app.post('/api/customer/auth/login', async (req, res) => {
         if (!customer) return res.status(400).json({ message: 'بيانات الدخول غير صحيحة' });
         const valid = await bcrypt.compare(password, customer.password);
         if (!valid) return res.status(400).json({ message: 'بيانات الدخول غير صحيحة' });
-const token = jwt.sign(
-    { id: customer._id },
-    process.env.JWT_CUSTOMER_SECRET || 'customer_secret_key',
-    { expiresIn: '7d' }
-);
+
+        // ✅ استخدام المفتاح الثابت
+        const token = jwt.sign(
+            { id: customer._id },
+            CUSTOMER_JWT_SECRET,
+            { expiresIn: '7d' }
+        );
+        
+        console.log(`🔑 تسجيل دخول عميل - التوكن صدر بالمفتاح: "${CUSTOMER_JWT_SECRET}"`);
         res.json({ token, customerId: customer._id, name: customer.name });
     } catch (err) {
+        console.error('❌ فشل تسجيل الدخول:', err);
         res.status(500).json({ message: 'فشل تسجيل الدخول' });
     }
 });
@@ -609,9 +622,14 @@ app.get('/api/customer/auth/profile', customerAuthMiddleware, async (req, res) =
 app.put('/api/customer/auth/profile', customerAuthMiddleware, async (req, res) => {
     const { name, email, phone } = req.body;
     try {
-        const customer = await Customer.findByIdAndUpdate(req.customerId, { name, email, phone }, { new: true }).select('-password');
+        const customer = await Customer.findByIdAndUpdate(
+            req.customerId,
+            { name, email, phone },
+            { new: true }
+        ).select('-password');
         res.json(customer);
     } catch (err) {
+        console.error('❌ فشل تحديث الملف الشخصي:', err);
         res.status(500).json({ message: 'فشل تحديث الملف الشخصي' });
     }
 });
@@ -628,6 +646,7 @@ app.put('/api/customer/auth/change-password', customerAuthMiddleware, async (req
         await Customer.findByIdAndUpdate(req.customerId, { password: hashedPassword });
         res.json({ message: 'تم تغيير كلمة المرور' });
     } catch (err) {
+        console.error('❌ فشل تغيير كلمة المرور:', err);
         res.status(500).json({ message: 'فشل تغيير كلمة المرور' });
     }
 });
@@ -637,6 +656,7 @@ app.delete('/api/customer/auth/me', customerAuthMiddleware, async (req, res) => 
         await Customer.findByIdAndDelete(req.customerId);
         res.json({ message: 'تم حذف الحساب' });
     } catch (err) {
+        console.error('❌ فشل حذف الحساب:', err);
         res.status(500).json({ message: 'فشل الحذف' });
     }
 });
