@@ -5860,8 +5860,7 @@ async function loadDashboard() {
         const reviewsRes = await fetch(`${API_BASE}/reviews/salon/${salon._id}`);
         const reviews = await reviewsRes.json();
         const existingGallery = salon.gallery || [];
-document.getElementById('setGallery').value = existingGallery.join('\n');
-displayExistingGallery(existingGallery);
+        displayExistingGallery(existingGallery);
 
         document.getElementById('dashSalonName').textContent = salon.name + (salon.featured ? ' ⭐' : '');
         document.getElementById('dashSalonCity').textContent = salon.city;
