@@ -48,9 +48,9 @@ app.set('io', io);
 // Middleware
 // ============================================================
 app.use(cors({ origin: '*' }));
-app.use(express.json({ limit: '10mb' }));
 app.use(express.static('public'));
-
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // ============================================================
 // الاتصال بقاعدة البيانات
 // ============================================================
@@ -1298,12 +1298,13 @@ app.put('/api/salons/:id/hours', authMiddleware, async (req, res) => {
 app.put('/api/salons/:id/settings', authMiddleware, async (req, res) => {
     try {
         const salon = await Salon.findByIdAndUpdate(
-            req.params.id, 
-            req.body, 
+            req.params.id,
+            req.body, // يحتوي على `gallery` كـ array من Base64
             { new: true }
         );
         res.json(salon);
     } catch (error) {
+        console.error('❌ فشل تحديث الإعدادات:', error);
         res.status(500).json({ message: error.message });
     }
 });
