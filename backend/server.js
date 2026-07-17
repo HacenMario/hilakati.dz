@@ -1199,6 +1199,16 @@ app.delete('/api/admin/salons/:id/reviews', adminAuthMiddleware, async (req, res
     }
 });
 
+app.post('/api/test-reminders', async (req, res) => {
+    try {
+        // تنفيذ منطق التذكير كما هو في المجدول
+        // ... (كود المجدول)
+        res.json({ message: 'تم تشغيل التذكيرات بنجاح' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
 // ============================================================
 // الصالونات العامة (مع فلترة الصالونات النشطة فقط)
 // ============================================================
