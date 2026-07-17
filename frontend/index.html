@@ -1,40 +1,64 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <!-- ✅ تحسين الأداء -->
-<!-- 1. التحميل المسبق للـ DNS -->
-<link rel="dns-prefetch" href="https://cdnjs.cloudflare.com" />
-<link rel="dns-prefetch" href="https://fonts.googleapis.com" />
-<link rel="dns-prefetch" href="https://halakati-project.onrender.com" />
+    <!-- ============================================================
+    ✅ تحسين الأداء
+    ============================================================ -->
+    <!-- 1. التحميل المسبق للـ DNS -->
+    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com" />
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="https://halakati-project.onrender.com" />
 
-<!-- 2. تحميل الخطوط بشكل أسرع -->
-<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- 2. تحميل الخطوط بشكل أسرع -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
-<!-- 3. تحميل CSS بشكل غير متزامن (غير محظور) -->
-<link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
-<noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" /></noscript>
+    <!-- 3. تحميل CSS بشكل غير متزامن (غير محظور) -->
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" /></noscript>
 
-<!-- 4. تحميل JavaScript بشكل غير متزامن -->
-<script src="https://cdn.socket.io/4.7.5/socket.io.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js" defer></script>
+    <!-- 4. تحميل JavaScript بشكل غير متزامن -->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js" defer></script>
     
+    <!-- ============================================================
+    ✅ بيانات الصفحة الأساسية
+    ============================================================ -->
     <meta charset="UTF-8" />
+    
+    <!-- ===== منع تخزين الصفحة مؤقتاً ===== -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="description" content="حلاقتي - منصة حجز صالونات الحلاقة والتجميل في الجزائر" />
     <title>حلاقتي - منصة حجز صالونات الحلاقة والتجميل</title>
+    
+    <!-- ============================================================
+    ✅ الخطوط والأيقونات (مع إصدار لمنع الكاش)
+    ============================================================ -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet" />
+    
+    <!-- ============================================================
+    ✅ JavaScript (مع إصدار لمنع الكاش - اختياري)
+    ============================================================ -->
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-    <!-- PWA -->
-    <link rel="manifest" href="/manifest.json">
+    
+    <!-- ============================================================
+    ✅ PWA (مع إصدار ديناميكي لمنع الكاش)
+    ============================================================ -->
+    <link rel="manifest" href="/manifest.json?v=1">
     <meta name="theme-color" content="#f5b042">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png?v=1">
+</head>
+    
     <style>
 /* ===== إصلاح نافذة تعديل الكوبون ===== */
 #editCouponModal {
@@ -2690,6 +2714,11 @@ input, textarea, select {
 </nav>
 
 <script>
+
+// ✅ تحديث إصدار PWA تلقائياً عند كل تحميل للصفحة
+const APP_VERSION = Date.now();
+document.querySelector('link[rel="manifest"]').href = `/manifest.json?v=${APP_VERSION}`;
+document.querySelector('link[rel="apple-touch-icon"]').href = `/icons/icon-192.png?v=${APP_VERSION}`;
 
 // ============================================================
 // ✅ فتح معرض صور الصالون (مع Lightbox للتكبير)
