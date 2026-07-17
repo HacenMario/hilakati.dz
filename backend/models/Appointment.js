@@ -16,7 +16,6 @@ const AppointmentSchema = new mongoose.Schema({
   notes: String,
   recurring: { type: String, enum: ['none', 'weekly', 'monthly'], default: 'none' },
   reminderSent: { type: Boolean, default: false }
-}, { timestamps: true });
   
   // ============================================================
   // 🆕 حقول الكوبونات
