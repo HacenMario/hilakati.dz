@@ -5137,6 +5137,7 @@ function updateAllDistances(userLat, userLng) {
         return { ...s, distance: undefined };
     });
 }
+
 // ===== Salon Details & Reviews =====
 async function showSalonDetails(id) {
     try {
@@ -5145,7 +5146,7 @@ async function showSalonDetails(id) {
             fetch(`${API_BASE}/salons/${id}`),
             fetch(`${API_BASE}/reviews/salon/${id}`)
         ]);
-        const salon = await salonRes.json(); // ✅ salon يعرف هنا
+        const salon = await salonRes.json();
         const reviews = await reviewsRes.json();
         const content = document.getElementById('salonDetailsContent');
         
@@ -5156,7 +5157,12 @@ async function showSalonDetails(id) {
             </div>`
         ).join('');
 
-          // ===== التقييمات =====
+        // ===== معرض الصور (مع التحقق من وجوده) =====
+        const galleryHtml = (salon.gallery || []).map(url => 
+            `<img src="${url}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border-color);cursor:pointer;" onclick="window.open('${url}','_blank')" onerror="this.style.display='none'">`
+        ).join('');
+
+        // ===== التقييمات =====
         const reviewsHtml = reviews.map(r => 
             `<div class="review-item">
                 <div class="review-header"><span>${r.customerName}</span><span>${'★'.repeat(r.rating)}</span></div>
@@ -5173,57 +5179,56 @@ async function showSalonDetails(id) {
                 const blob = await logoResponse.blob();
                 const url = URL.createObjectURL(blob);
                 logoHtml = `<img src="${url}" style="width:90px;height:90px;border-radius:50%;object-fit:cover;border:2px solid var(--gold);margin-bottom:0.3rem;">`;
-            } else {
-                // ... بديل اللوغو ...
             }
         } catch (error) {
             // ... بديل اللوغو ...
         }
 
-// ============================================================
-// ✅ تعريف الأزرار بألوان مختلفة تماماً
-// ============================================================
-
-// ✅ 1. زر احجز الآن (بنفسجي)
-const bookingButton = `
-    <button onclick="closeModal('salonDetailsModal');openBooking('${salon._id}')" 
-        style="display:inline-block;padding:0.4rem 1.2rem;border-radius:50px;font-size:0.8rem;font-weight:700;background:linear-gradient(135deg, #9b59b6, #8e44ad);color:#fff;border:none;cursor:pointer;transition:all 0.3s ease;box-shadow:0 4px 15px rgba(155,89,182,0.4);">
-        <i class="fas fa-calendar-plus"></i> احجز الآن
-    </button>
-`;
-
-// ✅ 2. زر قيم الصالون (أزرق)
-const reviewButton = `
-    <button onclick="closeModal('salonDetailsModal');openReview('${salon._id}')" 
-        style="display:inline-block;padding:0.4rem 1.2rem;border-radius:50px;font-size:0.8rem;font-weight:700;background:linear-gradient(135deg, #3498db, #2980b9);color:#fff;border:none;cursor:pointer;transition:all 0.3s ease;box-shadow:0 4px 15px rgba(52,152,219,0.4);">
-        <i class="fas fa-star"></i> قيم الصالون
-    </button>
-`;
-
-// ✅ 3. زر عرض على الخريطة (برتقالي)
-const mapButton = salon.lat && salon.lng ? `
-    <a href="https://www.google.com/maps/search/?api=1&query=${salon.lat},${salon.lng}" 
-       target="_blank" 
-       style="display:inline-block;padding:0.4rem 1rem;border-radius:50px;font-size:0.75rem;font-weight:600;background:linear-gradient(135deg, #f39c12, #e67e22);color:#fff;text-decoration:none;transition:all 0.3s ease;box-shadow:0 4px 15px rgba(243,156,18,0.3);">
-        <i class="fas fa-map-marked-alt"></i> موقع الصالون على الخريطة
-    </a>
-` : '';
-
-// ✅ 4. زر واتساب (أخضر واتساب)
-let whatsappButton = '';
-if (salon.phone) {
-    const cleanPhone = cleanPhoneNumber(salon.phone);
-    const whatsappUrl = `https://wa.me/${cleanPhone}`;
-    whatsappButton = `<a href="${whatsappUrl}" target="_blank" style="display:inline-block;padding:0.3rem 0.9rem;border-radius:50px;font-size:0.75rem;font-weight:600;background:#25D366;color:#fff;text-decoration:none;transition:all 0.3s ease;box-shadow:0 4px 15px rgba(37,211,102,0.3);">
-                        <i class="fab fa-whatsapp"></i> واتساب
-                      </a>`;
-} else {
-    whatsappButton = `<span style="display:inline-block;padding:0.3rem 0.9rem;border-radius:50px;font-size:0.75rem;font-weight:600;background:transparent;color:#888;border:1px solid #888;cursor:not-allowed;">
-                        <i class="fab fa-whatsapp"></i> لا يوجد رقم
-                      </span>`;
-}
         // ============================================================
-        // عرض المحتوى (استخدام mapButton هنا)
+        // ✅ تعريف الأزرار بألوان مختلفة تماماً
+        // ============================================================
+
+        // ✅ 1. زر احجز الآن (بنفسجي)
+        const bookingButton = `
+            <button onclick="closeModal('salonDetailsModal');openBooking('${salon._id}')" 
+                style="display:inline-block;padding:0.4rem 1.2rem;border-radius:50px;font-size:0.8rem;font-weight:700;background:linear-gradient(135deg, #9b59b6, #8e44ad);color:#fff;border:none;cursor:pointer;transition:all 0.3s ease;box-shadow:0 4px 15px rgba(155,89,182,0.4);">
+                <i class="fas fa-calendar-plus"></i> احجز الآن
+            </button>
+        `;
+
+        // ✅ 2. زر قيم الصالون (أزرق)
+        const reviewButton = `
+            <button onclick="closeModal('salonDetailsModal');openReview('${salon._id}')" 
+                style="display:inline-block;padding:0.4rem 1.2rem;border-radius:50px;font-size:0.8rem;font-weight:700;background:linear-gradient(135deg, #3498db, #2980b9);color:#fff;border:none;cursor:pointer;transition:all 0.3s ease;box-shadow:0 4px 15px rgba(52,152,219,0.4);">
+                <i class="fas fa-star"></i> قيم الصالون
+            </button>
+        `;
+
+        // ✅ 3. زر عرض على الخريطة (برتقالي)
+        const mapButton = salon.lat && salon.lng ? `
+            <a href="https://www.google.com/maps/search/?api=1&query=${salon.lat},${salon.lng}" 
+               target="_blank" 
+               style="display:inline-block;padding:0.4rem 1rem;border-radius:50px;font-size:0.75rem;font-weight:600;background:linear-gradient(135deg, #f39c12, #e67e22);color:#fff;text-decoration:none;transition:all 0.3s ease;box-shadow:0 4px 15px rgba(243,156,18,0.3);">
+                <i class="fas fa-map-marked-alt"></i> موقع الصالون على الخريطة
+            </a>
+        ` : '';
+
+        // ✅ 4. زر واتساب (أخضر واتساب)
+        let whatsappButton = '';
+        if (salon.phone) {
+            const cleanPhone = cleanPhoneNumber(salon.phone);
+            const whatsappUrl = `https://wa.me/${cleanPhone}`;
+            whatsappButton = `<a href="${whatsappUrl}" target="_blank" style="display:inline-block;padding:0.3rem 0.9rem;border-radius:50px;font-size:0.75rem;font-weight:600;background:#25D366;color:#fff;text-decoration:none;transition:all 0.3s ease;box-shadow:0 4px 15px rgba(37,211,102,0.3);">
+                                <i class="fab fa-whatsapp"></i> واتساب
+                              </a>`;
+        } else {
+            whatsappButton = `<span style="display:inline-block;padding:0.3rem 0.9rem;border-radius:50px;font-size:0.75rem;font-weight:600;background:transparent;color:#888;border:1px solid #888;cursor:not-allowed;">
+                                <i class="fab fa-whatsapp"></i> لا يوجد رقم
+                              </span>`;
+        }
+
+        // ============================================================
+        // عرض المحتوى (مع تضمين معرض الصور)
         // ============================================================
         content.innerHTML = `
             <div style="text-align:center;margin-bottom:0.8rem;">
@@ -5246,29 +5251,30 @@ if (salon.phone) {
                 `<span style="background:rgba(233,69,96,0.12);color:var(--accent);padding:0.1rem 0.4rem;border-radius:50px;">${s}</span>`
             ).join(' ') || 'لا يوجد'}</div></div>
             
-            ${galleryHtml ? `<div style="display:flex;gap:0.3rem;flex-wrap:wrap;justify-content:center;margin-top:0.3rem;">${galleryHtml}</div>` : ''}
+            <!-- ===== معرض الصور ===== -->
+            ${galleryHtml ? `<div style="margin-top:0.5rem;"><h4 style="color:var(--gold);">📷 معرض الأعمال</h4><div style="display:flex;gap:0.3rem;flex-wrap:wrap;justify-content:center;margin-top:0.3rem;">${galleryHtml}</div></div>` : ''}
             
             <div><h4 style="color:var(--gold);">⭐ التقييمات</h4>${reviewsHtml}</div>
             
-<div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-top:0.6rem;">
-    <!-- ✅ 1. زر احجز الآن (بنفسجي) -->
-    <button onclick="closeModal('salonDetailsModal');openBooking('${salon._id}')" 
-        style="display:inline-block;padding:0.4rem 1.2rem;border-radius:50px;font-size:0.8rem;font-weight:700;background:linear-gradient(135deg, #9b59b6, #8e44ad);color:#fff;border:none;cursor:pointer;transition:all 0.3s ease;box-shadow:0 4px 15px rgba(155,89,182,0.4);">
-        <i class="fas fa-calendar-plus"></i> احجز الآن
-    </button>
-    
-    <!-- ✅ 2. زر قيم الصالون (أزرق) -->
-    <button onclick="closeModal('salonDetailsModal');openReview('${salon._id}')" 
-        style="display:inline-block;padding:0.4rem 1.2rem;border-radius:50px;font-size:0.8rem;font-weight:700;background:linear-gradient(135deg, #3498db, #2980b9);color:#fff;border:none;cursor:pointer;transition:all 0.3s ease;box-shadow:0 4px 15px rgba(52,152,219,0.4);">
-        <i class="fas fa-star"></i> قيم الصالون
-    </button>
-    
-    <!-- ✅ 3. زر عرض على الخريطة (برتقالي) -->
-    ${mapButton}
-    
-    <!-- ✅ 4. زر واتساب (أخضر) -->
-    ${whatsappButton}
-</div>
+            <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-top:0.6rem;">
+                <!-- ✅ 1. زر احجز الآن (بنفسجي) -->
+                <button onclick="closeModal('salonDetailsModal');openBooking('${salon._id}')" 
+                    style="display:inline-block;padding:0.4rem 1.2rem;border-radius:50px;font-size:0.8rem;font-weight:700;background:linear-gradient(135deg, #9b59b6, #8e44ad);color:#fff;border:none;cursor:pointer;transition:all 0.3s ease;box-shadow:0 4px 15px rgba(155,89,182,0.4);">
+                    <i class="fas fa-calendar-plus"></i> احجز الآن
+                </button>
+                
+                <!-- ✅ 2. زر قيم الصالون (أزرق) -->
+                <button onclick="closeModal('salonDetailsModal');openReview('${salon._id}')" 
+                    style="display:inline-block;padding:0.4rem 1.2rem;border-radius:50px;font-size:0.8rem;font-weight:700;background:linear-gradient(135deg, #3498db, #2980b9);color:#fff;border:none;cursor:pointer;transition:all 0.3s ease;box-shadow:0 4px 15px rgba(52,152,219,0.4);">
+                    <i class="fas fa-star"></i> قيم الصالون
+                </button>
+                
+                <!-- ✅ 3. زر عرض على الخريطة (برتقالي) -->
+                ${mapButton}
+                
+                <!-- ✅ 4. زر واتساب (أخضر) -->
+                ${whatsappButton}
+            </div>
         `;
         openModal('salonDetailsModal');
     } catch (error) {
@@ -5859,8 +5865,6 @@ async function loadDashboard() {
         const appointments = await appRes.json();
         const reviewsRes = await fetch(`${API_BASE}/reviews/salon/${salon._id}`);
         const reviews = await reviewsRes.json();
-        const existingGallery = salon.gallery || [];
-        displayExistingGallery(existingGallery);
 
         document.getElementById('dashSalonName').textContent = salon.name + (salon.featured ? ' ⭐' : '');
         document.getElementById('dashSalonCity').textContent = salon.city;
@@ -5895,6 +5899,19 @@ async function loadDashboard() {
         document.getElementById('setSalonDesc').value = salon.desc || '';
         document.getElementById('setSalonType').value = salon.salonType || 'mixed';
         document.getElementById('setIsMobile').value = salon.isMobile ? 'true' : 'false';
+
+        // ✅ عرض الصور الموجودة (مع التحقق من وجود العنصر)
+        const existingGallery = salon.gallery || [];
+        const galleryInput = document.getElementById('setGallery');
+        if (galleryInput) {
+            galleryInput.value = existingGallery.join('\n');
+        }
+
+        // ✅ عرض معاينة الصور الموجودة (إذا كانت الدالة موجودة)
+        if (typeof displayExistingGallery === 'function') {
+            displayExistingGallery(existingGallery);
+        }
+
         if (salon.lat && salon.lng) {
             document.getElementById('setLat').value = salon.lat;
             document.getElementById('setLng').value = salon.lng;
@@ -5909,28 +5926,6 @@ async function loadDashboard() {
 
         newForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            // معالجة الصور الجديدة (من الملفات المرفوعة)
-let newImagesBase64 = [];
-const fileInput = document.getElementById('setGalleryInput');
-if (fileInput && fileInput.files.length > 0) {
-    const files = Array.from(fileInput.files);
-    for (const file of files) {
-        try {
-            const base64 = await new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onload = (e) => resolve(e.target.result);
-                reader.readAsDataURL(file);
-            });
-            newImagesBase64.push(base64);
-        } catch (err) {
-            console.error('❌ فشل تحويل الصورة:', err);
-        }
-    }
-}
-
-// دمج الصور الموجودة مع الصور الجديدة
-const existingGallery = document.getElementById('setGallery')?.value.split('\n').filter(s => s.trim()) || [];
-const finalGallery = [...existingGallery, ...newImagesBase64];
             const token = localStorage.getItem('token');
             const salonId = localStorage.getItem('salonId');
 
@@ -5953,6 +5948,29 @@ const finalGallery = [...existingGallery, ...newImagesBase64];
             const desc = safeGetValue('setSalonDesc');
             const salonType = safeGetSelectValue('setSalonType', 'mixed');
             const isMobile = safeGetValue('setIsMobile') === 'true';
+
+            // ✅ معالجة الصور الجديدة (من الملفات المرفوعة)
+            let newImagesBase64 = [];
+            const fileInput = document.getElementById('setGalleryInput');
+            if (fileInput && fileInput.files.length > 0) {
+                const files = Array.from(fileInput.files);
+                for (const file of files) {
+                    try {
+                        const base64 = await new Promise((resolve) => {
+                            const reader = new FileReader();
+                            reader.onload = (e) => resolve(e.target.result);
+                            reader.readAsDataURL(file);
+                        });
+                        newImagesBase64.push(base64);
+                    } catch (err) {
+                        console.error('❌ فشل تحويل الصورة:', err);
+                    }
+                }
+            }
+
+            // دمج الصور الموجودة مع الصور الجديدة
+            const existingGallery = document.getElementById('setGallery')?.value.split('\n').filter(s => s.trim()) || [];
+            const finalGallery = [...existingGallery, ...newImagesBase64];
 
             // معالجة إحداثيات GPS
             const latManual = document.getElementById('setLatManual');
