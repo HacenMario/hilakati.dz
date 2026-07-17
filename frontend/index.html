@@ -2794,6 +2794,50 @@ async function loadCustomerDashboard() {
         } catch (e) {
             console.warn('⚠️ فشل جلب عروض الأسعار:', e);
         }
+// ✅ إلغاء الحجز
+async function cancelBooking(bookingId) {
+    if (!confirm('هل أنت متأكد من إلغاء هذا الحجز؟')) return;
+    const token = localStorage.getItem('customerToken');
+    try {
+        const res = await fetch(`${API_BASE}/appointments/${bookingId}/cancel`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            showToast('✅ تم إلغاء الحجز', 'success');
+            loadCustomerDashboard();
+        } else {
+            const data = await res.json();
+            showToast(`❌ ${data.message}`, 'error');
+        }
+    } catch { showToast('❌ فشل الاتصال', 'error'); }
+}
+
+// ✅ تعديل الحجز
+async function rescheduleBooking(bookingId) {
+    const newDate = prompt('أدخل التاريخ الجديد (YYYY-MM-DD):');
+    if (!newDate) return;
+    const newTime = prompt('أدخل الوقت الجديد (HH:MM):');
+    if (!newTime) return;
+    const token = localStorage.getItem('customerToken');
+    try {
+        const res = await fetch(`${API_BASE}/appointments/${bookingId}/reschedule`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ date: newDate, time: newTime })
+        });
+        if (res.ok) {
+            showToast('✅ تم تعديل الحجز', 'success');
+            loadCustomerDashboard();
+        } else {
+            const data = await res.json();
+            showToast(`❌ ${data.message}`, 'error');
+        }
+    } catch { showToast('❌ فشل الاتصال', 'error'); }
+}
 
         // ===== بناء واجهة متكاملة مع قائمة جانبية =====
         document.getElementById('customerDashboardContent').innerHTML = `
@@ -2878,6 +2922,14 @@ function showCustomerSection(section, data) {
                     <div style="background:var(--stat-bg);padding:0.8rem;border-radius:12px;text-align:center;border:1px solid var(--border-color);">
                         <div style="font-size:1.5rem;font-weight:800;color:var(--gold);">${totalBookings}</div>
                         <div style="color:var(--text-color);opacity:0.6;font-size:0.7rem;">إجمالي الحجوزات</div>
+                        <div style="display:flex;gap:0.3rem;margin-top:0.3rem;">
+    <button class="btn-warning btn-sm" onclick="rescheduleBooking('${b._id}')" style="background:var(--warning);color:#000;border-radius:50px;padding:0.2rem 0.8rem;border:none;cursor:pointer;">
+        <i class="fas fa-edit"></i> تعديل
+    </button>
+    <button class="btn-danger btn-sm" onclick="cancelBooking('${b._id}')" style="background:var(--danger);color:#fff;border-radius:50px;padding:0.2rem 0.8rem;border:none;cursor:pointer;">
+        <i class="fas fa-times"></i> إلغاء
+    </button>
+</div>
                     </div>
                     <div style="background:var(--stat-bg);padding:0.8rem;border-radius:12px;text-align:center;border:1px solid var(--border-color);">
                         <div style="font-size:1.5rem;font-weight:800;color:var(--warning);">${pendingBookings}</div>
