@@ -48,7 +48,6 @@ app.set('io', io);
 // Middleware
 // ============================================================
 app.use(cors({ origin: '*' }));
-app.use(express.static('public'));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // ============================================================
@@ -1299,7 +1298,7 @@ app.put('/api/salons/:id/settings', authMiddleware, async (req, res) => {
     try {
         const salon = await Salon.findByIdAndUpdate(
             req.params.id,
-            req.body, // يحتوي على `gallery` كـ array من Base64
+            req.body, // يجب أن يحتوي على `gallery` كمصفوفة من Base64
             { new: true }
         );
         res.json(salon);
