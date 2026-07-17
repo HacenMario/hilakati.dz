@@ -2233,28 +2233,7 @@ input, textarea, select {
         <option value="children">أطفال</option>
         <option value="mixed">مختلط</option>
     </select>
-  <!-- ✅ فلاتر جديدة -->
-    <select id="filterPrice">
-        <option value="">السعر</option>
-        <option value="0-500">أقل من 500 دج</option>
-        <option value="500-1000">500 - 1000 دج</option>
-        <option value="1000-2000">1000 - 2000 دج</option>
-        <option value="2000+">أكثر من 2000 دج</option>
-    </select>
-    
-    <select id="filterRating">
-        <option value="">التقييم</option>
-        <option value="4">⭐ 4+</option>
-        <option value="3">⭐ 3+</option>
-        <option value="2">⭐ 2+</option>
-    </select>
-    
-    <button class="btn-gold btn-sm" onclick="applyAdvancedFilters()">
-        <i class="fas fa-filter"></i> تطبيق
-    </button>
-</div>
-</div>
-    <button class="btn-gold btn-sm" onclick="getNearbySalons()"><i class="fas fa-map-marker-alt"></i> القريبة</button>
+<button class="btn-gold btn-sm" onclick="getNearbySalons()"><i class="fas fa-map-marker-alt"></i> القريبة</button>
     <!-- ✅ زر إلغاء الفلتر -->
 <button class="btn-outline btn-sm" onclick="resetSalonFilters()">
     <i class="fas fa-undo"></i> إلغاء الفلتر
@@ -4814,52 +4793,12 @@ function applyFilters() {
     console.log(`📊 عدد النتائج النهائي: ${result.length}`);
     renderAllSalons(result);
 }
-function applyAdvancedFilters() {
-    const price = document.getElementById('filterPrice').value;
-    const rating = document.getElementById('filterRating').value;
-    const isOpen = document.getElementById('filterOpen').checked;
-    
-    let result = allSalons;
-    
-    // تصفية السعر
-    if (price) {
-        const [min, max] = price.split('-').map(Number);
-        result = result.filter(s => {
-            const minPrice = s.services?.length ? Math.min(...s.services.map(service => service.price)) : 0;
-            if (price === '2000+') return minPrice >= 2000;
-            return minPrice >= min && (max ? minPrice <= max : true);
-        });
-    }
-    
-    // تصفية التقييم
-    if (rating) {
-        result = result.filter(s => (s.rating || 0) >= parseInt(rating));
-    }
-    
-    // تصفية "مفتوح الآن"
-    if (isOpen) {
-        const now = new Date();
-        const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-        const dayName = dayNames[now.getDay()];
-        result = result.filter(s => {
-            const hours = s.hours?.[dayName];
-            if (!hours || hours === 'مغلق' || hours === 'closed') return false;
-            const [open, close] = hours.split('-').map(t => t.trim());
-            // التحقق البسيط من الوقت (يمكن تحسينه)
-            return true;
-        });
-    }
-    
-    renderAllSalons(result);
-}
+
 // ===== مستمعات الأحداث =====
 document.getElementById('searchSalon')?.addEventListener('input', applyFilters);
 document.getElementById('filterCity')?.addEventListener('change', applyFilters);
 document.getElementById('filterSalonType')?.addEventListener('change', applyFilters);
 document.getElementById('filterSort')?.addEventListener('change', applyFilters);
-document.getElementById('filterPrice')?.addEventListener('change', applyAdvancedFilters);
-document.getElementById('filterRating')?.addEventListener('change', applyAdvancedFilters);
-document.getElementById('filterOpen')?.addEventListener('change', applyAdvancedFilters);
 
 // ===== الحصول على الصالونات القريبة =====
 function getNearbySalons() {
