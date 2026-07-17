@@ -2083,15 +2083,10 @@ app.get('/api/notifications/customer', customerAuthMiddleware, async (req, res) 
 app.delete('/api/notifications/clear', async (req, res) => {
     try {
         const { userId, userType } = req.body;
-        console.log('🗑️ طلب مسح الإشعارات:', { userId, userType });
-        
         if (!userId || !userType) {
             return res.status(400).json({ message: 'بيانات غير مكتملة' });
         }
-        
         const result = await Notification.deleteMany({ userId, userType });
-        console.log(`✅ تم مسح ${result.deletedCount} إشعار`);
-        
         res.json({ 
             message: `✅ تم مسح ${result.deletedCount} إشعار`,
             count: result.deletedCount
