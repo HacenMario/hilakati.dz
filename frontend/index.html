@@ -5369,7 +5369,7 @@ async function updateNotificationUI() {
 // 3. تحديد الكل كمقروء
 // ============================================================
 async function markAllRead() {
-    const token = localStorage.getItem('token') || localStorage.getItem('customerToken');
+    const token = localStorage.getItem('token') || localStorage.getItem('customerToken') || localStorage.getItem('adminToken');
     if (!token) {
         showToast('❌ يرجى تسجيل الدخول', 'error');
         return;
@@ -5403,7 +5403,7 @@ async function markAllRead() {
 }
 
 // ============================================================
-// 4. مسح جميع الإشعارات
+// ✅ مسح جميع الإشعارات
 // ============================================================
 async function clearAllNotifications() {
     if (!confirm('⚠️ هل أنت متأكد من مسح جميع الإشعارات؟')) return;
