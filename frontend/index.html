@@ -2682,6 +2682,58 @@ input, textarea, select {
 <script>
 
 // ============================================================
+// ✅ فتح معرض صور الصالون
+// ============================================================
+async function openSalonGallery(salonId) {
+    try {
+        showToast('⏳ جاري تحميل الصور...', 'info');
+        
+        const res = await fetch(`${API_BASE}/salons/${salonId}`);
+        if (!res.ok) {
+            showToast('❌ فشل تحميل الصور', 'error');
+            return;
+        }
+        const salon = await res.json();
+        
+        const gallery = salon.gallery || [];
+        const container = document.getElementById('galleryContent');
+        
+        if (gallery.length === 0) {
+            container.innerHTML = `
+                <div style="grid-column:span 2;text-align:center;padding:2rem;color:var(--text-color);opacity:0.5;">
+                    <i class="fas fa-images" style="font-size:3rem;display:block;margin-bottom:0.5rem;"></i>
+                    لا توجد صور في المعرض
+                    <br>
+                    <small style="font-size:0.8rem;">يمكنك إضافة صور من لوحة تحكم الصالون</small>
+                </div>
+            `;
+        } else {
+            container.innerHTML = gallery.map(url => `
+                <div style="position:relative;border-radius:8px;overflow:hidden;aspect-ratio:1;background:var(--input-bg);border:1px solid var(--border-color);cursor:pointer;" 
+                     onclick="window.open('${url}', '_blank')">
+                    <img src="${url}" alt="عمل الصالون" 
+                         style="width:100%;height:100%;object-fit:cover;transition:transform 0.3s ease;"
+                         onerror="this.style.display='none';this.parentElement.innerHTML='<div style=\\'display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-color);opacity:0.3;\\'><i class=\\'fas fa-image\\' style=\\'font-size:2rem;\\'></i></div>'"
+                         onmouseover="this.style.transform='scale(1.05)'"
+                         onmouseout="this.style.transform='scale(1)'">
+                </div>
+            `).join('');
+        }
+        
+        // تحديث عنوان النافذة
+        document.querySelector('#galleryModal h2').innerHTML = `
+            <i class="fas fa-images"></i> معرض أعمال ${salon.name}
+        `;
+        
+        openModal('galleryModal');
+        
+    } catch (error) {
+        console.error('❌ فشل فتح المعرض:', error);
+        showToast('❌ فشل تحميل الصور', 'error');
+    }
+}
+
+// ============================================================
 // ✅ معاينة الصور قبل التحميل
 // ============================================================
 let selectedGalleryFiles = [];
@@ -4959,18 +5011,14 @@ function createSalonCard(salon) {
                 <button class="btn-outline btn-sm" onclick="event.stopPropagation();openQuoteRequest('${salon._id}')" style="flex:1;min-width:80px;border-color:var(--gold);color:var(--gold);"><i class="fas fa-file-invoice"></i> خاص بالمناسبات و الأعراس
                 </button>
                 </div>
-<!-- ✅ زر معرض الصور (يظهر إذا كانت هناك صور) -->
-${salon.gallery && salon.gallery.length > 0 ? `
-    <div style="margin-top:0.3rem;">
-        <button class="btn-info btn-sm" onclick="event.stopPropagation();openSalonGallery('${salon._id}')" 
-                style="width:100%;padding:0.3rem;border-radius:12px;font-size:0.75rem;font-weight:600;background:var(--info);color:#fff;border:none;cursor:pointer;transition:all 0.25s ease;">
-            <i class="fas fa-images"></i> معرض الصور (${salon.gallery.length})
-        </button>
-    </div>
-` : `
-    <div style="margin-top:0.3rem;font-size:0.65rem;color:var(--text-color);opacity:0.3;text-align:center;">
-        📷 لا توجد صور
-    </div>
+<!-- ✅ زر معرض الصور (يظهر دائماً) -->
+<div style="margin-top:0.3rem;">
+    <button class="btn-info btn-sm" onclick="event.stopPropagation();openSalonGallery('${salon._id}')" 
+            style="width:100%;padding:0.3rem;border-radius:12px;font-size:0.75rem;font-weight:600;background:linear-gradient(135deg, #3498db, #2980b9);color:#fff;border:none;cursor:pointer;transition:all 0.25s ease;box-shadow:0 2px 8px rgba(52,152,219,0.3);">
+        <i class="fas fa-images"></i> 
+        ${salon.gallery && salon.gallery.length > 0 ? `معرض الصور (${salon.gallery.length})` : '📷 إضافة صور'}
+    </button>
+</div>
 `}
             </div>
         </div>
