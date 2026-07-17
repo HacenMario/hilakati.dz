@@ -2194,38 +2194,44 @@ input, textarea, select {
 <section class="section hidden" id="page-salons">
     <h2 class="section-title">جميع <span class="highlight">الصالونات</span></h2>
 <div class="filter-section">
+    <!-- ===== البحث ===== -->
     <input type="text" id="searchSalon" placeholder="🔍 ابحث باسم الصالون..." />
+    
+    <!-- ===== الترتيب ===== -->
     <select id="filterSort">
-        <option value="rating">جميع الخيارات</option>        
         <option value="rating">الأعلى تقييماً</option>
         <option value="price">الأقل سعراً</option>
         <option value="distance">الأقرب</option>
     </select>
+    
+    <!-- ===== المدينة ===== -->
     <select id="filterCity">
-            <option value="">جميع الولايات</option>
-            <option value="أدرار">أدرار</option><option value="الشلف">الشلف</option><option value="الأغواط">الأغواط</option>
-            <option value="أم البواقي">أم البواقي</option><option value="باتنة">باتنة</option><option value="بجاية">بجاية</option>
-            <option value="بسكرة">بسكرة</option><option value="بشار">بشار</option><option value="البليدة">البليدة</option>
-            <option value="البويرة">البويرة</option><option value="تمنراست">تمنراست</option><option value="تبسة">تبسة</option>
-            <option value="تلمسان">تلمسان</option><option value="تيارت">تيارت</option><option value="تيزي وزو">تيزي وزو</option>
-            <option value="الجزائر العاصمة">الجزائر العاصمة</option><option value="الجلفة">الجلفة</option><option value="جيجل">جيجل</option>
-            <option value="سطيف">سطيف</option><option value="سعيدة">سعيدة</option><option value="سكيكدة">سكيكدة</option>
-            <option value="سيدي بلعباس">سيدي بلعباس</option><option value="عنابة">عنابة</option><option value="قالمة">قالمة</option>
-            <option value="قسنطينة">قسنطينة</option><option value="المدية">المدية</option><option value="مستغانم">مستغانم</option>
-            <option value="المسيلة">المسيلة</option><option value="معسكر">معسكر</option><option value="ورقلة">ورقلة</option>
-            <option value="وهران">وهران</option><option value="البيض">البيض</option><option value="إليزي">إليزي</option>
-            <option value="برج بوعريريج">برج بوعريريج</option><option value="بومرداس">بومرداس</option><option value="الطارف">الطارف</option>
-            <option value="تندوف">تندوف</option><option value="تيسمسيلت">تيسمسيلت</option><option value="الوادي">الوادي</option>
-            <option value="خنشلة">خنشلة</option><option value="سوق أهراس">سوق أهراس</option><option value="تيبازة">تيبازة</option>
-            <option value="ميلة">ميلة</option><option value="عين الدفلى">عين الدفلى</option><option value="النعامة">النعامة</option>
-            <option value="عين تموشنت">عين تموشنت</option><option value="غرداية">غرداية</option><option value="غليزان">غليزان</option>
-            <option value="تيميمون">تيميمون</option><option value="برج باجي مختار">برج باجي مختار</option>
-            <option value="أولاد جلال">أولاد جلال</option><option value="بني عباس">بني عباس</option>
-            <option value="عين صالح">عين صالح</option><option value="عين قزام">عين قزام</option>
-            <option value="تقرت">تقرت</option><option value="جانت">جانت</option>
-            <option value="المغير">المغير</option><option value="المنيعة">المنيعة</option>
-            <option value="قصر الشلالة ">قصر الشلالة</option>
+        <option value="">جميع الولايات</option>
+        <option value="أدرار">أدرار</option><option value="الشلف">الشلف</option><option value="الأغواط">الأغواط</option>
+        <option value="أم البواقي">أم البواقي</option><option value="باتنة">باتنة</option><option value="بجاية">بجاية</option>
+        <option value="بسكرة">بسكرة</option><option value="بشار">بشار</option><option value="البليدة">البليدة</option>
+        <option value="البويرة">البويرة</option><option value="تمنراست">تمنراست</option><option value="تبسة">تبسة</option>
+        <option value="تلمسان">تلمسان</option><option value="تيارت">تيارت</option><option value="تيزي وزو">تيزي وزو</option>
+        <option value="الجزائر العاصمة">الجزائر العاصمة</option><option value="الجلفة">الجلفة</option><option value="جيجل">جيجل</option>
+        <option value="سطيف">سطيف</option><option value="سعيدة">سعيدة</option><option value="سكيكدة">سكيكدة</option>
+        <option value="سيدي بلعباس">سيدي بلعباس</option><option value="عنابة">عنابة</option><option value="قالمة">قالمة</option>
+        <option value="قسنطينة">قسنطينة</option><option value="المدية">المدية</option><option value="مستغانم">مستغانم</option>
+        <option value="المسيلة">المسيلة</option><option value="معسكر">معسكر</option><option value="ورقلة">ورقلة</option>
+        <option value="وهران">وهران</option><option value="البيض">البيض</option><option value="إليزي">إليزي</option>
+        <option value="برج بوعريريج">برج بوعريريج</option><option value="بومرداس">بومرداس</option><option value="الطارف">الطارف</option>
+        <option value="تندوف">تندوف</option><option value="تيسمسيلت">تيسمسيلت</option><option value="الوادي">الوادي</option>
+        <option value="خنشلة">خنشلة</option><option value="سوق أهراس">سوق أهراس</option><option value="تيبازة">تيبازة</option>
+        <option value="ميلة">ميلة</option><option value="عين الدفلى">عين الدفلى</option><option value="النعامة">النعامة</option>
+        <option value="عين تموشنت">عين تموشنت</option><option value="غرداية">غرداية</option><option value="غليزان">غليزان</option>
+        <option value="تيميمون">تيميمون</option><option value="برج باجي مختار">برج باجي مختار</option>
+        <option value="أولاد جلال">أولاد جلال</option><option value="بني عباس">بني عباس</option>
+        <option value="عين صالح">عين صالح</option><option value="عين قزام">عين قزام</option>
+        <option value="تقرت">تقرت</option><option value="جانت">جانت</option>
+        <option value="المغير">المغير</option><option value="المنيعة">المنيعة</option>
+        <option value="قصر الشلالة">قصر الشلالة</option>
     </select>
+    
+    <!-- ===== نوع الصالون ===== -->
     <select id="filterSalonType">
         <option value="">جميع الأنواع</option>
         <option value="male">رجالي</option>
@@ -2233,11 +2239,32 @@ input, textarea, select {
         <option value="children">أطفال</option>
         <option value="mixed">مختلط</option>
     </select>
-<button class="btn-gold btn-sm" onclick="getNearbySalons()"><i class="fas fa-map-marker-alt"></i> القريبة</button>
-    <!-- ✅ زر إلغاء الفلتر -->
-<button class="btn-outline btn-sm" onclick="resetSalonFilters()">
-    <i class="fas fa-undo"></i> إلغاء الفلتر
-</button>
+    
+    <!-- ===== 🆕 فلتر السعر ===== -->
+    <select id="filterPrice">
+        <option value="">جميع الأسعار</option>
+        <option value="0-500">أقل من 500 دج</option>
+        <option value="500-1000">500 - 1000 دج</option>
+        <option value="1000-2000">1000 - 2000 دج</option>
+        <option value="2000+">أكثر من 2000 دج</option>
+    </select>
+    
+    <!-- ===== 🆕 فلتر التقييم ===== -->
+    <select id="filterRating">
+        <option value="">جميع التقييمات</option>
+        <option value="4">⭐ 4 نجوم فأكثر</option>
+        <option value="3">⭐ 3 نجوم فأكثر</option>
+        <option value="2">⭐ 2 نجوم فأكثر</option>
+    </select>
+    
+    <!-- ===== 🆕 فلتر "مفتوح الآن" ===== -->
+    <label style="display:flex;align-items:center;gap:0.3rem;font-size:0.8rem;cursor:pointer;padding:0.2rem 0.5rem;background:var(--input-bg);border-radius:50px;border:1px solid var(--border-color);white-space:nowrap;">
+        <input type="checkbox" id="filterOpen" /> مفتوح الآن
+    </label>
+    
+    <!-- ===== أزرار الإجراءات ===== -->
+    <button class="btn-gold btn-sm" onclick="getNearbySalons()"><i class="fas fa-map-marker-alt"></i> القريبة</button>
+    <button class="btn-outline btn-sm" onclick="resetSalonFilters()"><i class="fas fa-undo"></i> إلغاء الفلتر</button>
 </div>
     <div id="salonsResultCount" style="text-align:center;color:var(--text-color);opacity:0.4;margin-bottom:0.4rem;font-size:0.8rem;"></div>
     <div id="salonsLoading" class="grid-3">
@@ -4709,14 +4736,20 @@ function createSalonCard(salon) {
 }
 // ===== تطبيق الفلاتر =====
 function applyFilters() {
+    // قراءة قيم الفلاتر
     const query = document.getElementById('searchSalon')?.value?.toLowerCase()?.trim() || '';
     const city = document.getElementById('filterCity')?.value || '';
     const type = document.getElementById('filterSalonType')?.value || '';
     const sort = document.getElementById('filterSort')?.value || 'rating';
 
+    // ✅ الفلاتر الجديدة
+    const price = document.getElementById('filterPrice')?.value || '';
+    const rating = document.getElementById('filterRating')?.value || '';
+    const isOpen = document.getElementById('filterOpen')?.checked || false;
+
     console.log('🔍 الترتيب المختار:', sort);
 
-    // ===== التصفية الأساسية =====
+    // ===== التصفية الأساسية (الاسم، المدينة، النوع) =====
     let result = allSalons.filter(salon => {
         const matchName = salon.name.toLowerCase().includes(query);
         const matchCity = city ? salon.city === city : true;
@@ -4724,82 +4757,80 @@ function applyFilters() {
         return matchName && matchCity && matchType;
     });
 
-    console.log(`📊 عدد النتائج قبل التصفية: ${result.length}`);
+    console.log(`📊 عدد النتائج بعد التصفية الأساسية: ${result.length}`);
 
-    // ===== التصفية حسب الخيار المختار =====
-    if (sort === 'rating') {
-        // ✅ الأعلى تقييماً: عرض الصالونات ذات أعلى تقييم فقط
-        console.log('⭐ تصفية: الأعلى تقييماً');
-        if (result.length === 0) {
-            currentPage = 1;
-            renderAllSalons(result);
-            return;
-        }
-        // حساب أعلى تقييم
-        const maxRating = Math.max(...result.map(s => s.rating || 0));
-        result = result.filter(s => (s.rating || 0) === maxRating);
-        console.log(`📊 أعلى تقييم: ${maxRating}، عدد الصالونات: ${result.length}`);
-    } 
-    else if (sort === 'price') {
-        // ✅ الأقل سعراً: عرض الصالونات ذات أقل سعر خدمة فقط
-        console.log('💰 تصفية: الأقل سعراً');
-        if (result.length === 0) {
-            currentPage = 1;
-            renderAllSalons(result);
-            return;
-        }
-        // حساب أقل سعر خدمة لكل صالون
-        const minPrices = result.map(s => {
-            if (s.services?.length) {
-                return Math.min(...s.services.map(service => service.price || 0));
-            }
-            return Infinity;
+    // ===== تصفية السعر =====
+    if (price) {
+        const [min, max] = price.split('-').map(Number);
+        result = result.filter(salon => {
+            // أقل سعر خدمة في الصالون
+            const minPrice = salon.services?.length ? Math.min(...salon.services.map(s => s.price)) : 0;
+            if (price === '2000+') return minPrice >= 2000;
+            return minPrice >= min && (max ? minPrice <= max : true);
         });
-        const globalMin = Math.min(...minPrices);
-        // إذا كان أقل سعر لا نهائي (يعني لا توجد خدمات)، نعرض الكل
-        if (globalMin === Infinity) {
-            console.log('⚠️ لا توجد خدمات، عرض الكل');
-            currentPage = 1;
-            renderAllSalons(result);
-            return;
-        }
-        result = result.filter((s, index) => minPrices[index] === globalMin);
-        console.log(`📊 أقل سعر: ${globalMin}، عدد الصالونات: ${result.length}`);
-    } 
-    else if (sort === 'distance') {
-        // ✅ الأقرب ضمن 10 كم
-        console.log('📍 تصفية: الأقرب (ضمن 10 كم)');
-        const salonsWithDistance = result.filter(s => s.distance !== undefined && s.distance !== null);
-        if (salonsWithDistance.length === 0) {
-            showToast('📍 اضغط على "القريبة" لتحديد موقعك أولاً', 'info');
-            currentPage = 1;
-            renderAllSalons(result);
-            return;
-        }
-        const nearbySalons = salonsWithDistance.filter(s => s.distance <= 10);
-        if (nearbySalons.length === 0) {
-            showToast('❌ لا توجد صالونات ضمن 10 كم', 'error');
-            currentPage = 1;
-            renderAllSalons([]);
-            return;
-        }
-        // ترتيب تصاعدي (الأقرب أولاً)
-        nearbySalons.sort((a, b) => a.distance - b.distance);
-        result = nearbySalons;
+        console.log(`📊 بعد تصفية السعر (${price}): ${result.length}`);
     }
 
-    // ===== عرض النتائج =====
-    currentPage = 1;
+    // ===== تصفية التقييم =====
+    if (rating) {
+        const minRating = parseInt(rating);
+        result = result.filter(salon => (salon.rating || 0) >= minRating);
+        console.log(`📊 بعد تصفية التقييم (${rating}+): ${result.length}`);
+    }
+
+    // ===== تصفية "مفتوح الآن" =====
+    if (isOpen) {
+        const now = new Date();
+        const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+        const dayName = dayNames[now.getDay()];
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+        result = result.filter(salon => {
+            const hours = salon.hours?.[dayName];
+            if (!hours || hours === 'مغلق' || hours === 'closed') return false;
+            const parts = hours.split('-').map(t => t.trim());
+            if (parts.length !== 2) return false;
+            const [openTime, closeTime] = parts;
+            const [openHour, openMin] = openTime.split(':').map(Number);
+            const [closeHour, closeMin] = closeTime.split(':').map(Number);
+            if (isNaN(openHour) || isNaN(closeHour)) return false;
+            const openMinutes = openHour * 60 + (openMin || 0);
+            const closeMinutes = closeHour * 60 + (closeMin || 0);
+            return currentMinutes >= openMinutes && currentMinutes <= closeMinutes;
+        });
+        console.log(`📊 بعد تصفية "مفتوح الآن": ${result.length}`);
+    }
+
+    // ===== الترتيب =====
+    if (sort === 'rating') {
+        // الأعلى تقييماً أولاً
+        result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    } else if (sort === 'price') {
+        // الأقل سعراً أولاً
+        result.sort((a, b) => {
+            const aPrice = a.services?.length ? Math.min(...a.services.map(s => s.price)) : Infinity;
+            const bPrice = b.services?.length ? Math.min(...b.services.map(s => s.price)) : Infinity;
+            return aPrice - bPrice;
+        });
+    } else if (sort === 'distance') {
+        // الأقرب أولاً (إذا كانت المسافة محسوبة)
+        result.sort((a, b) => (a.distance || Infinity) - (b.distance || Infinity));
+    }
+
     console.log(`📊 عدد النتائج النهائي: ${result.length}`);
+    currentPage = 1;
     renderAllSalons(result);
 }
 
-// ===== مستمعات الأحداث =====
+// ===== مستمعات الأحداث للفلاتر =====
 document.getElementById('searchSalon')?.addEventListener('input', applyFilters);
 document.getElementById('filterCity')?.addEventListener('change', applyFilters);
 document.getElementById('filterSalonType')?.addEventListener('change', applyFilters);
 document.getElementById('filterSort')?.addEventListener('change', applyFilters);
-
+document.getElementById('filterPrice')?.addEventListener('change', applyFilters);
+document.getElementById('filterRating')?.addEventListener('change', applyFilters);
+document.getElementById('filterOpen')?.addEventListener('change', applyFilters);
+    
 // ===== الحصول على الصالونات القريبة =====
 function getNearbySalons() {
     const salonsWithGps = allSalons.filter(s => s.lat && s.lng);
