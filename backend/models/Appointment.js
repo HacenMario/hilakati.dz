@@ -15,7 +15,6 @@ const AppointmentSchema = new mongoose.Schema({
   payment: { type: String, enum: ['cash', 'online'], default: 'cash' },
   notes: String,
   recurring: { type: String, enum: ['none', 'weekly', 'monthly'], default: 'none' },
-  reminderSent: { type: Boolean, default: false }
   
   // ============================================================
   // 🆕 حقول الكوبونات
@@ -36,6 +35,14 @@ const AppointmentSchema = new mongoose.Schema({
   originalPrice: { 
     type: Number, 
     default: 0 
+  },
+  
+  // ============================================================
+  // 🆕 حقل تذكير الحجز
+  // ============================================================
+  reminderSent: { 
+    type: Boolean, 
+    default: false 
   }
   
 }, { timestamps: true });
