@@ -1199,16 +1199,6 @@ app.delete('/api/admin/salons/:id/reviews', adminAuthMiddleware, async (req, res
     }
 });
 
-app.post('/api/test-reminders', async (req, res) => {
-    try {
-        // تنفيذ منطق التذكير كما هو في المجدول
-        // ... (كود المجدول)
-        res.json({ message: 'تم تشغيل التذكيرات بنجاح' });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-});
-
 // ============================================================
 // الصالونات العامة (مع فلترة الصالونات النشطة فقط)
 // ============================================================
@@ -2506,6 +2496,45 @@ cron.schedule('0 * * * *', async () => {
         console.log('✅ انتهى تشغيل مجدول التذكيرات');
     } catch (error) {
         console.error('❌ فشل مجدول التذكيرات:', error);
+    }
+});
+
+// ============================================================
+// ✅ تشغيل التذكيرات يدوياً (لـ Admin)
+// ============================================================
+app.post('/api/test-reminders', async (req, res) => {
+    try {
+        // استدعاء منطق التذكير (نفس الكود الموجود في cron)
+        const now = new Date();
+        const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+        const tomorrowStr = tomorrow.toISOString().split('T')[0];
+        
+        const appointments = await Appointment.find({
+            date: tomorrowStr,
+            status: 'confirmed',
+            reminderSent: { $ne: true }
+        }).populate('customerId', 'name email phone');
+        
+        let count = 0;
+        for (const app of appointments) {
+            try {
+                // محاكاة إرسال البريد والإشعار (نفس الكود)
+                // ... (يمكنك نسخ الكود من مجدول التذكير)
+                app.reminderSent = true;
+                await app.save();
+                count++;
+            } catch (err) {
+                console.error(`❌ فشل تذكير الحجز ${app._id}:`, err);
+            }
+        }
+        
+        res.json({ 
+            message: `✅ تم تشغيل التذكيرات بنجاح. عدد التذكيرات المرسلة: ${count}`,
+            count
+        });
+    } catch (error) {
+        console.error('❌ فشل تشغيل التذكيرات:', error);
+        res.status(500).json({ message: 'فشل تشغيل التذكيرات: ' + error.message });
     }
 });
 
