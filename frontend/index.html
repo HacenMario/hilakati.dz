@@ -4500,21 +4500,12 @@ function createSalonCard(salon) {
                 <div class="tags">${(salon.tags || []).map(t => `<span>#${t}</span>`).join('')}</div>
                 <div class="price-info">${minPrice > 0 ? `💰 يبدأ من ${minPrice} دج` : 'اتصل للاستفسار'}</div>
                 
-// ===== أزرار الإجراءات (مع تباعد محسّن) =====
-<div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.5rem;">
-    <button class="btn-book" onclick="event.stopPropagation();openBooking('${salon._id}')" 
-            style="flex:1;min-width:80px;padding:0.4rem 0.6rem;">
-        <i class="fas fa-calendar-plus"></i> احجز الآن
-    </button>
-    <button class="btn-success btn-sm" onclick="event.stopPropagation();quickBooking('${salon._id}')" 
-            style="flex:1;min-width:80px;padding:0.4rem 0.6rem;">
-        <i class="fas fa-bolt"></i> حجز سريع
-    </button>
-    <button class="btn-outline btn-sm" onclick="event.stopPropagation();openQuoteRequest('${salon._id}')" 
-            style="flex:1;min-width:80px;padding:0.4rem 0.6rem;border-color:var(--gold);color:var(--gold);">
-        <i class="fas fa-file-invoice"></i> خاص بالمناسبات و الأعراس
-    </button>
-</div>
+                <!-- ===== أزرار الإجراءات ===== -->
+                <button class="btn-book" onclick="event.stopPropagation();openBooking('${salon._id}')"><i class="fas fa-calendar-plus"></i> احجز الآن
+                <button class="btn-success btn-sm" onclick="event.stopPropagation();quickBooking('${salon._id}')" style="margin-top:0.3rem;width:100%;"><i class="fas fa-bolt"></i> حجز سريع
+                <button class="btn-outline btn-sm" onclick="event.stopPropagation();openQuoteRequest('${salon._id}')" style="flex:1;min-width:80px;border-color:var(--gold);color:var(--gold);"><i class="fas fa-file-invoice"></i> خاص بالمناسبات و الأعراس
+                </button>
+                </div>
             </div>
         </div>
     `;
