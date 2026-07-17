@@ -2876,13 +2876,14 @@ function displayExistingGallery(images) {
             const updatedImages = [...images];
             updatedImages.splice(index, 1);
             displayExistingGallery(updatedImages);
-            // سيتم تحديث المصفوفة في الذاكرة وإرسالها عند الحفظ
         };
         
         wrapper.appendChild(img);
         wrapper.appendChild(deleteBtn);
         container.appendChild(wrapper);
     });
+    // ❌ تم إزالة السطر المسبب للخطأ:
+    // document.getElementById('setGallery').value = images.join('\n');
 }
         
 // ✅ عرض تفاصيل طلب عرض سعر
@@ -5984,14 +5985,12 @@ async function loadDashboard() {
         document.getElementById('setSalonType').value = salon.salonType || 'mixed';
         document.getElementById('setIsMobile').value = salon.isMobile ? 'true' : 'false';
 
-        // ✅ عرض الصور الموجودة (مع التحقق من وجود العنصر)
+        // ✅ عرض الصور الموجودة
         const existingGallery = salon.gallery || [];
         const galleryInput = document.getElementById('setGallery');
         if (galleryInput) {
             galleryInput.value = existingGallery.join('\n');
         }
-
-        // ✅ عرض معاينة الصور الموجودة (إذا كانت الدالة موجودة)
         if (typeof displayExistingGallery === 'function') {
             displayExistingGallery(existingGallery);
         }
@@ -6002,7 +6001,7 @@ async function loadDashboard() {
             document.getElementById('setGpsStatus').textContent = `✅ ${salon.lat.toFixed(4)}, ${salon.lng.toFixed(4)}`;
         }
 
-        // ===== ✅ إضافة معالج حدث النموذج (settingsForm) =====
+        // ===== معالج نموذج الإعدادات =====
         const settingsForm = document.getElementById('settingsForm');
         const newForm = settingsForm.cloneNode(true);
         settingsForm.parentNode.replaceChild(newForm, settingsForm);
@@ -6030,7 +6029,7 @@ async function loadDashboard() {
             const salonType = safeGetSelectValue('setSalonType', 'mixed');
             const isMobile = safeGetValue('setIsMobile') === 'true';
 
-            // ✅ معالجة الصور الجديدة (من الملفات المرفوعة)
+            // معالجة الصور الجديدة
             let newImagesBase64 = [];
             const fileInput = document.getElementById('setGalleryInput');
             if (fileInput && fileInput.files.length > 0) {
@@ -6049,11 +6048,10 @@ async function loadDashboard() {
                 }
             }
 
-            // دمج الصور الموجودة مع الصور الجديدة
             const existingGallery = document.getElementById('setGallery')?.value.split('\n').filter(s => s.trim()) || [];
             const finalGallery = [...existingGallery, ...newImagesBase64];
 
-            // معالجة إحداثيات GPS
+            // معالجة GPS
             const latManual = document.getElementById('setLatManual');
             const latHidden = document.getElementById('setLat');
             const lngManual = document.getElementById('setLngManual');
@@ -6061,20 +6059,12 @@ async function loadDashboard() {
 
             let lat = null;
             let lng = null;
+            if (latManual && latManual.value) lat = parseFloat(latManual.value);
+            else if (latHidden && latHidden.value) lat = parseFloat(latHidden.value);
+            if (lngManual && lngManual.value) lng = parseFloat(lngManual.value);
+            else if (lngHidden && lngHidden.value) lng = parseFloat(lngHidden.value);
 
-            if (latManual && latManual.value) {
-                lat = parseFloat(latManual.value);
-            } else if (latHidden && latHidden.value) {
-                lat = parseFloat(latHidden.value);
-            }
-
-            if (lngManual && lngManual.value) {
-                lng = parseFloat(lngManual.value);
-            } else if (lngHidden && lngHidden.value) {
-                lng = parseFloat(lngHidden.value);
-            }
-
-            // معالجة تحميل الشعار
+            // معالجة الشعار
             let logo = null;
             const logoFileInput = document.getElementById('setLogo');
             if (logoFileInput && logoFileInput.files.length > 0) {
@@ -6091,35 +6081,18 @@ async function loadDashboard() {
             }
 
             const body = {
-                name,
-                city,
-                address,
-                phone,
-                desc,
-                salonType,
-                isMobile,
+                name, city, address, phone, desc, salonType, isMobile,
                 gallery: finalGallery
             };
-
-            if (lat !== null && lng !== null) {
-                body.lat = lat;
-                body.lng = lng;
-            }
-
-            if (logo) {
-                body.logo = logo;
-            }
+            if (lat !== null && lng !== null) { body.lat = lat; body.lng = lng; }
+            if (logo) { body.logo = logo; }
 
             try {
                 const res = await fetch(`${API_BASE}/salons/${salonId}/settings`, {
                     method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify(body)
                 });
-
                 if (res.ok) {
                     showToast('✅ تم الحفظ', 'success');
                     loadDashboard();
@@ -6132,8 +6105,8 @@ async function loadDashboard() {
                 showToast('❌ فشل الاتصال بالخادم', 'error');
             }
         });
-        
-        // ✅ تحميل الإضافات الجديدة
+
+        // تحميل الإضافات
         loadStaff();
         loadInventory();
         loadCoupons();
