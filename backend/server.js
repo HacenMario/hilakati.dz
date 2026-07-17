@@ -1243,7 +1243,7 @@ app.get('/api/salons/:id', async (req, res) => {
             _id: req.params.id,
             status: 'active',
             isActive: true
-        }).select('-password -logo -gallery');
+        }).select('-password -logo');  // ✅ إزالة -gallery
 
         if (!salon) {
             return res.status(404).json({ message: 'الصالون غير موجود أو غير مفعل' });
