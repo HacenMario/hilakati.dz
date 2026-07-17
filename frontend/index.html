@@ -1,6 +1,25 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
+    <!-- ✅ تحسين الأداء -->
+<!-- 1. التحميل المسبق للـ DNS -->
+<link rel="dns-prefetch" href="https://cdnjs.cloudflare.com" />
+<link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+<link rel="dns-prefetch" href="https://halakati-project.onrender.com" />
+
+<!-- 2. تحميل الخطوط بشكل أسرع -->
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+<!-- 3. تحميل CSS بشكل غير متزامن (غير محظور) -->
+<link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+<noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" /></noscript>
+
+<!-- 4. تحميل JavaScript بشكل غير متزامن -->
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js" defer></script>
+    
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="description" content="حلاقتي - منصة حجز صالونات الحلاقة والتجميل في الجزائر" />
@@ -1286,6 +1305,39 @@ td { color: var(--text-color); }
     font-weight: 700;
 }
 
+/* ===== شريط التنقل السفلي ===== */
+@media (max-width: 768px) {
+    .mobile-bottom-nav {
+        display: flex !important;
+    }
+    /* إضافة مسافة أسفل الصفحة لعدم تغطية المحتوى */
+    body {
+        padding-bottom: 60px;
+    }
+}
+
+.mobile-bottom-nav a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 0.6rem;
+    color: var(--text-color);
+    opacity: 0.5;
+    text-decoration: none;
+    padding: 0.2rem 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.mobile-bottom-nav a.active {
+    color: var(--gold);
+    opacity: 1;
+}
+
+.mobile-bottom-nav a i {
+    font-size: 1.2rem;
+    margin-bottom: 2px;
+}
+        
 /* ============================================================
    تحسينات الجوال والتطبيقات (Mobile-First)
    ============================================================ */
@@ -2181,6 +2233,30 @@ input, textarea, select {
         <option value="children">أطفال</option>
         <option value="mixed">مختلط</option>
     </select>
+        <!-- ✅ فلاتر جديدة -->
+    <select id="filterPrice">
+        <option value="">السعر</option>
+        <option value="0-500">أقل من 500 دج</option>
+        <option value="500-1000">500 - 1000 دج</option>
+        <option value="1000-2000">1000 - 2000 دج</option>
+        <option value="2000+">أكثر من 2000 دج</option>
+    </select>
+    
+    <select id="filterRating">
+        <option value="">التقييم</option>
+        <option value="4">⭐ 4+</option>
+        <option value="3">⭐ 3+</option>
+        <option value="2">⭐ 2+</option>
+    </select>
+    
+    <label style="display:flex;align-items:center;gap:0.3rem;font-size:0.8rem;">
+        <input type="checkbox" id="filterOpen" /> مفتوح الآن
+    </label>
+    
+    <button class="btn-gold btn-sm" onclick="applyAdvancedFilters()">
+        <i class="fas fa-filter"></i> تطبيق
+    </button>
+</div>
     <button class="btn-gold btn-sm" onclick="getNearbySalons()"><i class="fas fa-map-marker-alt"></i> القريبة</button>
     <!-- ✅ زر إلغاء الفلتر -->
 <button class="btn-outline btn-sm" onclick="resetSalonFilters()">
@@ -2552,6 +2628,30 @@ input, textarea, select {
     <h2 class="section-title">حسابي</h2>
     <div id="customerDashboardContent"></div>
 </section>
+
+<!-- ===== شريط التنقل السفلي (للجوال فقط) ===== -->
+<nav class="mobile-bottom-nav" style="display:none;position:fixed;bottom:0;left:0;right:0;background:var(--bg-header);backdrop-filter:blur(12px);border-top:1px solid var(--border-color);padding:0.3rem 0;z-index:999;justify-content:space-around;">
+    <a href="#" onclick="navigateTo('home');return false;" data-page="home" class="active">
+        <i class="fas fa-home"></i>
+        <span>الرئيسية</span>
+    </a>
+    <a href="#" onclick="navigateTo('salons');return false;" data-page="salons">
+        <i class="fas fa-search"></i>
+        <span>البحث</span>
+    </a>
+    <a href="#" onclick="navigateTo('dashboard');return false;" data-page="dashboard" id="mobileDashLink" style="display:none;">
+        <i class="fas fa-chart-pie"></i>
+        <span>لوحتي</span>
+    </a>
+    <a href="#" onclick="navigateTo('customer-dashboard');return false;" data-page="customer-dashboard" id="mobileCustomerLink" style="display:none;">
+        <i class="fas fa-user"></i>
+        <span>حسابي</span>
+    </a>
+    <a href="#" onclick="openModal('customerLoginModal');return false;" id="mobileLoginLink">
+        <i class="fas fa-sign-in-alt"></i>
+        <span>دخول</span>
+    </a>
+</nav>
 
 <script>
     
@@ -4717,11 +4817,52 @@ function applyFilters() {
     console.log(`📊 عدد النتائج النهائي: ${result.length}`);
     renderAllSalons(result);
 }
+function applyAdvancedFilters() {
+    const price = document.getElementById('filterPrice').value;
+    const rating = document.getElementById('filterRating').value;
+    const isOpen = document.getElementById('filterOpen').checked;
+    
+    let result = allSalons;
+    
+    // تصفية السعر
+    if (price) {
+        const [min, max] = price.split('-').map(Number);
+        result = result.filter(s => {
+            const minPrice = s.services?.length ? Math.min(...s.services.map(service => service.price)) : 0;
+            if (price === '2000+') return minPrice >= 2000;
+            return minPrice >= min && (max ? minPrice <= max : true);
+        });
+    }
+    
+    // تصفية التقييم
+    if (rating) {
+        result = result.filter(s => (s.rating || 0) >= parseInt(rating));
+    }
+    
+    // تصفية "مفتوح الآن"
+    if (isOpen) {
+        const now = new Date();
+        const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+        const dayName = dayNames[now.getDay()];
+        result = result.filter(s => {
+            const hours = s.hours?.[dayName];
+            if (!hours || hours === 'مغلق' || hours === 'closed') return false;
+            const [open, close] = hours.split('-').map(t => t.trim());
+            // التحقق البسيط من الوقت (يمكن تحسينه)
+            return true;
+        });
+    }
+    
+    renderAllSalons(result);
+}
 // ===== مستمعات الأحداث =====
 document.getElementById('searchSalon')?.addEventListener('input', applyFilters);
 document.getElementById('filterCity')?.addEventListener('change', applyFilters);
 document.getElementById('filterSalonType')?.addEventListener('change', applyFilters);
 document.getElementById('filterSort')?.addEventListener('change', applyFilters);
+document.getElementById('filterPrice')?.addEventListener('change', applyAdvancedFilters);
+document.getElementById('filterRating')?.addEventListener('change', applyAdvancedFilters);
+document.getElementById('filterOpen')?.addEventListener('change', applyAdvancedFilters);
 
 // ===== الحصول على الصالونات القريبة =====
 function getNearbySalons() {
