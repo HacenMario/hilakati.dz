@@ -2997,8 +2997,18 @@ case 'bookings':
             <i class="fas fa-calendar-alt"></i> حجوزاتي
         </h3>
         <div id="customerBookingsList">
-            ${bookings.length ? bookings.map(b => `
-                <div style="background:rgba(255,255,255,0.02);padding:0.5rem;border-radius:10px;margin-bottom:0.5rem;border-right:3px solid ${b.status === 'confirmed' ? 'var(--success)' : b.status === 'pending' ? 'var(--warning)' : 'var(--danger)'};">
+            ${bookings.length ? bookings.map(b => {
+                // ✅ تحديد الألوان حسب الحالة
+                let borderColor = 'var(--warning)';
+                if (b.status === 'confirmed') borderColor = 'var(--success)';
+                else if (b.status === 'completed') borderColor = 'var(--info)';
+                else if (b.status === 'cancelled') borderColor = 'var(--danger)';
+                
+                // ✅ إظهار الأزرار فقط للحجوزات غير المكتملة والملغاة
+                const showActions = b.status !== 'completed' && b.status !== 'cancelled';
+                
+                return `
+                <div style="background:rgba(255,255,255,0.02);padding:0.5rem;border-radius:10px;margin-bottom:0.5rem;border-right:3px solid ${borderColor};">
                     <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:0.3rem;">
                         <div>
                             <strong style="color:var(--gold);">${b.salonId?.name || 'صالون'}</strong>
@@ -3011,8 +3021,8 @@ case 'bookings':
                     </div>
                     <div style="color:var(--gold);font-size:0.85rem;">💰 ${b.totalPrice || b.price || 0} دج</div>
                     
-                    <!-- ✅ أزرار الإجراءات (تظهر فقط للحجوزات غير الملغاة والمكتملة) -->
-                    ${b.status !== 'cancelled' && b.status !== 'completed' ? `
+                    <!-- ✅ أزرار الإجراءات -->
+                    ${showActions ? `
                         <div style="display:flex;gap:0.3rem;margin-top:0.3rem;flex-wrap:wrap;">
                             <button class="btn-warning btn-sm" onclick="rescheduleBooking('${b._id}')" style="background:var(--warning);color:#000;border-radius:50px;padding:0.2rem 0.8rem;border:none;cursor:pointer;">
                                 <i class="fas fa-edit"></i> تعديل
@@ -3021,10 +3031,9 @@ case 'bookings':
                                 <i class="fas fa-times"></i> إلغاء
                             </button>
                         </div>
-                    ` : ''}
-                    ${b.status === 'pending' ? `<div style="font-size:0.7rem;opacity:0.5;margin-top:0.2rem;">⏳ بانتظار تأكيد الصالون</div>` : ''}
+                    ` : `<div style="font-size:0.7rem;opacity:0.5;margin-top:0.2rem;">${b.status === 'pending' ? '⏳ بانتظار تأكيد الصالون' : '✅ تم إنجاز هذا الحجز'}</div>`}
                 </div>
-            `).join('') : '<p style="color:var(--text-color);opacity:0.5;">لا توجد حجوزات</p>'}
+            `}).join('') : '<p style="color:var(--text-color);opacity:0.5;">لا توجد حجوزات</p>'}
         </div>
         <button class="btn-gold btn-sm" onclick="loadCustomerDashboard()" style="margin-top:0.5rem;">
             <i class="fas fa-sync"></i> تحديث
