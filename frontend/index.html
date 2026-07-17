@@ -2800,33 +2800,23 @@ async function loadCustomerDashboard() {
 // ✅ إلغاء الحجز
 async function cancelBooking(bookingId) {
     if (!confirm('⚠️ هل أنت متأكد من إلغاء هذا الحجز؟')) return;
-    
     const token = localStorage.getItem('customerToken');
-    if (!token) {
-        showToast('❌ يرجى تسجيل الدخول', 'error');
-        return;
-    }
-    
+    if (!token) { showToast('❌ يرجى تسجيل الدخول', 'error'); return; }
     try {
-        showToast('⏳ جاري إلغاء الحجز...', 'info');
         const res = await fetch(`${API_BASE}/appointments/${bookingId}/cancel-by-customer`, {
             method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
         });
         const data = await res.json();
         if (res.ok) {
-            showToast('✅ تم إلغاء الحجز بنجاح', 'success');
+            showToast('✅ تم إلغاء الحجز', 'success');
             loadCustomerDashboard();
             refreshNotifications();
         } else {
-            showToast(`❌ ${data.message || 'فشل الإلغاء'}`, 'error');
+            showToast(`❌ ${data.message}`, 'error');
         }
     } catch (error) {
-        console.error('❌ فشل إلغاء الحجز:', error);
-        showToast('❌ فشل الاتصال بالخادم', 'error');
+        showToast('❌ فشل الاتصال', 'error');
     }
 }
 
@@ -2834,41 +2824,29 @@ async function cancelBooking(bookingId) {
 // ✅ تعديل الحجز (للعميل)
 // ============================================================
 async function rescheduleBooking(bookingId) {
-    // نافذة اختيار التاريخ والوقت الجديدين
-    const newDate = prompt('📅 أدخل التاريخ الجديد (YYYY-MM-DD):', new Date().toISOString().split('T')[0]);
+    const newDate = prompt('📅 التاريخ الجديد (YYYY-MM-DD):', new Date().toISOString().split('T')[0]);
     if (!newDate) return;
-    const newTime = prompt('🕐 أدخل الوقت الجديد (HH:MM):', '10:00');
+    const newTime = prompt('🕐 الوقت الجديد (HH:MM):', '10:00');
     if (!newTime) return;
-    
-    if (!confirm(`✅ هل أنت متأكد من تعديل الحجز إلى ${newDate} الساعة ${newTime}؟`)) return;
-    
+    if (!confirm(`✅ تعديل إلى ${newDate} ${newTime}؟`)) return;
     const token = localStorage.getItem('customerToken');
-    if (!token) {
-        showToast('❌ يرجى تسجيل الدخول', 'error');
-        return;
-    }
-    
+    if (!token) { showToast('❌ يرجى تسجيل الدخول', 'error'); return; }
     try {
-        showToast('⏳ جاري تعديل الحجز...', 'info');
         const res = await fetch(`${API_BASE}/appointments/${bookingId}/reschedule`, {
             method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ date: newDate, time: newTime })
         });
         const data = await res.json();
         if (res.ok) {
-            showToast('✅ تم تعديل الحجز بنجاح', 'success');
+            showToast('✅ تم تعديل الحجز', 'success');
             loadCustomerDashboard();
             refreshNotifications();
         } else {
-            showToast(`❌ ${data.message || 'فشل التعديل'}`, 'error');
+            showToast(`❌ ${data.message}`, 'error');
         }
     } catch (error) {
-        console.error('❌ فشل تعديل الحجز:', error);
-        showToast('❌ فشل الاتصال بالخادم', 'error');
+        showToast('❌ فشل الاتصال', 'error');
     }
 }
 
