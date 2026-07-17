@@ -1703,6 +1703,18 @@ input, textarea, select {
 </div>
 
 <!-- ===== النوافذ المنبثقة ===== -->
+<!-- ===== نافذة معرض الصور ===== -->
+<div class="modal-overlay" id="galleryModal">
+    <div class="modal-box" style="max-width:650px;">
+        <button class="modal-close" onclick="closeModal('galleryModal')">&times;</button>
+        <h2 style="color:var(--gold);text-align:center;margin-bottom:0.5rem;">
+            <i class="fas fa-images"></i> معرض الأعمال
+        </h2>
+        <div id="galleryContent" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:0.5rem;max-height:70vh;overflow-y:auto;padding:0.5rem 0;">
+            <!-- سيتم تعبئته بواسطة JavaScript -->
+        </div>
+    </div>
+</div>
 <!-- ===== نافذة اختيار تاريخ ووقت الحجز ===== -->
 <div class="modal-overlay" id="quoteDateTimeModal">
     <div class="modal-box" style="max-width:450px;">
@@ -2400,6 +2412,18 @@ input, textarea, select {
             <div id="dashSettings" class="hidden">
                 <h3 style="color:var(--gold);margin-bottom:0.6rem;font-size:1rem;"><i class="fas fa-cog"></i> <span data-i18n="settings">الإعدادات</span></h3>
                 <form id="settingsForm">
+    <div class="form-group">
+    <label>📷 معرض الصور (اختر صوراً من جهازك)</label>
+    <input type="file" id="setGalleryInput" accept="image/*" multiple style="width:100%;padding:0.5rem;border-radius:8px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--text-color);">
+    <small style="color:var(--text-color);opacity:0.5;font-size:0.7rem;">يمكنك اختيار عدة صور في وقت واحد (jpg, png, gif, webp)</small>
+    
+    <!-- ✅ منطقة معاينة الصور -->
+    <div id="galleryPreview" style="display:flex;flex-wrap:wrap;gap:0.3rem;margin-top:0.3rem;"></div>
+    
+    <!-- ✅ الصور الموجودة حالياً (تُملأ من قاعدة البيانات) -->
+    <div id="existingGallery" style="display:flex;flex-wrap:wrap;gap:0.3rem;margin-top:0.3rem;"></div>
+</div>
+
                     <div class="form-group"><label data-i18n="salonName">اسم الصالون</label><input type="text" id="setSalonName"></div>
                     <div class="form-group"><label data-i18n="city">المدينة</label><input type="text" id="setSalonCity"></div>
                     <div class="form-group"><label data-i18n="address">العنوان</label><input type="text" id="setSalonAddress"></div>
@@ -2408,7 +2432,6 @@ input, textarea, select {
                     <div class="form-group"><label>نوع الصالون</label><select id="setSalonType"><option value="mixed">مختلط</option><option value="male">رجالي</option><option value="female">نسائي</option><option value="children">أطفال</option></select></div>
                     <div class="form-group"><label>خدمة متنقلة</label><select id="setIsMobile"><option value="false">لا</option><option value="true">نعم</option></select></div>
                     <div class="form-group"><label data-i18n="logo">شعار جديد</label><input type="file" id="setLogo" accept="image/*"></div>
-                    <div class="form-group"><label>معرض صور (URLs)</label><input type="text" id="setGallery" placeholder="https://... , https://..."></div>
                     <div class="form-group"><label data-i18n="gps">موقع GPS</label>
                         <div style="display:flex;gap:0.3rem;flex-wrap:wrap;align-items:center;">
                             <button type="button" class="btn-primary btn-sm" onclick="getCurrentLocation('setLat','setLng')"><i class="fas fa-map-marker-alt"></i> تحديث</button>
@@ -2657,6 +2680,99 @@ input, textarea, select {
 </nav>
 
 <script>
+
+// ============================================================
+// ✅ معاينة الصور قبل التحميل
+// ============================================================
+let selectedGalleryFiles = [];
+
+document.getElementById('setGalleryInput')?.addEventListener('change', function(e) {
+    const files = Array.from(this.files);
+    const previewContainer = document.getElementById('galleryPreview');
+    previewContainer.innerHTML = ''; // مسح المعاينة السابقة
+    
+    selectedGalleryFiles = files;
+    
+    files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const img = document.createElement('img');
+            img.src = event.target.result;
+            img.style.width = '80px';
+            img.style.height = '80px';
+            img.style.objectFit = 'cover';
+            img.style.borderRadius = '8px';
+            img.style.border = '1px solid var(--border-color)';
+            img.style.transition = 'transform 0.3s ease';
+            img.onmouseover = () => img.style.transform = 'scale(1.05)';
+            img.onmouseout = () => img.style.transform = 'scale(1)';
+            previewContainer.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+    });
+});
+
+// ============================================================
+// ✅ عرض الصور الموجودة حالياً (من قاعدة البيانات)
+// ============================================================
+function displayExistingGallery(images) {
+    const container = document.getElementById('existingGallery');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    if (!images || images.length === 0) {
+        container.innerHTML = '<span style="font-size:0.7rem;color:var(--text-color);opacity:0.4;">لا توجد صور محفوظة</span>';
+        return;
+    }
+    
+    images.forEach((url, index) => {
+        const wrapper = document.createElement('div');
+        wrapper.style.position = 'relative';
+        wrapper.style.display = 'inline-block';
+        
+        const img = document.createElement('img');
+        img.src = url;
+        img.style.width = '80px';
+        img.style.height = '80px';
+        img.style.objectFit = 'cover';
+        img.style.borderRadius = '8px';
+        img.style.border = '1px solid var(--border-color)';
+        
+        // زر حذف الصورة
+        const deleteBtn = document.createElement('button');
+        deleteBtn.innerHTML = '✕';
+        deleteBtn.style.position = 'absolute';
+        deleteBtn.style.top = '-6px';
+        deleteBtn.style.right = '-6px';
+        deleteBtn.style.width = '20px';
+        deleteBtn.style.height = '20px';
+        deleteBtn.style.borderRadius = '50%';
+        deleteBtn.style.border = 'none';
+        deleteBtn.style.background = 'var(--danger)';
+        deleteBtn.style.color = '#fff';
+        deleteBtn.style.fontSize = '12px';
+        deleteBtn.style.cursor = 'pointer';
+        deleteBtn.style.display = 'flex';
+        deleteBtn.style.alignItems = 'center';
+        deleteBtn.style.justifyContent = 'center';
+        deleteBtn.onclick = function(e) {
+            e.stopPropagation();
+            // حذف الصورة من القائمة (سيتم إرسال القائمة المحدثة عند الحفظ)
+            const updatedImages = [...images];
+            updatedImages.splice(index, 1);
+            displayExistingGallery(updatedImages);
+            // تخزين القائمة المحدثة مؤقتاً
+            document.getElementById('setGallery').value = updatedImages.join('\n');
+        };
+        
+        wrapper.appendChild(img);
+        wrapper.appendChild(deleteBtn);
+        container.appendChild(wrapper);
+    });
+    
+    // تحديث الحقل المخفي
+    document.getElementById('setGallery').value = images.join('\n');
+}
     
 // ✅ عرض تفاصيل طلب عرض سعر
 async function showQuoteDetails(quoteId) {
@@ -4843,6 +4959,19 @@ function createSalonCard(salon) {
                 <button class="btn-outline btn-sm" onclick="event.stopPropagation();openQuoteRequest('${salon._id}')" style="flex:1;min-width:80px;border-color:var(--gold);color:var(--gold);"><i class="fas fa-file-invoice"></i> خاص بالمناسبات و الأعراس
                 </button>
                 </div>
+<!-- ✅ زر معرض الصور (يظهر إذا كانت هناك صور) -->
+${salon.gallery && salon.gallery.length > 0 ? `
+    <div style="margin-top:0.3rem;">
+        <button class="btn-info btn-sm" onclick="event.stopPropagation();openSalonGallery('${salon._id}')" 
+                style="width:100%;padding:0.3rem;border-radius:12px;font-size:0.75rem;font-weight:600;background:var(--info);color:#fff;border:none;cursor:pointer;transition:all 0.25s ease;">
+            <i class="fas fa-images"></i> معرض الصور (${salon.gallery.length})
+        </button>
+    </div>
+` : `
+    <div style="margin-top:0.3rem;font-size:0.65rem;color:var(--text-color);opacity:0.3;text-align:center;">
+        📷 لا توجد صور
+    </div>
+`}
             </div>
         </div>
     `;
@@ -5027,12 +5156,7 @@ async function showSalonDetails(id) {
             </div>`
         ).join('');
 
-        // ===== معرض الصور =====
-        const galleryHtml = (salon.gallery || []).map(url => 
-            `<img src="${url}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border-color);">`
-        ).join('');
-
-        // ===== التقييمات =====
+          // ===== التقييمات =====
         const reviewsHtml = reviews.map(r => 
             `<div class="review-item">
                 <div class="review-header"><span>${r.customerName}</span><span>${'★'.repeat(r.rating)}</span></div>
@@ -5735,6 +5859,9 @@ async function loadDashboard() {
         const appointments = await appRes.json();
         const reviewsRes = await fetch(`${API_BASE}/reviews/salon/${salon._id}`);
         const reviews = await reviewsRes.json();
+        const existingGallery = salon.gallery || [];
+document.getElementById('setGallery').value = existingGallery.join('\n');
+displayExistingGallery(existingGallery);
 
         document.getElementById('dashSalonName').textContent = salon.name + (salon.featured ? ' ⭐' : '');
         document.getElementById('dashSalonCity').textContent = salon.city;
@@ -5769,7 +5896,6 @@ async function loadDashboard() {
         document.getElementById('setSalonDesc').value = salon.desc || '';
         document.getElementById('setSalonType').value = salon.salonType || 'mixed';
         document.getElementById('setIsMobile').value = salon.isMobile ? 'true' : 'false';
-        document.getElementById('setGallery').value = (salon.gallery || []).join(',');
         if (salon.lat && salon.lng) {
             document.getElementById('setLat').value = salon.lat;
             document.getElementById('setLng').value = salon.lng;
@@ -5784,6 +5910,28 @@ async function loadDashboard() {
 
         newForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            // معالجة الصور الجديدة (من الملفات المرفوعة)
+let newImagesBase64 = [];
+const fileInput = document.getElementById('setGalleryInput');
+if (fileInput && fileInput.files.length > 0) {
+    const files = Array.from(fileInput.files);
+    for (const file of files) {
+        try {
+            const base64 = await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.readAsDataURL(file);
+            });
+            newImagesBase64.push(base64);
+        } catch (err) {
+            console.error('❌ فشل تحويل الصورة:', err);
+        }
+    }
+}
+
+// دمج الصور الموجودة مع الصور الجديدة
+const existingGallery = document.getElementById('setGallery')?.value.split('\n').filter(s => s.trim()) || [];
+const finalGallery = [...existingGallery, ...newImagesBase64];
             const token = localStorage.getItem('token');
             const salonId = localStorage.getItem('salonId');
 
@@ -5806,10 +5954,6 @@ async function loadDashboard() {
             const desc = safeGetValue('setSalonDesc');
             const salonType = safeGetSelectValue('setSalonType', 'mixed');
             const isMobile = safeGetValue('setIsMobile') === 'true';
-
-            // معالجة حقل المعرض (gallery)
-            const galleryEl = document.getElementById('setGallery');
-            const gallery = galleryEl ? galleryEl.value.split(',').map(s => s.trim()).filter(s => s) : [];
 
             // معالجة إحداثيات GPS
             const latManual = document.getElementById('setLatManual');
@@ -5857,7 +6001,7 @@ async function loadDashboard() {
                 desc,
                 salonType,
                 isMobile,
-                gallery
+                gallery: finalGallery  // ✅ القائمة النهائية
             };
 
             if (lat !== null && lng !== null) {
