@@ -1607,6 +1607,111 @@ app.put('/api/appointments/:id/confirm', authMiddleware, async (req, res) => {
 });
 
 // ============================================================
+// ✅ إلغاء الحجز من قبل العميل
+// ============================================================
+app.put('/api/appointments/:id/cancel-by-customer', customerAuthMiddleware, async (req, res) => {
+    try {
+        const appointment = await Appointment.findById(req.params.id);
+        if (!appointment) {
+            return res.status(404).json({ message: '❌ الحجز غير موجود' });
+        }
+        
+        // التأكد من أن العميل هو صاحب الحجز
+        if (appointment.customerId && appointment.customerId.toString() !== req.customerId) {
+            return res.status(403).json({ message: '❌ غير مصرح لك بإلغاء هذا الحجز' });
+        }
+        
+        // منع إلغاء حجز مكتمل أو ملغى مسبقاً
+        if (appointment.status === 'completed' || appointment.status === 'cancelled') {
+            return res.status(400).json({ message: '❌ لا يمكن إلغاء حجز مكتمل أو ملغى بالفعل' });
+        }
+        
+        appointment.status = 'cancelled';
+        await appointment.save();
+        
+        // إشعار للصالون
+        try {
+            const Notification = require('./models/Notification');
+            const notification = new Notification({
+                userId: appointment.salonId,
+                userType: 'salon',
+                title: '❌ تم إلغاء حجز',
+                message: `قام العميل ${appointment.clientName} بإلغاء حجز ${appointment.date} الساعة ${appointment.time}`,
+                read: false,
+                createdAt: new Date()
+            });
+            await notification.save();
+        } catch (notifError) {
+            console.error('❌ فشل إرسال الإشعار:', notifError);
+        }
+        
+        res.json({ message: '✅ تم إلغاء الحجز بنجاح', appointment });
+    } catch (error) {
+        console.error('❌ فشل إلغاء الحجز:', error);
+        res.status(500).json({ message: 'فشل إلغاء الحجز: ' + error.message });
+    }
+});
+
+// ============================================================
+// ✅ تعديل الحجز من قبل العميل
+// ============================================================
+app.put('/api/appointments/:id/reschedule', customerAuthMiddleware, async (req, res) => {
+    try {
+        const { date, time } = req.body;
+        const appointment = await Appointment.findById(req.params.id);
+        if (!appointment) {
+            return res.status(404).json({ message: '❌ الحجز غير موجود' });
+        }
+        
+        if (appointment.customerId && appointment.customerId.toString() !== req.customerId) {
+            return res.status(403).json({ message: '❌ غير مصرح لك بتعديل هذا الحجز' });
+        }
+        
+        if (appointment.status === 'completed' || appointment.status === 'cancelled') {
+            return res.status(400).json({ message: '❌ لا يمكن تعديل حجز مكتمل أو ملغى' });
+        }
+        
+        // التحقق من عدم وجود حجز مكرر في نفس الوقت
+        const existing = await Appointment.findOne({
+            salonId: appointment.salonId,
+            date,
+            time,
+            status: { $in: ['pending', 'confirmed'] },
+            _id: { $ne: appointment._id }
+        });
+        if (existing) {
+            return res.status(409).json({ message: '❌ هذا الموعد محجوز مسبقاً' });
+        }
+        
+        appointment.date = date;
+        appointment.time = time;
+        appointment.status = 'pending'; // يعيد الحجز إلى حالة الانتظار لتأكيد الصالون
+        await appointment.save();
+        
+        // إشعار للصالون
+        try {
+            const Notification = require('./models/Notification');
+            const notification = new Notification({
+                userId: appointment.salonId,
+                userType: 'salon',
+                title: '📅 تم تعديل حجز',
+                message: `قام العميل ${appointment.clientName} بتعديل الحجز إلى ${date} الساعة ${time}`,
+                read: false,
+                createdAt: new Date()
+            });
+            await notification.save();
+        } catch (notifError) {
+            console.error('❌ فشل إرسال الإشعار:', notifError);
+        }
+        
+        res.json({ message: '✅ تم تعديل الحجز بنجاح', appointment });
+    } catch (error) {
+        console.error('❌ فشل تعديل الحجز:', error);
+        res.status(500).json({ message: 'فشل تعديل الحجز: ' + error.message });
+    }
+});
+
+// ============================================================
 // إلغاء الحجز (مع اسم الصالون في الإشعار)
 // ============================================================
 app.put('/api/appointments/:id/cancel', authMiddleware, async (req, res) => {
@@ -2315,6 +2420,84 @@ app.get('/api/quotes/:id', authMiddleware, async (req, res) => {
 });
 
 module.exports = { customerAuthMiddleware };
+
+// ============================================================
+// ⏰ نظام إشعارات التذكير (قبل 24 ساعة من الحجز)
+// ============================================================
+const cron = require('node-cron');
+
+// تشغيل المجدول كل ساعة (للتأكد من إرسال التذكيرات في الوقت المناسب)
+cron.schedule('0 * * * *', async () => {
+    console.log('⏰ تشغيل مجدول التذكيرات...');
+    try {
+        const now = new Date();
+        const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+        const tomorrowStr = tomorrow.toISOString().split('T')[0];
+        
+        // جلب الحجوزات المؤكدة ليوم الغد
+        const appointments = await Appointment.find({
+            date: tomorrowStr,
+            status: 'confirmed',
+            reminderSent: { $ne: true } // لم يُرسل لها تذكير سابقاً
+        }).populate('customerId', 'name email phone');
+        
+        console.log(`📅 عدد الحجوزات التي تحتاج تذكير: ${appointments.length}`);
+        
+        for (const app of appointments) {
+            try {
+                // 1. إرسال بريد إلكتروني (إذا كان العميل مسجلاً وله بريد)
+                if (app.customerId && app.customerId.email) {
+                    const transporter = nodemailer.createTransport({
+                        service: 'gmail',
+                        auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+                    });
+                    await transporter.sendMail({
+                        from: process.env.EMAIL_USER,
+                        to: app.customerId.email,
+                        subject: '🔔 تذكير بحجزك غداً - حلاقتي',
+                        html: `
+                            <div dir="rtl" style="font-family: 'Tajawal', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f8f9fa; border-radius: 12px;">
+                                <h2 style="color: #f5b042; text-align: center;">🔔 تذكير بحجزك غداً!</h2>
+                                <p>مرحباً <strong>${app.clientName}</strong>،</p>
+                                <p>نود تذكيرك بحجزك في <strong>${app.salonId?.name || 'الصالون'}</strong> غداً.</p>
+                                <div style="background: #fff; padding: 15px; border-radius: 8px; margin: 15px 0; border-right: 4px solid #f5b042;">
+                                    <p><strong>📅 التاريخ:</strong> ${app.date}</p>
+                                    <p><strong>🕐 الوقت:</strong> ${app.time}</p>
+                                    <p><strong>✂️ الخدمات:</strong> ${app.services?.map(s => s.name).join(', ') || 'خدمات متنوعة'}</p>
+                                    <p><strong>👨‍💼 الموظف:</strong> ${app.staff}</p>
+                                </div>
+                                <p style="text-align: center; color: #666;">نحن في انتظارك! 💈</p>
+                            </div>
+                        `
+                    });
+                    console.log(`📧 تم إرسال تذكير بالبريد للعميل ${app.clientName}`);
+                }
+                
+                // 2. إشعار داخل التطبيق
+                const Notification = require('./models/Notification');
+                await new Notification({
+                    userId: app.customerId || app._id,
+                    userType: app.customerId ? 'customer' : 'guest',
+                    title: '🔔 تذكير بحجزك غداً',
+                    message: `لديك حجز في ${app.salonId?.name || 'الصالون'} غداً الساعة ${app.time}`,
+                    read: false,
+                    createdAt: new Date()
+                }).save();
+                
+                // 3. تحديث الحجز بأن التذكير قد أرسل
+                app.reminderSent = true;
+                await app.save();
+                
+            } catch (err) {
+                console.error(`❌ فشل إرسال تذكير للحجز ${app._id}:`, err);
+            }
+        }
+        
+        console.log('✅ انتهى تشغيل مجدول التذكيرات');
+    } catch (error) {
+        console.error('❌ فشل مجدول التذكيرات:', error);
+    }
+});
 
 // ============================================================
 // تشغيل الخادم
