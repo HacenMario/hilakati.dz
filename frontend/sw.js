@@ -1,15 +1,23 @@
-const CACHE_NAME = 'halakati-v1';
+// ============================================================
+// ✅ إصدار التطبيق (يتغير تلقائياً عند كل تحديث)
+// ============================================================
+const APP_VERSION = new Date().getTime();
+const CACHE_NAME = `halakati-${APP_VERSION}`;
 
 // ✅ قائمة الملفات المطلوب تخزينها (تأكد من وجودها)
 const urlsToCache = [
     '/',
     '/index.html',
-    '/manifest.json'
+    '/manifest.json',
+    '/icons/icon-192.png',
+    '/icons/icon-512.png'
 ];
 
+// ============================================================
 // ✅ تثبيت Service Worker
+// ============================================================
 self.addEventListener('install', event => {
-    console.log('✅ تثبيت Service Worker...');
+    console.log(`✅ تثبيت Service Worker (${CACHE_NAME})...`);
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then(cache => {
@@ -29,6 +37,8 @@ self.addEventListener('install', event => {
             })
             .then(() => {
                 console.log('✅ تم التخزين المؤقت بنجاح');
+                // ✅ تخطي الانتظار وتفعيل Service Worker فوراً
+                return self.skipWaiting();
             })
             .catch(err => {
                 console.error('❌ فشل التخزين المؤقت:', err);
@@ -36,9 +46,11 @@ self.addEventListener('install', event => {
     );
 });
 
-// ✅ تفعيل Service Worker
+// ============================================================
+// ✅ تفعيل Service Worker وحذف الكاش القديم
+// ============================================================
 self.addEventListener('activate', event => {
-    console.log('✅ تفعيل Service Worker...');
+    console.log(`✅ تفعيل Service Worker (${CACHE_NAME})...`);
     event.waitUntil(
         caches.keys().then(cacheNames => {
             return Promise.all(
@@ -50,10 +62,16 @@ self.addEventListener('activate', event => {
                 })
             );
         })
+        .then(() => {
+            // ✅ السيطرة على جميع الصفحات المفتوحة
+            return self.clients.claim();
+        })
     );
 });
 
+// ============================================================
 // ✅ اعتراض الطلبات والرد من الكاش
+// ============================================================
 self.addEventListener('fetch', event => {
     event.respondWith(
         caches.match(event.request)
