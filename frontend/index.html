@@ -4972,7 +4972,7 @@ function goToPage(page) { currentPage = page; renderAllSalons(allSalons); }
 function createSalonCard(salon) {
     const typeInfo = getSalonTypeIcon(salon.salonType);
     const typeIcon = `<span style="display:inline-flex;align-items:center;gap:4px;background:${typeInfo.color}20;color:${typeInfo.color};padding:0.1rem 0.4rem;border-radius:50px;font-size:0.65rem;">
-    <i class="fas ${typeInfo.icon}"></i> ${typeInfo.label}
+        <i class="fas ${typeInfo.icon}"></i> ${typeInfo.label}
     </span>`;
     const minPrice = salon.services?.length ? Math.min(...salon.services.map(s => s.price)) : 0;
     const firstLetter = salon.name?.charAt(0)?.toUpperCase() || '?';
@@ -4993,11 +4993,10 @@ function createSalonCard(salon) {
     return `
         <div class="salon-card" onclick="showSalonDetails('${salon._id}')">
             <div class="cover">
-            <div class="desc">${typeIcon} ${mobileLabel}</div>
+                <div class="desc">${typeIcon} ${mobileLabel}</div>
                 ${logoHtml}
                 <span class="rating-badge">⭐ ${salon.rating || 'جديد'}</span>
                 ${salon.lat && salon.lng ? '<span class="gps-badge"><i class="fas fa-map-marker-alt"></i> GPS</span>' : ''}
-                
                 ${salon.featured ? '<span class="featured-badge">⭐ مميز</span>' : ''}
             </div>
             <div class="body">
@@ -5008,24 +5007,31 @@ function createSalonCard(salon) {
                 <div class="price-info">${minPrice > 0 ? `💰 يبدأ من ${minPrice} دج` : 'اتصل للاستفسار'}</div>
                 
                 <!-- ===== أزرار الإجراءات ===== -->
-                <button class="btn-book" onclick="event.stopPropagation();openBooking('${salon._id}')"><i class="fas fa-calendar-plus"></i> احجز الآن
-                <button class="btn-success btn-sm" onclick="event.stopPropagation();quickBooking('${salon._id}')" style="margin-top:0.3rem;width:100%;"><i class="fas fa-bolt"></i> حجز سريع
-                <button class="btn-outline btn-sm" onclick="event.stopPropagation();openQuoteRequest('${salon._id}')" style="flex:1;min-width:80px;border-color:var(--gold);color:var(--gold);"><i class="fas fa-file-invoice"></i> خاص بالمناسبات و الأعراس
-                </button>
+                <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.5rem;">
+                    <button class="btn-book" onclick="event.stopPropagation();openBooking('${salon._id}')" style="flex:1;min-width:70px;padding:0.4rem 0.5rem;border-radius:12px;font-size:0.8rem;font-weight:700;background:linear-gradient(135deg, var(--gold), #e67e22);color:var(--dark);border:none;cursor:pointer;">
+                        <i class="fas fa-calendar-plus"></i> احجز الآن
+                    </button>
+                    <button class="btn-success btn-sm" onclick="event.stopPropagation();quickBooking('${salon._id}')" style="flex:1;min-width:70px;padding:0.4rem 0.5rem;border-radius:12px;font-size:0.75rem;font-weight:600;background:var(--success);color:#fff;border:none;cursor:pointer;">
+                        <i class="fas fa-bolt"></i> حجز سريع
+                    </button>
+                    <button class="btn-outline btn-sm" onclick="event.stopPropagation();openQuoteRequest('${salon._id}')" style="flex:1;min-width:70px;padding:0.4rem 0.5rem;border-radius:12px;font-size:0.75rem;font-weight:600;border:1.5px solid var(--gold);color:var(--gold);background:transparent;cursor:pointer;">
+                        <i class="fas fa-file-invoice"></i> خاص بالمناسبات و الأعراس
+                    </button>
                 </div>
-<!-- ✅ زر معرض الصور (يظهر دائماً) -->
-<div style="margin-top:0.3rem;">
-    <button class="btn-info btn-sm" onclick="event.stopPropagation();openSalonGallery('${salon._id}')" 
-            style="width:100%;padding:0.3rem;border-radius:12px;font-size:0.75rem;font-weight:600;background:linear-gradient(135deg, #3498db, #2980b9);color:#fff;border:none;cursor:pointer;transition:all 0.25s ease;box-shadow:0 2px 8px rgba(52,152,219,0.3);">
-        <i class="fas fa-images"></i> 
-        ${salon.gallery && salon.gallery.length > 0 ? `معرض الصور (${salon.gallery.length})` : '📷 إضافة صور'}
-    </button>
-</div>
-`}
+                
+                <!-- ✅ زر معرض الصور -->
+                <div style="margin-top:0.3rem;">
+                    <button class="btn-info btn-sm" onclick="event.stopPropagation();openSalonGallery('${salon._id}')" 
+                            style="width:100%;padding:0.3rem;border-radius:12px;font-size:0.75rem;font-weight:600;background:linear-gradient(135deg, #3498db, #2980b9);color:#fff;border:none;cursor:pointer;transition:all 0.25s ease;box-shadow:0 2px 8px rgba(52,152,219,0.3);">
+                        <i class="fas fa-images"></i> 
+                        ${salon.gallery && salon.gallery.length > 0 ? `معرض الصور (${salon.gallery.length})` : '📷 إضافة صور'}
+                    </button>
+                </div>
             </div>
         </div>
     `;
 }
+
 // ===== تطبيق الفلاتر =====
 function applyFilters() {
     // قراءة قيم الفلاتر
