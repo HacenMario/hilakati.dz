@@ -2479,6 +2479,20 @@ cron.schedule('0 * * * *', async () => {
     }
 });
 
+app.post('/api/test-whatsapp', async (req, res) => {
+    try {
+        const { phone, message } = req.body;
+        const url = `${process.env.WHATSAPP_API_URL}/waInstance${process.env.WHATSAPP_ID_INSTANCE}/sendMessage/${process.env.WHATSAPP_API_TOKEN}`;
+        const response = await axios.post(url, {
+            chatId: `${phone.replace(/[^0-9]/g, '')}@c.us`,
+            message: message || '🔔 اختبار من حلاقتي'
+        });
+        res.json({ success: true, data: response.data });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // تشغيل المجدول كل ساعة (للتأكد من إرسال التذكيرات في الوقت المناسب)
 cron.schedule('0 * * * *', async () => {
     console.log('⏰ تشغيل مجدول التذكيرات...');
