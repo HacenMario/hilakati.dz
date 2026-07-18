@@ -1329,6 +1329,56 @@ td { color: var(--text-color); }
     font-weight: 700;
 }
 
+/* ============================================================
+   تعديل معرض الصور للهواتف فقط (عرض أفقي)
+   ============================================================ */
+@media (max-width: 768px) {
+    /* حاوية المصغرات تصبح شريطاً أفقياً مع تمرير */
+    #galleryThumbnails,
+    .thumbnails {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        gap: 0.5rem !important;
+        padding: 0.5rem 0 !important;
+        justify-content: flex-start !important;
+        -webkit-overflow-scrolling: touch; /* تمرير سلس على iOS */
+        scroll-snap-type: x mandatory;    /* اختياري: يثبت الصور أثناء التمرير */
+    }
+
+    /* كل صورة مصغرة تأخذ حجماً مناسباً ولا تتقلص */
+    #galleryThumbnails img,
+    .thumbnails img {
+        flex: 0 0 auto !important;
+        width: 70px !important;
+        height: 70px !important;
+        scroll-snap-align: start; /* اختياري */
+        border-radius: 8px !important;
+    }
+
+    /* الصورة الرئيسية تأخذ عرضاً كاملاً مع ارتفاع مناسب */
+    #galleryImage {
+        max-height: 50vh !important;
+        width: 100% !important;
+        object-fit: contain !important;
+    }
+
+    /* زر الإغلاق يكون أكبر قليلاً */
+    .close-modal {
+        font-size: 2rem !important;
+        top: 5px !important;
+        right: 15px !important;
+    }
+
+    /* أزرار التنقل تكون أصغر قليلاً */
+    .slide-btn {
+        font-size: 1.5rem !important;
+        padding: 6px 12px !important;
+    }
+}
+        
 /* ===== شريط التنقل السفلي ===== */
 @media (max-width: 768px) {
     .mobile-bottom-nav {
