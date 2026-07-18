@@ -15,6 +15,72 @@ const server = http.createServer(app);
 const notificationsRouter = require('./routes/notifications');
 app.use('/api/notifications', notificationsRouter);
 
+// ============================================================
+// ✅ Firebase Admin - تهيئة آمنة مع منع التكرار
+// ============================================================
+let admin = null;  // استخدم let بدلاً من const لتفادي إعادة التعريف
+
+try {
+    const fs = require('fs');
+    const path = require('path');
+    const serviceAccountPath = path.join(__dirname, 'serviceAccountKey.json');
+
+    if (fs.existsSync(serviceAccountPath)) {
+        const serviceAccount = require(serviceAccountPath);
+        const firebaseAdmin = require('firebase-admin');
+        admin = firebaseAdmin;  // تعيين المتغير العام
+
+        if (!admin.apps.length) {
+            admin.initializeApp({
+                credential: admin.credential.cert(serviceAccount)
+            });
+            console.log('✅ Firebase Admin مهيأ بنجاح');
+        } else {
+            console.log('ℹ️ Firebase Admin مهيأ مسبقاً');
+        }
+    } else {
+        console.warn('⚠️ ملف serviceAccountKey.json غير موجود. سيتم تعطيل Firebase.');
+    }
+} catch (error) {
+    console.warn('⚠️ فشل تهيئة Firebase:', error.message);
+}
+
+// ============================================================
+// ✅ دالة إرسال إشعار Push (آمنة حتى لو admin == null)
+// ============================================================
+async function sendPushNotification(userId, userType, title, body, data = {}) {
+    if (!admin) {
+        console.warn('⚠️ Firebase غير مهيأ، لا يمكن إرسال الإشعار');
+        return;
+    }
+    try {
+        // افترض أن لديك مجموعة devices في MongoDB
+        const devices = await db.collection('devices')
+            .find({ userId, userType })
+            .toArray();
+
+        if (devices.length === 0) {
+            console.log(`ℹ️ لا توجد أجهزة مسجلة للمستخدم ${userId}`);
+            return;
+        }
+
+        const tokens = devices.map(d => d.token);
+        const message = {
+            notification: { title, body },
+            data: data,
+            tokens: tokens
+        };
+
+        const response = await admin.messaging().sendEachForMulticast(message);
+        console.log(`✅ أرسل الإشعار إلى ${response.successCount} جهاز`);
+        if (response.failureCount > 0) {
+            console.warn(`❌ فشل الإرسال إلى ${response.failureCount} جهاز`);
+        }
+    } catch (error) {
+        console.error('❌ فشل إرسال الإشعار:', error);
+    }
+}
+
 // ===== تهيئة Firebase Admin (اختياري) =====
 let admin = null;
 try {
