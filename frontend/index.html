@@ -35,7 +35,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="description" content="حلاقتي - منصة حجز صالونات الحلاقة والتجميل في الجزائر" />
     <title>حلاقتي - منصة حجز صالونات الحلاقة والتجميل</title>
-
+   
+    <!-- ============================================================
+    ✅ الخطوط والأيقونات (مع إصدار لمنع الكاش)
+    ============================================================ -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet" />
+    
+    <!-- ============================================================
+    ✅ JavaScript (مع إصدار لمنع الكاش - اختياري)
+    ============================================================ -->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    
+    <!-- ============================================================
+    ✅ PWA (مع إصدار ديناميكي لمنع الكاش)
+    ============================================================ -->
+    <link rel="manifest" href="/manifest.json?v=1">
+    <meta name="theme-color" content="#f5b042">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png?v=1">
+</head>
+    
+    <style>
     /* زر فتح المعرض */
 #openGalleryBtn {
   padding: 12px 24px;
@@ -153,31 +177,6 @@
 .thumbnails img.active-thumb {
   border-color: #007bff;
 }
-    
-    <!-- ============================================================
-    ✅ الخطوط والأيقونات (مع إصدار لمنع الكاش)
-    ============================================================ -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet" />
-    
-    <!-- ============================================================
-    ✅ JavaScript (مع إصدار لمنع الكاش - اختياري)
-    ============================================================ -->
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-    
-    <!-- ============================================================
-    ✅ PWA (مع إصدار ديناميكي لمنع الكاش)
-    ============================================================ -->
-    <link rel="manifest" href="/manifest.json?v=1">
-    <meta name="theme-color" content="#f5b042">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="/icons/icon-192.png?v=1">
-</head>
-    
-    <style>
 
 /* ===== تحسين أزرار الإجراءات ===== */
 .btn-action {
@@ -1914,7 +1913,6 @@ input, textarea, select {
 </div>
 
 <!-- ===== النوافذ المنبثقة ===== -->
-
 <!-- زر فتح المعرض -->
 <button id="openGalleryBtn">📸 فتح المعرض</button>
 
@@ -1932,7 +1930,7 @@ input, textarea, select {
     </div>
   </div>
 </div>
-
+    
 <!-- ===== نافذة عرض الصورة المكبرة (Lightbox) ===== -->
 <div class="modal-overlay" id="imageLightbox">
     <div class="modal-box" style="max-width:95vw;max-height:95vh;padding:0.5rem;background:rgba(0,0,0,0.85);box-shadow:0 8px 32px rgba(0,0,0,0.8);border:none;border-radius:12px;display:flex;align-items:center;justify-content:center;position:relative;">
@@ -2951,12 +2949,11 @@ input, textarea, select {
 
 <script>
 
-// قائمة الصور (استبدلها بمسار صورك الفعلية)
+// قائمة الصور (استبدلها بمسارات صورك الفعلية)
 const images = [
   'path/to/image1.jpg',
   'path/to/image2.jpg',
   'path/to/image3.jpg',
-  // أضف المزيد حسب الحاجة
 ];
 
 let currentIndex = 0;
@@ -2969,20 +2966,16 @@ const closeBtn = document.querySelector('.close-modal');
 const prevBtn = document.getElementById('prevBtn');
 const nextBtn = document.getElementById('nextBtn');
 
-// عرض الصورة بناءً على الفهرس
 function showImage(index) {
   if (index < 0) index = images.length - 1;
   if (index >= images.length) index = 0;
   currentIndex = index;
   galleryImage.src = images[currentIndex];
-  
-  // تحديث الفعالية في المصغرات
   document.querySelectorAll('.thumbnails img').forEach((thumb, i) => {
     thumb.classList.toggle('active-thumb', i === currentIndex);
   });
 }
 
-// تعبئة المصغرات
 images.forEach((src, i) => {
   const img = document.createElement('img');
   img.src = src;
@@ -2991,27 +2984,17 @@ images.forEach((src, i) => {
   thumbnailsContainer.appendChild(img);
 });
 
-// فتح النافذة
 openBtn.addEventListener('click', () => {
   modal.style.display = 'flex';
-  showImage(0); // أو أي صورة تبدأ بها
+  showImage(0);
 });
 
-// إغلاق النافذة
-closeBtn.addEventListener('click', () => {
-  modal.style.display = 'none';
-});
-
-// إغلاق عند النقر خارج المحتوى
+closeBtn.addEventListener('click', () => modal.style.display = 'none');
 modal.addEventListener('click', (e) => {
   if (e.target === modal) modal.style.display = 'none';
 });
-
-// أزرار التنقل
 prevBtn.addEventListener('click', () => showImage(currentIndex - 1));
 nextBtn.addEventListener('click', () => showImage(currentIndex + 1));
-
-// التنقل عبر لوحة المفاتيح
 document.addEventListener('keydown', (e) => {
   if (modal.style.display === 'flex') {
     if (e.key === 'ArrowLeft') showImage(currentIndex - 1);
