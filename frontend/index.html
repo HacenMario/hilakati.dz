@@ -1629,6 +1629,75 @@ input, textarea, select {
     -ms-user-select: text;
     user-select: text;
 }
+/* ============================================================
+   إصلاح معرض الصور على الهواتف (عرض أفقي مع تمرير)
+   ============================================================ */
+@media (max-width: 768px) {
+    /* استهداف الصنف الموجود فعلاً */
+    .thumbnails,
+    #galleryThumbnails {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        gap: 0.5rem !important;
+        padding: 0.5rem 0.8rem !important;
+        justify-content: flex-start !important;
+        -webkit-overflow-scrolling: touch !important;
+        scroll-snap-type: x mandatory !important;
+        /* إلغاء أي تنسيق سابق يتعارض */
+        grid-template-columns: unset !important;
+        grid-auto-flow: unset !important;
+    }
+
+    .thumbnails img,
+    #galleryThumbnails img {
+        flex: 0 0 70px !important;
+        width: 70px !important;
+        height: 70px !important;
+        scroll-snap-align: start !important;
+        border-radius: 8px !important;
+        border: 2px solid transparent !important;
+        transition: border 0.3s !important;
+    }
+
+    .thumbnails img:hover,
+    #galleryThumbnails img:hover {
+        border-color: var(--gold, #f5b042) !important;
+    }
+
+    /* الصورة الرئيسية */
+    #galleryImage {
+        max-height: 50vh !important;
+        width: 100% !important;
+        object-fit: contain !important;
+    }
+
+    /* أزرار التنقل */
+    .slide-btn {
+        font-size: 1.5rem !important;
+        padding: 6px 12px !important;
+    }
+
+    /* زر الإغلاق */
+    .close-modal {
+        font-size: 2rem !important;
+        top: 5px !important;
+        right: 15px !important;
+    }
+
+    /* إخفاء شريط التمرير (اختياري) */
+    .thumbnails::-webkit-scrollbar,
+    #galleryThumbnails::-webkit-scrollbar {
+        height: 4px;
+    }
+    .thumbnails::-webkit-scrollbar-thumb,
+    #galleryThumbnails::-webkit-scrollbar-thumb {
+        background: var(--gold, #f5b042);
+        border-radius: 10px;
+    }
+}
     </style>
 </head>
 <body>
