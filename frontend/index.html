@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     <!-- ============================================================
     ✅ تحسين الأداء
     ============================================================ -->
@@ -3229,6 +3231,56 @@ input, textarea, select {
 </nav>
 
 <script>
+
+// تهيئة Firebase (ضع config الخاص بك)
+const firebaseConfig = {
+  apiKey: "AIzaSyBvVft2tK7uCW2lK1BzFfJEqcfi2BfRKIY",
+  authDomain: "hilakatidz.firebaseapp.com",
+  projectId: "hilakatidz",
+  storageBucket: "hilakatidz.firebasestorage.app",
+  messagingSenderId: "254055907785",
+  appId: "1:254055907785:web:c3d2164dcc8cc110aa2818",
+  measurementId: "G-5H5C0Q83H1"
+};
+firebase.initializeApp(firebaseConfig);
+const messaging = firebase.messaging();
+
+// طلب إذن الإشعارات
+async function requestNotificationPermission() {
+    try {
+        const token = await messaging.getToken({
+            vapidKey: "YOUR_VAPID_KEY" // من إعدادات Firebase
+        });
+        console.log('📱 Token FCM:', token);
+        
+        // حفظ token في الخادم
+        await fetch(`${API_BASE}/notifications/register-device`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                token,
+                userId: localStorage.getItem('customerId') || localStorage.getItem('salonId'),
+                userType: localStorage.getItem('customerToken') ? 'customer' : 'salon'
+            })
+        });
+        return token;
+    } catch (error) {
+        console.error('❌ فشل الحصول على token:', error);
+    }
+}
+
+// استقبال إشعارات في الخلفية
+messaging.onBackgroundMessage((payload) => {
+    console.log('📨 إشعار في الخلفية:', payload);
+    // سيظهر تلقائياً إذا كان service worker مسجلاً
+});
+
+// استقبال إشعارات في المقدمة
+messaging.onMessage((payload) => {
+    console.log('📨 إشعار في المقدمة:', payload);
+    showToast(`🔔 ${payload.notification.title}: ${payload.notification.body}`, 'info');
+});
+
 
 // ✅ تحديث إصدار PWA تلقائياً عند كل تحميل للصفحة
 const APP_VERSION = Date.now();
