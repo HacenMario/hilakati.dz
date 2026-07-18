@@ -11,14 +11,12 @@ const addNotification = async (userId, userType, title, message) => {
 };
 
 router.get('/salon', auth, async (req, res) => {
-  const userId = req.userId || req.salonId; // حماية
-  const notifications = await Notification.find({ userId: req.userId, userType: 'salon' }).sort({ createdAt: -1 });
+  const notifications = await Notification.find({ userId: req.salonId, userType: 'salon' }).sort({ createdAt: -1 });
   res.json(notifications);
 });
 
 router.get('/customer', customerAuth, async (req, res) => {
-  const userId = req.userId || req.salonId; // حماية
-  const notifications = await Notification.find({ userId: req.userId, userType: 'salon' }).sort({ createdAt: -1 });
+  const notifications = await Notification.find({ userId: req.customerId, userType: 'customer' }).sort({ createdAt: -1 });
   res.json(notifications);
 });
 
