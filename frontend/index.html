@@ -5186,8 +5186,9 @@ function createSalonCard(salon) {
     const mobileLabel = salon.isMobile ? ' 🚗 متنقل' : '';
     
     return `
-        <div class="salon-card" onclick="showSalonDetails('${salon._id}')">
-            <div class="cover">
+        <div class="salon-card" style="cursor:default;">
+            <!-- ===== الغلاف (ينقر لفتح التفاصيل) ===== -->
+            <div class="cover" onclick="showSalonDetails('${salon._id}')" style="cursor:pointer;">
                 <div class="desc">${typeIcon} ${mobileLabel}</div>
                 ${logoHtml}
                 <span class="rating-badge">⭐ ${salon.rating || 'جديد'}</span>
@@ -5195,38 +5196,39 @@ function createSalonCard(salon) {
                 ${salon.featured ? '<span class="featured-badge">⭐ مميز</span>' : ''}
             </div>
             <div class="body">
-                <h3>${salon.name} ${distance}</h3>
+                <!-- ===== اسم الصالون (ينقر لفتح التفاصيل) ===== -->
+                <h3 onclick="showSalonDetails('${salon._id}')" style="cursor:pointer;">${salon.name} ${distance}</h3>
                 <div class="desc">${salon.desc || ''} ${typeLabel} ${mobileLabel}</div>
                 <div class="location"><i class="fas fa-map-marker-alt"></i> ${salon.city}</div>
                 <div class="tags">${(salon.tags || []).map(t => `<span>#${t}</span>`).join('')}</div>
                 <div class="price-info">${minPrice > 0 ? `💰 يبدأ من ${minPrice} دج` : 'اتصل للاستفسار'}</div>
                 
-                <!-- ===== أزرار الإجراءات ===== -->
+                <!-- ===== أزرار الإجراءات الرئيسية ===== -->
                 <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.5rem;">
                     <button class="btn-book" onclick="event.stopPropagation();openBooking('${salon._id}')" style="flex:1;min-width:70px;padding:0.4rem 0.5rem;border-radius:12px;font-size:0.8rem;font-weight:700;background:linear-gradient(135deg, var(--gold), #e67e22);color:var(--dark);border:none;cursor:pointer;">
-                        <i class="fas fa-calendar-plus"></i> احجز الآن
+                        <i class="fas fa-calendar-plus"></i> احجز
                     </button>
                     <button class="btn-success btn-sm" onclick="event.stopPropagation();quickBooking('${salon._id}')" style="flex:1;min-width:70px;padding:0.4rem 0.5rem;border-radius:12px;font-size:0.75rem;font-weight:600;background:var(--success);color:#fff;border:none;cursor:pointer;">
-                        <i class="fas fa-bolt"></i> حجز سريع
+                        <i class="fas fa-bolt"></i> سريع
                     </button>
                     <button class="btn-outline btn-sm" onclick="event.stopPropagation();openQuoteRequest('${salon._id}')" style="flex:1;min-width:70px;padding:0.4rem 0.5rem;border-radius:12px;font-size:0.75rem;font-weight:600;border:1.5px solid var(--gold);color:var(--gold);background:transparent;cursor:pointer;">
-                        <i class="fas fa-file-invoice"></i> خاص بالمناسبات و الأعراس
+                        <i class="fas fa-file-invoice"></i> عرض سعر
                     </button>
                 </div>
                 
-                <!-- ✅ زر معرض الصور -->
-<div style="margin-top:0.3rem;">
-    <button class="btn-info btn-sm" onclick="event.stopPropagation();openSalonGallery('${salon._id}')" 
-            style="width:100%;padding:0.3rem;border-radius:12px;font-size:0.75rem;font-weight:600;background:linear-gradient(135deg, #3498db, #2980b9);color:#fff;border:none;cursor:pointer;transition:all 0.25s ease;box-shadow:0 2px 8px rgba(52,152,219,0.3);">
-        <i class="fas fa-images"></i> 
-        ${salon.gallery && salon.gallery.length > 0 ? `معرض الصور (${salon.gallery.length})` : '📷 معرض الصور'}
-    </button>
-    <!-- ✅ زر عرض التقييمات (جديد) -->
-<button onclick="closeModal('salonDetailsModal');openReviewsModal('${salon._id}')" 
-    style="display:inline-block;padding:0.4rem 1.2rem;border-radius:50px;font-size:0.8rem;font-weight:700;background:linear-gradient(135deg, #f39c12, #e67e22);color:#fff;border:none;cursor:pointer;transition:all 0.3s ease;box-shadow:0 4px 15px rgba(243,156,18,0.4);">
-    <i class="fas fa-star"></i> التقييمات (${salon.totalReviews || 0})
-</button>
-</div>
+                <!-- ===== أزرار معرض الصور والتقييمات (صف منفصل) ===== -->
+                <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.3rem;">
+                    <button class="btn-info btn-sm" onclick="event.stopPropagation();openSalonGallery('${salon._id}')" 
+                            style="flex:1;min-width:70px;padding:0.3rem 0.5rem;border-radius:12px;font-size:0.75rem;font-weight:600;background:linear-gradient(135deg, #3498db, #2980b9);color:#fff;border:none;cursor:pointer;transition:all 0.25s ease;box-shadow:0 2px 8px rgba(52,152,219,0.3);">
+                        <i class="fas fa-images"></i> 
+                        ${salon.gallery && salon.gallery.length > 0 ? `معرض (${salon.gallery.length})` : '📷 إضافة صور'}
+                    </button>
+                    <button class="btn-warning btn-sm" onclick="event.stopPropagation();openReviewsModal('${salon._id}')" 
+                            style="flex:1;min-width:70px;padding:0.3rem 0.5rem;border-radius:12px;font-size:0.75rem;font-weight:600;background:linear-gradient(135deg, #f39c12, #e67e22);color:#fff;border:none;cursor:pointer;transition:all 0.25s ease;box-shadow:0 2px 8px rgba(243,156,18,0.3);">
+                        <i class="fas fa-star"></i> 
+                        التقييمات (${salon.totalReviews || 0})
+                    </button>
+                </div>
             </div>
         </div>
     `;
