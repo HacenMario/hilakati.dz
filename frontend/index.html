@@ -60,6 +60,68 @@
 </head>
     
     <style>
+
+/* ===== تحسين أزرار الإجراءات ===== */
+.btn-action {
+    font-family: 'Tajawal', sans-serif;
+    transition: all 0.25s ease;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    white-space: nowrap;
+}
+
+.btn-action i {
+    font-size: 0.9rem;
+}
+
+/* تأثير hover للأزرار */
+.btn-primary-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(245, 176, 66, 0.4);
+}
+
+.btn-success-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(46, 204, 113, 0.4);
+}
+
+.btn-outline-action:hover {
+    background: var(--gold);
+    color: var(--dark);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(245, 176, 66, 0.3);
+}
+
+.btn-info-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+}
+
+.btn-warning-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(243, 156, 18, 0.4);
+}
+
+/* تأثير الضغط (active) */
+.btn-action:active {
+    transform: scale(0.95) !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+}
+
+/* تحسين الأزرار على الهواتف */
+@media (max-width: 480px) {
+    .btn-action {
+        font-size: 0.7rem !important;
+        padding: 0.4rem 0.3rem !important;
+        min-width: 60px;
+    }
+    .btn-action i {
+        font-size: 0.8rem;
+    }
+}
 /* ===== إصلاح نافذة تعديل الكوبون ===== */
 #editCouponModal {
     display: none !important;
@@ -5203,32 +5265,35 @@ function createSalonCard(salon) {
                 <div class="tags">${(salon.tags || []).map(t => `<span>#${t}</span>`).join('')}</div>
                 <div class="price-info">${minPrice > 0 ? `💰 يبدأ من ${minPrice} دج` : 'اتصل للاستفسار'}</div>
                 
-                <!-- ===== أزرار الإجراءات الرئيسية ===== -->
-                <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.5rem;">
-                    <button class="btn-book" onclick="event.stopPropagation();openBooking('${salon._id}')" style="flex:1;min-width:70px;padding:0.4rem 0.5rem;border-radius:12px;font-size:0.8rem;font-weight:700;background:linear-gradient(135deg, var(--gold), #e67e22);color:var(--dark);border:none;cursor:pointer;">
-                        <i class="fas fa-calendar-plus"></i> احجز الآن
-                        </button>
-                    <button class="btn-success btn-sm" onclick="event.stopPropagation();quickBooking('${salon._id}')" style="flex:1;min-width:70px;padding:0.4rem 0.5rem;border-radius:12px;font-size:0.75rem;font-weight:600;background:var(--success);color:#fff;border:none;cursor:pointer;">
-                        <i class="fas fa-bolt"></i> حجز سريع
-                    </button>
-                    <button class="btn-outline btn-sm" onclick="event.stopPropagation();openQuoteRequest('${salon._id}')" style="flex:1;min-width:70px;padding:0.4rem 0.5rem;border-radius:12px;font-size:0.75rem;font-weight:600;border:1.5px solid var(--gold);color:var(--gold);background:transparent;cursor:pointer;">
-                        <i class="fas fa-file-invoice"></i> خاص بالمناسبات و الأعراس
-                    </button>
-                </div>
-                
-                <!-- ===== أزرار معرض الصور والتقييمات (صف منفصل) ===== -->
-                <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.3rem;">
-                    <button class="btn-info btn-sm" onclick="event.stopPropagation();openSalonGallery('${salon._id}')" 
-                            style="flex:1;min-width:70px;padding:0.3rem 0.5rem;border-radius:12px;font-size:0.75rem;font-weight:600;background:linear-gradient(135deg, #3498db, #2980b9);color:#fff;border:none;cursor:pointer;transition:all 0.25s ease;box-shadow:0 2px 8px rgba(52,152,219,0.3);">
-                        <i class="fas fa-images"></i> 
-                        ${salon.gallery && salon.gallery.length > 0 ? `معرض (${salon.gallery.length})` : '📷 معرض الصور'}
-                    </button>
-                    <button class="btn-warning btn-sm" onclick="event.stopPropagation();openReviewsModal('${salon._id}')" 
-                            style="flex:1;min-width:70px;padding:0.3rem 0.5rem;border-radius:12px;font-size:0.75rem;font-weight:600;background:linear-gradient(135deg, #f39c12, #e67e22);color:#fff;border:none;cursor:pointer;transition:all 0.25s ease;box-shadow:0 2px 8px rgba(243,156,18,0.3);">
-                        <i class="fas fa-star"></i> 
-                        التقييمات (${salon.totalReviews || 0})
-                    </button>
-                </div>
+<!-- ===== أزرار الإجراءات الرئيسية ===== -->
+<div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.5rem;">
+    <button class="btn-action btn-primary-action" onclick="event.stopPropagation();openBooking('${salon._id}')" 
+            style="flex:1;min-width:70px;padding:0.5rem 0.4rem;border-radius:12px;font-size:0.8rem;font-weight:700;background:linear-gradient(135deg, #f5b042, #e67e22);color:#1a1a2e;border:none;cursor:pointer;transition:all 0.25s ease;box-shadow:0 2px 8px rgba(245,176,66,0.3);">
+        <i class="fas fa-calendar-plus" style="margin-left:4px;"></i> احجز الآن
+    </button>
+    <button class="btn-action btn-success-action" onclick="event.stopPropagation();quickBooking('${salon._id}')" 
+            style="flex:1;min-width:70px;padding:0.5rem 0.4rem;border-radius:12px;font-size:0.8rem;font-weight:600;background:linear-gradient(135deg, #2ecc71, #27ae60);color:#fff;border:none;cursor:pointer;transition:all 0.25s ease;box-shadow:0 2px 8px rgba(46,204,113,0.3);">
+        <i class="fas fa-bolt" style="margin-left:4px;"></i> حجز سريع    
+        </button>
+    <button class="btn-action btn-outline-action" onclick="event.stopPropagation();openQuoteRequest('${salon._id}')" 
+            style="flex:1;min-width:70px;padding:0.5rem 0.4rem;border-radius:12px;font-size:0.8rem;font-weight:600;background:transparent;color:var(--gold);border:2px solid var(--gold);cursor:pointer;transition:all 0.25s ease;">
+        <i class="fas fa-file-invoice" style="margin-left:4px;"></i> سعر خاص بالمناسبات
+    </button>
+</div>
+
+<!-- ===== أزرار معرض الصور والتقييمات ===== -->
+<div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.4rem;">
+    <button class="btn-action btn-info-action" onclick="event.stopPropagation();openSalonGallery('${salon._id}')" 
+            style="flex:1;min-width:70px;padding:0.4rem 0.4rem;border-radius:12px;font-size:0.75rem;font-weight:600;background:linear-gradient(135deg, #3498db, #2980b9);color:#fff;border:none;cursor:pointer;transition:all 0.25s ease;box-shadow:0 2px 8px rgba(52,152,219,0.3);">
+        <i class="fas fa-images" style="margin-left:4px;"></i> 
+        ${salon.gallery && salon.gallery.length > 0 ? `معرض (${salon.gallery.length})` : '📷 ألبوم الصور'}
+    </button>
+    <button class="btn-action btn-warning-action" onclick="event.stopPropagation();openReviewsModal('${salon._id}')" 
+            style="flex:1;min-width:70px;padding:0.4rem 0.4rem;border-radius:12px;font-size:0.75rem;font-weight:600;background:linear-gradient(135deg, #f39c12, #e67e22);color:#fff;border:none;cursor:pointer;transition:all 0.25s ease;box-shadow:0 2px 8px rgba(243,156,18,0.3);">
+        <i class="fas fa-star" style="margin-left:4px;"></i> 
+        التقييمات (${salon.totalReviews || 0})
+    </button>
+</div>
             </div>
         </div>
     `;
