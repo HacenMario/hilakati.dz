@@ -1330,44 +1330,44 @@ td { color: var(--text-color); }
 }
 
 /* ============================================================
-   تنسيق معرض الصور على الهواتف
+   معرض الصور - الوضع الافتراضي (الحاسوب)
+   ============================================================ */
+#galleryContent {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 0.5rem;
+    max-height: 70vh;
+    overflow-y: auto;
+    padding: 0.5rem 0;
+}
+
+#galleryContent .gallery-item {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    aspect-ratio: 1;
+    background: var(--input-bg, #f0f0f0);
+    border: 1px solid var(--border-color, #ddd);
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+#galleryContent .gallery-item:hover {
+    transform: scale(1.03);
+}
+
+#galleryContent .gallery-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* ============================================================
+   معرض الصور - للهواتف فقط (عرض أفقي مع تمرير)
    ============================================================ */
 @media (max-width: 768px) {
-    /* جعل الصورة الرئيسية تظهر بشكل كبير */
-    #galleryImage {
-        max-height: 55vh !important;
-        width: 100% !important;
-        object-fit: contain !important;
-        border-radius: 8px !important;
-        background: var(--input-bg, #222) !important;
-    }
-
-    /* أزرار التنقل تظهر فوق الصورة */
-    .slide-btn {
-        position: absolute !important;
-        top: 50% !important;
-        transform: translateY(-50%) !important;
-        background: rgba(0,0,0,0.6) !important;
-        color: #fff !important;
-        border: none !important;
-        font-size: 2rem !important;
-        padding: 8px 14px !important;
-        cursor: pointer !important;
-        border-radius: 50% !important;
-        z-index: 10 !important;
-        transition: background 0.3s !important;
-    }
-    .slide-btn:hover {
-        background: rgba(0,0,0,0.9) !important;
-    }
-    .slide-btn.left {
-        left: 8px !important;
-    }
-    .slide-btn.right {
-        right: 8px !important;
-    }
-
-    /* المصغرات تصبح شريطاً أفقياً */
+    /* حاوية الشبكة تصبح شريطاً أفقياً */
     #galleryContent {
         display: flex !important;
         flex-direction: row !important;
@@ -1379,49 +1379,61 @@ td { color: var(--text-color); }
         justify-content: flex-start !important;
         -webkit-overflow-scrolling: touch !important;
         scroll-snap-type: x mandatory !important;
-        max-height: 120px !important;
+        /* إلغاء أي تنسيق شبكي سابق */
         grid-template-columns: unset !important;
         grid-auto-flow: unset !important;
-        background: transparent !important;
+        max-height: none !important;
+        height: auto !important;
     }
 
+    /* كل عنصر صورة يصبح بحجم ثابت ولا يتقلص */
     #galleryContent .gallery-item {
-        flex: 0 0 100px !important;
-        height: 100px !important;
-        aspect-ratio: unset !important;
+        flex: 0 0 120px !important;   /* عرض ثابت */
+        height: 120px !important;      /* ارتفاع ثابت */
+        aspect-ratio: unset !important; /* إلغاء النسبة الأصلية */
         scroll-snap-align: start !important;
         border-radius: 8px !important;
         overflow: hidden !important;
         border: 2px solid transparent !important;
         transition: border 0.3s !important;
+        position: relative !important;
         background: var(--input-bg, #f0f0f0) !important;
-        cursor: pointer !important;
     }
 
+    /* الصورة داخل العنصر */
     #galleryContent .gallery-item img {
         width: 100% !important;
         height: 100% !important;
         object-fit: cover !important;
         display: block !important;
+        transition: transform 0.3s ease !important;
     }
 
-    #galleryContent .gallery-item.active-thumb {
-        border-color: var(--gold, #f5b042) !important;
+    #galleryContent .gallery-item img:hover {
+        transform: scale(1.05) !important;
     }
 
-    /* حاوية الصورة الرئيسية تحتاج إلى position:relative لتعمل الأزرار المطلقة */
-    #galleryModal .modal-box > div:first-of-type {
-        position: relative !important;
+    /* الصورة الرئيسية في النافذة */
+    #galleryImage {
+        max-height: 50vh !important;
+        width: 100% !important;
+        object-fit: contain !important;
     }
 
-    /* إغلاق النافذة */
+    /* أزرار التنقل (السابق/التالي) */
+    .slide-btn {
+        font-size: 1.5rem !important;
+        padding: 6px 12px !important;
+    }
+
+    /* زر الإغلاق */
     .close-modal {
         font-size: 2rem !important;
         top: 5px !important;
         right: 15px !important;
     }
 
-    /* شريط تمرير المصغرات */
+    /* تخصيص شريط التمرير */
     #galleryContent::-webkit-scrollbar {
         height: 4px;
     }
@@ -1432,6 +1444,7 @@ td { color: var(--text-color); }
     #galleryContent::-webkit-scrollbar-track {
         background: transparent;
     }
+}
 
     /* تحسين حجم النافذة */
     .modal-box {
