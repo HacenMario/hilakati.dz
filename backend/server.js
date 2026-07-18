@@ -15,31 +15,28 @@ const server = http.createServer(app);
 const notificationsRouter = require('./routes/notifications');
 app.use('/api/notifications', notificationsRouter);
 
-// ============================================================
-// ✅ Firebase Admin - تهيئة آمنة مع منع التكرار
-// ============================================================
-let admin = null;  // استخدم let بدلاً من const لتفادي إعادة التعريف
+// ===== تهيئة Firebase Admin باستخدام متغيرات البيئة =====
+let admin = null;
 
 try {
-    const fs = require('fs');
-    const path = require('path');
-    const serviceAccountPath = path.join(__dirname, 'serviceAccountKey.json');
+    // قراءة المتغيرات من البيئة
+    const projectId = process.env.FIREBASE_PROJECT_ID;
+    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n') : null;
 
-    if (fs.existsSync(serviceAccountPath)) {
-        const serviceAccount = require(serviceAccountPath);
-        const firebaseAdmin = require('firebase-admin');
-        admin = firebaseAdmin;  // تعيين المتغير العام
-
-        if (!admin.apps.length) {
-            admin.initializeApp({
-                credential: admin.credential.cert(serviceAccount)
-            });
-            console.log('✅ Firebase Admin مهيأ بنجاح');
-        } else {
-            console.log('ℹ️ Firebase Admin مهيأ مسبقاً');
-        }
+    // التحقق من وجود جميع المتغيرات
+    if (projectId && clientEmail && privateKey) {
+        admin = require('firebase-admin');
+        admin.initializeApp({
+            credential: admin.credential.cert({
+                projectId,
+                clientEmail,
+                privateKey
+            })
+        });
+        console.log('✅ Firebase Admin مهيأ بنجاح باستخدام متغيرات البيئة');
     } else {
-        console.warn('⚠️ ملف serviceAccountKey.json غير موجود. سيتم تعطيل Firebase.');
+        console.warn('⚠️ متغيرات Firebase غير مكتملة، سيتم تعطيل إرسال الإشعارات');
     }
 } catch (error) {
     console.warn('⚠️ فشل تهيئة Firebase:', error.message);
@@ -81,25 +78,6 @@ async function sendPushNotification(userId, userType, title, body, data = {}) {
     }
 }
 
-// ===== تهيئة Firebase Admin (اختياري) =====
-let admin = null;
-try {
-    // محاولة تحميل ملف المفتاح إذا كان موجوداً
-    const fs = require('fs');
-    const serviceAccountPath = './serviceAccountKey.json';
-    if (fs.existsSync(serviceAccountPath)) {
-        const serviceAccount = require(serviceAccountPath);
-        admin = require('firebase-admin');
-        admin.initializeApp({
-            credential: admin.credential.cert(serviceAccount)
-        });
-        console.log('✅ Firebase Admin مهيأ بنجاح');
-    } else {
-        console.log('⚠️ ملف serviceAccountKey.json غير موجود، سيتم تعطيل Firebase');
-    }
-} catch (error) {
-    console.warn('⚠️ فشل تهيئة Firebase:', error.message);
-}
 
 // ============================================================
 // Socket.io
