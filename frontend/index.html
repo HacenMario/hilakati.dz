@@ -3076,8 +3076,60 @@ const APP_VERSION = Date.now();
 document.querySelector('link[rel="manifest"]').href = `/manifest.json?v=${APP_VERSION}`;
 document.querySelector('link[rel="apple-touch-icon"]').href = `/icons/icon-192.png?v=${APP_VERSION}`;
 
+
+
 // ============================================================
-// ✅ فتح معرض صور الصالون (مع Lightbox للتكبير)
+// ✅ النظام الجديد لإدارة معرض الصور (بدون أخطاء)
+// ============================================================
+
+// متغيرات عامة لتخزين الصور والحالة الحالية
+let currentGalleryImages = [];
+let currentGalleryIndex = 0;
+
+// دالة تحديث نشاط الصور المصغرة
+function updateGalleryThumbnails(activeIndex) {
+    const thumbs = document.querySelectorAll('#galleryThumbnails img');
+    thumbs.forEach((img, i) => {
+        img.style.border = i === activeIndex ? '3px solid var(--gold)' : '2px solid transparent';
+        img.style.transform = i === activeIndex ? 'scale(1.05)' : 'scale(1)';
+    });
+}
+
+// ربط أزرار التنقل (مرة واحدة فقط عند تحميل الصفحة)
+document.addEventListener('DOMContentLoaded', function() {
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const galleryImg = document.getElementById('galleryImage');
+
+    // زر السابق
+    if (prevBtn && galleryImg) {
+        prevBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (currentGalleryImages.length === 0) return;
+            currentGalleryIndex = (currentGalleryIndex - 1 + currentGalleryImages.length) % currentGalleryImages.length;
+            galleryImg.src = currentGalleryImages[currentGalleryIndex];
+            updateGalleryThumbnails(currentGalleryIndex);
+        });
+    } else {
+        console.warn('⚠️ زر السابق (prevBtn) غير موجود في DOM');
+    }
+
+    // زر التالي
+    if (nextBtn && galleryImg) {
+        nextBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (currentGalleryImages.length === 0) return;
+            currentGalleryIndex = (currentGalleryIndex + 1) % currentGalleryImages.length;
+            galleryImg.src = currentGalleryImages[currentGalleryIndex];
+            updateGalleryThumbnails(currentGalleryIndex);
+        });
+    } else {
+        console.warn('⚠️ زر التالي (nextBtn) غير موجود في DOM');
+    }
+});
+
+// ============================================================
+// ✅ دالة فتح المعرض المعدلة (نسخة مستقرة)
 // ============================================================
 async function openSalonGallery(salonId) {
     try {
@@ -3091,89 +3143,62 @@ async function openSalonGallery(salonId) {
         const salon = await res.json();
         
         const gallery = salon.gallery || [];
-        const modal = document.getElementById('galleryModal');
-        const galleryImage = document.getElementById('galleryImage');
-        const thumbnailsContainer = document.getElementById('galleryThumbnails');
-        const titleElement = document.getElementById('galleryModalTitle');
-        
+        const thumbContainer = document.getElementById('galleryThumbnails');
+        const galleryImg = document.getElementById('galleryImage');
+        const titleEl = document.getElementById('galleryModalTitle');
+
         // تحديث العنوان
-        if (titleElement) {
-            titleElement.textContent = `📷 ألبوم الصور - ${salon.name}`;
+        if (titleEl) {
+            titleEl.textContent = `📷 ألبوم الصور - ${salon.name}`;
         }
-        
-        // مسح المصغرات السابقة
-        thumbnailsContainer.innerHTML = '';
-        
+
+        // مسح المحتوى القديم
+        thumbContainer.innerHTML = '';
+        currentGalleryImages = gallery;
+        currentGalleryIndex = 0;
+
+        // إذا لم توجد صور
         if (gallery.length === 0) {
-            thumbnailsContainer.innerHTML = `
+            thumbContainer.innerHTML = `
                 <div style="grid-column:span 2;text-align:center;padding:2rem;color:var(--text-color);opacity:0.5;width:100%;">
                     <i class="fas fa-images" style="font-size:3rem;display:block;margin-bottom:0.5rem;"></i>
                     لا توجد صور في المعرض حالياً
                 </div>
             `;
-            galleryImage.style.display = 'none';
-        } else {
-            // تعبئة المصغرات
-            gallery.forEach(url => {
-                const img = document.createElement('img');
-                img.src = url;
-                img.alt = 'عمل الصالون';
-                img.style.width = '60px';
-                img.style.height = '60px';
-                img.style.objectFit = 'cover';
-                img.style.borderRadius = '6px';
-                img.style.cursor = 'pointer';
-                img.style.border = '2px solid transparent';
-                img.style.transition = '0.3s';
-                img.onmouseover = () => img.style.borderColor = 'var(--gold)';
-                img.onmouseout = () => img.style.borderColor = 'transparent';
-                img.onclick = () => openLightbox(url);
-                thumbnailsContainer.appendChild(img);
-            });
-            
-            // عرض أول صورة في النافذة الرئيسية
-            galleryImage.src = gallery[0];
-            galleryImage.style.display = 'block';
-            
-            // تحديث أزرار التنقل لتعمل على قائمة الصور
-            let currentIndex = 0;
-            const totalImages = gallery.length;
-            
-            const prevBtn = document.getElementById('prevBtn');
-            const nextBtn = document.getElementById('nextBtn');
-            
-            // إزالة المستمعين القديمين (لتجنب التكرار)
-            const newPrev = prevBtn.cloneNode(true);
-            const newNext = nextBtn.cloneNode(true);
-            prevBtn.parentNode.replaceChild(newPrev, prevBtn);
-            nextBtn.parentNode.replaceChild(newNext, nextBtn);
-            
-            newPrev.addEventListener('click', () => {
-                currentIndex = (currentIndex - 1 + totalImages) % totalImages;
-                galleryImage.src = gallery[currentIndex];
-                // تحديث الفعالية في المصغرات
-                document.querySelectorAll('#galleryThumbnails img').forEach((thumb, i) => {
-                    thumb.style.borderColor = i === currentIndex ? 'var(--gold)' : 'transparent';
-                });
-            });
-            
-            newNext.addEventListener('click', () => {
-                currentIndex = (currentIndex + 1) % totalImages;
-                galleryImage.src = gallery[currentIndex];
-                document.querySelectorAll('#galleryThumbnails img').forEach((thumb, i) => {
-                    thumb.style.borderColor = i === currentIndex ? 'var(--gold)' : 'transparent';
-                });
-            });
-            
-            // تفعيل أول صورة
-            document.querySelectorAll('#galleryThumbnails img').forEach((thumb, i) => {
-                if (i === 0) thumb.style.borderColor = 'var(--gold)';
-            });
+            galleryImg.style.display = 'none';
+            openModal('galleryModal');
+            return;
         }
-        
+
+        // تعبئة الصور المصغرة
+        gallery.forEach((url, index) => {
+            const img = document.createElement('img');
+            img.src = url;
+            img.alt = 'عمل الصالون';
+            img.style.cssText = `
+                width: 60px; height: 60px; object-fit: cover; border-radius: 6px;
+                cursor: pointer; border: 2px solid transparent; transition: all 0.3s ease;
+            `;
+            img.onmouseover = () => { if (index !== currentGalleryIndex) img.style.borderColor = 'var(--gold)'; };
+            img.onmouseout = () => { if (index !== currentGalleryIndex) img.style.borderColor = 'transparent'; };
+            img.onclick = () => {
+                galleryImg.src = url;
+                currentGalleryIndex = index;
+                updateGalleryThumbnails(index);
+                // فتح الصورة في Lightbox (إذا أردت)
+                // openLightbox(url);
+            };
+            thumbContainer.appendChild(img);
+        });
+
+        // عرض الصورة الأولى
+        galleryImg.src = gallery[0];
+        galleryImg.style.display = 'block';
+        updateGalleryThumbnails(0);
+
         // فتح النافذة
         openModal('galleryModal');
-        
+
     } catch (error) {
         console.error('❌ فشل فتح المعرض:', error);
         showToast('❌ فشل تحميل الصور', 'error');
