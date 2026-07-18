@@ -5206,13 +5206,13 @@ function createSalonCard(salon) {
                 <!-- ===== أزرار الإجراءات الرئيسية ===== -->
                 <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.5rem;">
                     <button class="btn-book" onclick="event.stopPropagation();openBooking('${salon._id}')" style="flex:1;min-width:70px;padding:0.4rem 0.5rem;border-radius:12px;font-size:0.8rem;font-weight:700;background:linear-gradient(135deg, var(--gold), #e67e22);color:var(--dark);border:none;cursor:pointer;">
-                        <i class="fas fa-calendar-plus"></i> احجز
-                    </button>
+                        <i class="fas fa-calendar-plus"></i> احجز الآن
+                        </button>
                     <button class="btn-success btn-sm" onclick="event.stopPropagation();quickBooking('${salon._id}')" style="flex:1;min-width:70px;padding:0.4rem 0.5rem;border-radius:12px;font-size:0.75rem;font-weight:600;background:var(--success);color:#fff;border:none;cursor:pointer;">
-                        <i class="fas fa-bolt"></i> سريع
+                        <i class="fas fa-bolt"></i> حجز سريع
                     </button>
                     <button class="btn-outline btn-sm" onclick="event.stopPropagation();openQuoteRequest('${salon._id}')" style="flex:1;min-width:70px;padding:0.4rem 0.5rem;border-radius:12px;font-size:0.75rem;font-weight:600;border:1.5px solid var(--gold);color:var(--gold);background:transparent;cursor:pointer;">
-                        <i class="fas fa-file-invoice"></i> عرض سعر
+                        <i class="fas fa-file-invoice"></i> خاص بالمناسبات و الأعراس
                     </button>
                 </div>
                 
@@ -5221,7 +5221,7 @@ function createSalonCard(salon) {
                     <button class="btn-info btn-sm" onclick="event.stopPropagation();openSalonGallery('${salon._id}')" 
                             style="flex:1;min-width:70px;padding:0.3rem 0.5rem;border-radius:12px;font-size:0.75rem;font-weight:600;background:linear-gradient(135deg, #3498db, #2980b9);color:#fff;border:none;cursor:pointer;transition:all 0.25s ease;box-shadow:0 2px 8px rgba(52,152,219,0.3);">
                         <i class="fas fa-images"></i> 
-                        ${salon.gallery && salon.gallery.length > 0 ? `معرض (${salon.gallery.length})` : '📷 إضافة صور'}
+                        ${salon.gallery && salon.gallery.length > 0 ? `معرض (${salon.gallery.length})` : '📷 معرض الصور'}
                     </button>
                     <button class="btn-warning btn-sm" onclick="event.stopPropagation();openReviewsModal('${salon._id}')" 
                             style="flex:1;min-width:70px;padding:0.3rem 0.5rem;border-radius:12px;font-size:0.75rem;font-weight:600;background:linear-gradient(135deg, #f39c12, #e67e22);color:#fff;border:none;cursor:pointer;transition:all 0.25s ease;box-shadow:0 2px 8px rgba(243,156,18,0.3);">
