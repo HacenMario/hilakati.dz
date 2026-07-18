@@ -35,6 +35,124 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="description" content="حلاقتي - منصة حجز صالونات الحلاقة والتجميل في الجزائر" />
     <title>حلاقتي - منصة حجز صالونات الحلاقة والتجميل</title>
+
+    /* زر فتح المعرض */
+#openGalleryBtn {
+  padding: 12px 24px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: 0.3s;
+}
+#openGalleryBtn:hover {
+  background: #0056b3;
+}
+
+/* خلفية النافذة المنبثقة */
+.gallery-modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.85);
+  justify-content: center;
+  align-items: center;
+}
+
+/* محتوى النافذة */
+.gallery-modal-content {
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  max-width: 800px;
+  width: 90%;
+  position: relative;
+  text-align: center;
+}
+
+/* زر الإغلاق */
+.close-modal {
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  font-size: 30px;
+  font-weight: bold;
+  color: #333;
+  cursor: pointer;
+  transition: 0.3s;
+}
+.close-modal:hover {
+  color: #ff0000;
+}
+
+/* حاوية الصورة وأزرار التنقل */
+.gallery-slider {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 15px 0;
+}
+
+#galleryImage {
+  max-width: 100%;
+  max-height: 70vh;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+/* أزرار التنقل */
+.slide-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0,0,0,0.5);
+  color: white;
+  border: none;
+  font-size: 28px;
+  padding: 10px 16px;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: 0.3s;
+  z-index: 10;
+}
+.slide-btn:hover {
+  background: rgba(0,0,0,0.8);
+}
+.slide-btn.left {
+  left: 10px;
+}
+.slide-btn.right {
+  right: 10px;
+}
+
+/* الصور المصغرة */
+.thumbnails {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 15px;
+}
+.thumbnails img {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: 0.3s;
+}
+.thumbnails img:hover,
+.thumbnails img.active-thumb {
+  border-color: #007bff;
+}
     
     <!-- ============================================================
     ✅ الخطوط والأيقونات (مع إصدار لمنع الكاش)
@@ -1796,45 +1914,25 @@ input, textarea, select {
 </div>
 
 <!-- ===== النوافذ المنبثقة ===== -->
-<!-- ===== نافذة معرض الصور ===== -->
-<div class="modal-overlay" id="galleryModal">
-    <div class="modal-box" style="max-width:650px;">
-        <button class="modal-close" onclick="closeModal('galleryModal')">&times;</button>
-        <h2 style="color:var(--gold);text-align:center;margin-bottom:0.5rem;">
-            <i class="fas fa-images"></i> ألبوم الصور
-        </h2>
-        <div id="galleryContent" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:0.5rem;max-height:70vh;overflow-y:auto;padding:0.5rem 0;">
-            <!-- سيتم تعبئته بواسطة JavaScript -->
-        </div>
+
+<!-- زر فتح المعرض -->
+<button id="openGalleryBtn">📸 فتح المعرض</button>
+
+<!-- نافذة المعرض المنبثقة (Modal) -->
+<div id="galleryModal" class="gallery-modal">
+  <div class="gallery-modal-content">
+    <span class="close-modal">&times;</span>
+    <div class="gallery-slider">
+      <img id="galleryImage" src="" alt="صورة المعرض">
+      <button class="slide-btn left" id="prevBtn">&#10094;</button>
+      <button class="slide-btn right" id="nextBtn">&#10095;</button>
     </div>
+    <div class="thumbnails">
+      <!-- سيتم تعبئة الصور المصغرة بواسطة JavaScript -->
+    </div>
+  </div>
 </div>
 
-/* ✅ تحسين مظهر الصور في المعرض */
-#galleryContent .gallery-item {
-    position: relative;
-    border-radius: 8px;
-    overflow: hidden;
-    aspect-ratio: 1;
-    background: var(--input-bg);
-    border: 1px solid var(--border-color);
-    cursor: pointer;
-    width: 100%;
-    transition: transform 0.3s ease;
-}
-
-#galleryContent .gallery-item:hover {
-    transform: scale(1.03);
-}
-
-#galleryContent .gallery-item img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-}
-        </div>
-    </div>
-</div>
 <!-- ===== نافذة عرض الصورة المكبرة (Lightbox) ===== -->
 <div class="modal-overlay" id="imageLightbox">
     <div class="modal-box" style="max-width:95vw;max-height:95vh;padding:0.5rem;background:rgba(0,0,0,0.85);box-shadow:0 8px 32px rgba(0,0,0,0.8);border:none;border-radius:12px;display:flex;align-items:center;justify-content:center;position:relative;">
@@ -2853,6 +2951,75 @@ input, textarea, select {
 
 <script>
 
+// قائمة الصور (استبدلها بمسار صورك الفعلية)
+const images = [
+  'path/to/image1.jpg',
+  'path/to/image2.jpg',
+  'path/to/image3.jpg',
+  // أضف المزيد حسب الحاجة
+];
+
+let currentIndex = 0;
+
+const modal = document.getElementById('galleryModal');
+const galleryImage = document.getElementById('galleryImage');
+const thumbnailsContainer = document.querySelector('.thumbnails');
+const openBtn = document.getElementById('openGalleryBtn');
+const closeBtn = document.querySelector('.close-modal');
+const prevBtn = document.getElementById('prevBtn');
+const nextBtn = document.getElementById('nextBtn');
+
+// عرض الصورة بناءً على الفهرس
+function showImage(index) {
+  if (index < 0) index = images.length - 1;
+  if (index >= images.length) index = 0;
+  currentIndex = index;
+  galleryImage.src = images[currentIndex];
+  
+  // تحديث الفعالية في المصغرات
+  document.querySelectorAll('.thumbnails img').forEach((thumb, i) => {
+    thumb.classList.toggle('active-thumb', i === currentIndex);
+  });
+}
+
+// تعبئة المصغرات
+images.forEach((src, i) => {
+  const img = document.createElement('img');
+  img.src = src;
+  img.alt = `صورة ${i+1}`;
+  img.addEventListener('click', () => showImage(i));
+  thumbnailsContainer.appendChild(img);
+});
+
+// فتح النافذة
+openBtn.addEventListener('click', () => {
+  modal.style.display = 'flex';
+  showImage(0); // أو أي صورة تبدأ بها
+});
+
+// إغلاق النافذة
+closeBtn.addEventListener('click', () => {
+  modal.style.display = 'none';
+});
+
+// إغلاق عند النقر خارج المحتوى
+modal.addEventListener('click', (e) => {
+  if (e.target === modal) modal.style.display = 'none';
+});
+
+// أزرار التنقل
+prevBtn.addEventListener('click', () => showImage(currentIndex - 1));
+nextBtn.addEventListener('click', () => showImage(currentIndex + 1));
+
+// التنقل عبر لوحة المفاتيح
+document.addEventListener('keydown', (e) => {
+  if (modal.style.display === 'flex') {
+    if (e.key === 'ArrowLeft') showImage(currentIndex - 1);
+    else if (e.key === 'ArrowRight') showImage(currentIndex + 1);
+    else if (e.key === 'Escape') modal.style.display = 'none';
+  }
+});
+    
 // ============================================================
 // ✅ فتح نافذة التقييمات
 // ============================================================
