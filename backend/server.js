@@ -13,11 +13,25 @@ const socketIo = require('socket.io');
 const app = express();
 const server = http.createServer(app);
 
-const admin = require('firebase-admin');
-admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    projectId: 'your-project-id'
-});
+// ===== تهيئة Firebase Admin (اختياري) =====
+let admin = null;
+try {
+    // محاولة تحميل ملف المفتاح إذا كان موجوداً
+    const fs = require('fs');
+    const serviceAccountPath = './serviceAccountKey.json';
+    if (fs.existsSync(serviceAccountPath)) {
+        const serviceAccount = require(serviceAccountPath);
+        admin = require('firebase-admin');
+        admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount)
+        });
+        console.log('✅ Firebase Admin مهيأ بنجاح');
+    } else {
+        console.log('⚠️ ملف serviceAccountKey.json غير موجود، سيتم تعطيل Firebase');
+    }
+} catch (error) {
+    console.warn('⚠️ فشل تهيئة Firebase:', error.message);
+}
 
 // ============================================================
 // Socket.io
