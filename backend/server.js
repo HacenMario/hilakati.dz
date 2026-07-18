@@ -15,8 +15,11 @@ const server = http.createServer(app);
 const notificationsRouter = require('./routes/notifications');
 app.use('/api/notifications', notificationsRouter);
 
-// ===== تهيئة Firebase Admin باستخدام متغيرات البيئة =====
+// ============================================================
+// ✅ تهيئة Firebase Admin (نسخة نظيفة)
+// ============================================================
 let admin = null;
+let firebaseInitialized = false;
 
 try {
     // قراءة المتغيرات من البيئة
@@ -25,7 +28,7 @@ try {
     const privateKey = process.env.FIREBASE_PRIVATE_KEY ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n') : null;
 
     // التحقق من وجود جميع المتغيرات
-    if (projectId && clientEmail && privateKey) {
+    if (projectId && clientEmail && privateKey && privateKey.startsWith('-----BEGIN PRIVATE KEY-----')) {
         admin = require('firebase-admin');
         admin.initializeApp({
             credential: admin.credential.cert({
@@ -34,50 +37,106 @@ try {
                 privateKey
             })
         });
+        firebaseInitialized = true;
         console.log('✅ Firebase Admin مهيأ بنجاح باستخدام متغيرات البيئة');
     } else {
         console.warn('⚠️ متغيرات Firebase غير مكتملة، سيتم تعطيل إرسال الإشعارات');
+        console.warn('   FIREBASE_PROJECT_ID:', projectId ? '✅ موجود' : '❌ مفقود');
+        console.warn('   FIREBASE_CLIENT_EMAIL:', clientEmail ? '✅ موجود' : '❌ مفقود');
+        console.warn('   FIREBASE_PRIVATE_KEY:', privateKey ? '✅ موجود (يبدأ بـ ' + privateKey.substring(0, 30) + '...)' : '❌ مفقود');
     }
 } catch (error) {
     console.warn('⚠️ فشل تهيئة Firebase:', error.message);
 }
 
 // ============================================================
-// ✅ دالة إرسال إشعار Push (آمنة حتى لو admin == null)
+// ✅ دالة إرسال إشعار Push (آمنة)
 // ============================================================
 async function sendPushNotification(userId, userType, title, body, data = {}) {
-    if (!admin) {
-        console.warn('⚠️ Firebase غير مهيأ، لا يمكن إرسال الإشعار');
+    if (!firebaseInitialized || !admin) {
+        console.log('ℹ️ Firebase غير مهيأ، لا يمكن إرسال الإشعار');
         return;
     }
+    
     try {
-        // افترض أن لديك مجموعة devices في MongoDB
-        const devices = await db.collection('devices')
-            .find({ userId, userType })
-            .toArray();
-
+        // ✅ البحث عن أجهزة المستخدم في قاعدة البيانات (MongoDB)
+        const Device = require('./models/Device'); // يجب إنشاء هذا النموذج
+        const devices = await Device.find({ userId, userType });
+        
         if (devices.length === 0) {
             console.log(`ℹ️ لا توجد أجهزة مسجلة للمستخدم ${userId}`);
             return;
         }
 
         const tokens = devices.map(d => d.token);
+        
+        // ✅ إرسال الإشعار
         const message = {
-            notification: { title, body },
-            data: data,
+            notification: { 
+                title: title || 'إشعار من حلاقتي', 
+                body: body || '' 
+            },
+            data: data || {},
             tokens: tokens
         };
 
         const response = await admin.messaging().sendEachForMulticast(message);
         console.log(`✅ أرسل الإشعار إلى ${response.successCount} جهاز`);
+        
         if (response.failureCount > 0) {
             console.warn(`❌ فشل الإرسال إلى ${response.failureCount} جهاز`);
+            // يمكنك معالجة الأجهزة الفاشلة (حذف التوكنات المنتهية)
+            response.responses.forEach((resp, idx) => {
+                if (!resp.success) {
+                    console.warn(`   جهاز ${idx}: ${resp.error?.message}`);
+                }
+            });
         }
     } catch (error) {
         console.error('❌ فشل إرسال الإشعار:', error);
     }
 }
 
+// ============================================================
+// ✅ مسار تسجيل توكن الجهاز
+// ============================================================
+app.post('/api/notifications/register-token', async (req, res) => {
+    try {
+        const { userId, userType, token } = req.body;
+        
+        if (!userId || !token) {
+            return res.status(400).json({ error: 'بيانات ناقصة: userId و token مطلوبان' });
+        }
+
+        // ✅ استخدام Mongoose بدلاً من db.collection
+        const Device = require('./models/Device');
+        
+        // ✅ تحديث أو إنشاء توكن جديد
+        const existing = await Device.findOne({ userId, userType, token });
+        if (existing) {
+            // التوكن موجود مسبقاً
+            return res.json({ success: true, message: 'التوكن موجود مسبقاً' });
+        }
+
+        // ✅ حذف التوكنات القديمة لنفس المستخدم (اختياري)
+        // await Device.deleteMany({ userId, userType });
+
+        const device = new Device({
+            userId,
+            userType,
+            token,
+            createdAt: new Date()
+        });
+        await device.save();
+
+        console.log(`✅ تم تسجيل توكن جديد للمستخدم ${userId} (${userType})`);
+        res.json({ success: true, message: 'تم تسجيل التوكن بنجاح' });
+
+    } catch (error) {
+        console.error('❌ فشل تسجيل التوكن:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
 
 // ============================================================
 // Socket.io
@@ -219,43 +278,6 @@ const Appointment = require('./models/Appointment');
 const Review = require('./models/Review');
 const Admin = require('./models/Admin');
 const Notification = require('./models/Notification');
-
-const admin = require('firebase-admin');
-
-app.post('/api/notifications/register-token', async (req, res) => {
-  const { userId, userType, token } = req.body;
-  if (!userId || !token) return res.status(400).json({ error: 'بيانات ناقصة' });
-
-  try {
-    await db.collection('devices').insertOne({
-      userId, userType, token,
-      createdAt: new Date()
-    });
-    res.json({ success: true });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// إذا كنت تستخدم متغيرات البيئة (يفضل)
-const serviceAccount = {
-  type: process.env.FIREBASE_TYPE,
-  project_id: process.env.FIREBASE_PROJECT_ID,
-  private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
-  private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-  client_email: process.env.FIREBASE_CLIENT_EMAIL,
-  client_id: process.env.FIREBASE_CLIENT_ID,
-  auth_uri: "https://accounts.google.com/o/oauth2/auth",
-  token_uri: "https://oauth2.googleapis.com/token",
-  auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
-  client_x509_cert_url: process.env.FIREBASE_CLIENT_CERT_URL
-};
-
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
-});
-
-console.log('✅ Firebase Admin مهيأ');
 
 // ============================================================
 // ✅ التحقق من صلاحية الكوبون (مسار عام - لا يحتاج مصادقة)
@@ -2347,51 +2369,6 @@ app.post('/api/contact', async (req, res) => {
         res.status(500).json({ message: '❌ فشل إرسال الرسالة' });
     }
 });
-
-async function sendPushNotification(userId, userType, title, body, data = {}) {
-  try {
-    // جلب جميع توكنات هذا المستخدم
-    const devices = await db.collection('devices')
-      .find({ userId, userType })
-      .toArray();
-
-    if (devices.length === 0) {
-      console.log(`⚠️ لا توجد أجهزة مسجلة للمستخدم ${userId}`);
-      return;
-    }
-
-    const tokens = devices.map(d => d.token);
-
-    const message = {
-      notification: { title, body },
-      data: data, // بيانات إضافية (مثل معرف الحجز)
-      tokens: tokens
-    };
-
-    const response = await admin.messaging().sendEachForMulticast(message);
-
-    console.log(`✅ أرسل الإشعار إلى ${response.successCount} جهاز`);
-    if (response.failureCount > 0) {
-      console.warn(`❌ فشل الإرسال إلى ${response.failureCount} جهاز`);
-    }
-  } catch (error) {
-    console.error('❌ فشل إرسال الإشعار:', error);
-  }
-}
-// بعد إنشاء الحجز بنجاح
-await sendPushNotification(
-  salonId, 'salon',
-  'حجز جديد 🆕',
-  `طلب حجز من ${clientName} في ${date}`,
-  { appointmentId: newAppointment._id, type: 'new_booking' }
-);
-
-await sendPushNotification(
-  customerId, 'customer',
-  'تم تأكيد حجزك ✅',
-  `تم تأكيد حجزك في ${salonName}`,
-  { appointmentId: newAppointment._id, type: 'confirmed' }
-);
 
 // ============================================================
 // تحميل الكوبونات
