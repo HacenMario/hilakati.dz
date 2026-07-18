@@ -1773,6 +1773,318 @@ input, textarea, select {
         border-radius: 10px;
     }
 }
+
+/* ============================================================
+   تحسينات شاملة للهواتف (تجربة مثالية)
+   ============================================================ */
+@media (max-width: 768px) {
+    /* ===== 1. الهيدر ===== */
+    .header {
+        padding: 0.3rem 2% !important;
+        gap: 0.2rem !important;
+        flex-wrap: wrap !important;
+    }
+    .logo {
+        font-size: 1rem !important;
+        flex: 0 0 100% !important;
+        text-align: center !important;
+        justify-content: center !important;
+    }
+    .nav-links {
+        gap: 0.1rem !important;
+        justify-content: center !important;
+        width: 100% !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        padding: 0.2rem 0 !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+    .nav-links a {
+        font-size: 0.7rem !important;
+        padding: 0.2rem 0.5rem !important;
+        white-space: nowrap !important;
+        flex-shrink: 0 !important;
+    }
+    .header-actions {
+        gap: 0.15rem !important;
+        justify-content: center !important;
+        width: 100% !important;
+        flex-wrap: wrap !important;
+    }
+    .header-actions button,
+    .header-actions .btn-sm {
+        font-size: 0.6rem !important;
+        padding: 0.15rem 0.4rem !important;
+        min-height: 28px !important;
+    }
+    .role-buttons {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 0.3rem !important;
+        width: 100% !important;
+    }
+    .role-buttons > div {
+        justify-content: center !important;
+        flex-wrap: wrap !important;
+        padding: 0.15rem 0.3rem !important;
+    }
+    .role-buttons button {
+        font-size: 0.6rem !important;
+        padding: 0.15rem 0.4rem !important;
+        min-height: 28px !important;
+    }
+
+    /* ===== 2. البطاقات (صالونات) ===== */
+    .salon-card {
+        border-radius: 12px !important;
+        margin-bottom: 0.5rem !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+    }
+    .salon-card .cover {
+        height: 100px !important;
+        padding: 6px !important;
+    }
+    .salon-card .cover .rating-badge {
+        font-size: 0.6rem !important;
+        padding: 0.1rem 0.4rem !important;
+        top: 4px !important;
+        right: 4px !important;
+    }
+    .salon-card .cover .gps-badge {
+        font-size: 0.5rem !important;
+        padding: 0.1rem 0.4rem !important;
+        top: 4px !important;
+        left: 4px !important;
+    }
+    .salon-card .cover .featured-badge {
+        font-size: 0.5rem !important;
+        padding: 0.1rem 0.4rem !important;
+        top: 4px !important;
+        left: 50px !important;
+    }
+    .salon-card .cover img {
+        max-width: 60px !important;
+        max-height: 60px !important;
+    }
+    .salon-card .cover .default-icon {
+        font-size: 2.5rem !important;
+    }
+    .salon-card .body {
+        padding: 0.5rem !important;
+    }
+    .salon-card .body h3 {
+        font-size: 0.95rem !important;
+    }
+    .salon-card .body .desc {
+        font-size: 0.75rem !important;
+        margin-bottom: 0.2rem !important;
+    }
+    .salon-card .body .location {
+        font-size: 0.7rem !important;
+    }
+    .salon-card .body .price-info {
+        font-size: 0.8rem !important;
+    }
+    .salon-card .body .btn-book {
+        font-size: 0.75rem !important;
+        padding: 0.3rem !important;
+        min-height: 36px !important;
+    }
+
+    /* ===== 3. الأزرار بشكل عام ===== */
+    .btn-sm {
+        font-size: 0.65rem !important;
+        padding: 0.2rem 0.5rem !important;
+        min-height: 32px !important;
+    }
+    .btn-primary, .btn-gold, .btn-outline, .btn-success, .btn-danger {
+        font-size: 0.7rem !important;
+        padding: 0.3rem 0.8rem !important;
+        min-height: 36px !important;
+    }
+
+    /* ===== 4. النوافذ المنبثقة (مودال) ===== */
+    .modal-overlay {
+        padding: 0.3rem !important;
+    }
+    .modal-box {
+        max-width: 98% !important;
+        padding: 0.8rem !important;
+        margin: 0.2rem !important;
+        border-radius: 12px !important;
+        max-height: 90vh !important;
+    }
+    .modal-box h2 {
+        font-size: 1rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+    .modal-box .modal-close {
+        font-size: 1.2rem !important;
+        width: 28px !important;
+        height: 28px !important;
+    }
+
+    /* ===== 5. النماذج (حقول الإدخال) ===== */
+    .form-group {
+        margin-bottom: 0.6rem !important;
+    }
+    .form-group label {
+        font-size: 0.75rem !important;
+    }
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        font-size: 0.9rem !important;
+        padding: 0.5rem 0.6rem !important;
+        min-height: 40px !important;
+        border-radius: 8px !important;
+    }
+    .form-row {
+        grid-template-columns: 1fr !important;
+        gap: 0.4rem !important;
+    }
+
+    /* ===== 6. الجداول (تحويل إلى بطاقات) ===== */
+    .table-wrap {
+        overflow-x: auto !important;
+        border-radius: 8px !important;
+    }
+    table {
+        font-size: 0.7rem !important;
+    }
+    th, td {
+        padding: 0.3rem 0.4rem !important;
+        white-space: nowrap !important;
+    }
+
+    /* ===== 7. لوحة التحكم (Dashboard) ===== */
+    .dashboard-container {
+        grid-template-columns: 1fr !important;
+        gap: 0.8rem !important;
+    }
+    .sidebar {
+        position: static !important;
+        padding: 0.6rem !important;
+    }
+    .sidebar .profile .avatar {
+        width: 48px !important;
+        height: 48px !important;
+        font-size: 1.2rem !important;
+    }
+    .sidebar .menu {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 0.3rem !important;
+        justify-content: center !important;
+    }
+    .sidebar .menu a {
+        font-size: 0.7rem !important;
+        padding: 0.3rem 0.5rem !important;
+        flex: 0 1 auto !important;
+        text-align: center !important;
+    }
+    .dashboard-content {
+        padding: 0.6rem !important;
+    }
+    .stats-grid {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 0.4rem !important;
+    }
+    .stat-card {
+        padding: 0.4rem !important;
+    }
+    .stat-card .number {
+        font-size: 1.2rem !important;
+    }
+    .stat-card .label {
+        font-size: 0.6rem !important;
+    }
+
+    /* ===== 8. شريط التنقل السفلي ===== */
+    .mobile-bottom-nav {
+        padding: 0.2rem 0 !important;
+        justify-content: space-around !important;
+    }
+    .mobile-bottom-nav a {
+        font-size: 0.55rem !important;
+        padding: 0.1rem 0.3rem !important;
+        flex: 1 !important;
+        text-align: center !important;
+    }
+    .mobile-bottom-nav a i {
+        font-size: 1rem !important;
+        margin-bottom: 1px !important;
+    }
+
+    /* ===== 9. فلاتر البحث ===== */
+    .filter-section {
+        flex-direction: column !important;
+        gap: 0.3rem !important;
+        padding: 0.6rem !important;
+        border-radius: 10px !important;
+    }
+    .filter-section input,
+    .filter-section select {
+        width: 100% !important;
+        font-size: 0.85rem !important;
+        padding: 0.4rem 0.6rem !important;
+        min-height: 38px !important;
+        border-radius: 50px !important;
+    }
+    .filter-section label {
+        font-size: 0.75rem !important;
+        padding: 0.2rem 0.4rem !important;
+    }
+    .filter-section .btn-sm {
+        min-height: 36px !important;
+        flex: 1 !important;
+    }
+
+    /* ===== 10. معرض الصور ===== */
+    #galleryContent .gallery-item {
+        flex: 0 0 100px !important;
+        height: 100px !important;
+    }
+
+    /* ===== 11. الإشعارات ===== */
+    .notif-dropdown {
+        min-width: 280px !important;
+        left: -120px !important;
+        right: auto !important;
+    }
+    .notif-item {
+        padding: 0.3rem 0.5rem !important;
+    }
+    .notif-item .notif-title {
+        font-size: 0.75rem !important;
+    }
+    .notif-item .notif-msg {
+        font-size: 0.7rem !important;
+    }
+
+    /* ===== 12. التوست (Toast) ===== */
+    .toast {
+        bottom: 70px !important;
+        right: 10px !important;
+        left: 10px !important;
+        font-size: 0.8rem !important;
+        padding: 0.6rem 0.8rem !important;
+        max-width: 100% !important;
+        border-radius: 10px !important;
+    }
+
+    /* ===== 13. العناوين والنصوص ===== */
+    .section-title {
+        font-size: 1.4rem !important;
+    }
+    .section-subtitle {
+        font-size: 0.85rem !important;
+    }
+    .section {
+        padding: 0.8rem 3% !important;
+        min-height: auto !important;
+    }
+}
     </style>
 </head>
 <body>
