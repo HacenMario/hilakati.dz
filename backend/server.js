@@ -13,6 +13,12 @@ const socketIo = require('socket.io');
 const app = express();
 const server = http.createServer(app);
 
+const admin = require('firebase-admin');
+admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+    projectId: 'your-project-id'
+});
+
 // ============================================================
 // Socket.io
 // ============================================================
@@ -2244,6 +2250,25 @@ app.post('/api/contact', async (req, res) => {
         res.status(500).json({ message: '❌ فشل إرسال الرسالة' });
     }
 });
+
+async function sendPushNotification(userId, title, body, data = {}) {
+    // جلب جميع أجهزة المستخدم
+    const devices = await getDeviceTokens(userId);
+    
+    const message = {
+        notification: { title, body },
+        data: data,
+        tokens: devices
+    };
+    
+    try {
+        const response = await admin.messaging().sendEachForMulticast(message);
+        console.log('✅ تم إرسال الإشعارات:', response);
+        return response;
+    } catch (error) {
+        console.error('❌ فشل إرسال الإشعارات:', error);
+    }
+}
 
 // ============================================================
 // تحميل الكوبونات
