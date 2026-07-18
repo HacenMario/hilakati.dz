@@ -1904,12 +1904,13 @@ input, textarea, select {
 <div id="galleryModal" class="gallery-modal">
   <div class="gallery-modal-content">
     <span class="close-modal">&times;</span>
+    <h2 id="galleryModalTitle" style="color:var(--gold);text-align:center;margin:0 0 0.5rem 0;font-size:1.2rem;">📷 معرض الصور</h2>
     <div class="gallery-slider">
-      <img id="galleryImage" src="" alt="صورة المعرض">
+      <img id="galleryImage" src="" alt="صورة المعرض" style="display:block; max-width:100%; max-height:70vh; border-radius:8px; margin:0 auto;">
       <button class="slide-btn left" id="prevBtn">&#10094;</button>
       <button class="slide-btn right" id="nextBtn">&#10095;</button>
     </div>
-    <div class="thumbnails">
+    <div class="thumbnails" id="galleryThumbnails">
       <!-- سيتم تعبئة الصور المصغرة بواسطة JavaScript -->
     </div>
   </div>
@@ -3090,30 +3091,87 @@ async function openSalonGallery(salonId) {
         const salon = await res.json();
         
         const gallery = salon.gallery || [];
-        const container = document.getElementById('galleryContent');
+        const modal = document.getElementById('galleryModal');
+        const galleryImage = document.getElementById('galleryImage');
+        const thumbnailsContainer = document.getElementById('galleryThumbnails');
+        const titleElement = document.getElementById('galleryModalTitle');
+        
+        // تحديث العنوان
+        if (titleElement) {
+            titleElement.textContent = `📷 ألبوم الصور - ${salon.name}`;
+        }
+        
+        // مسح المصغرات السابقة
+        thumbnailsContainer.innerHTML = '';
         
         if (gallery.length === 0) {
-            container.innerHTML = `
-                <div style="grid-column:span 2;text-align:center;padding:2rem;color:var(--text-color);opacity:0.5;">
+            thumbnailsContainer.innerHTML = `
+                <div style="grid-column:span 2;text-align:center;padding:2rem;color:var(--text-color);opacity:0.5;width:100%;">
                     <i class="fas fa-images" style="font-size:3rem;display:block;margin-bottom:0.5rem;"></i>
                     لا توجد صور في المعرض حالياً
                 </div>
             `;
+            galleryImage.style.display = 'none';
         } else {
-container.innerHTML = gallery.map(url => `
-    <div class="gallery-item" onclick="openLightbox('${url}')">
-        <img src="${url}" alt="عمل الصالون" 
-             loading="lazy"
-             onerror="this.style.display='none';this.parentElement.innerHTML='<div style=\\'display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-color);opacity:0.3;\\'><i class=\\'fas fa-image\\' style=\\'font-size:2rem;\\'></i></div>'">
-    </div>
-`).join('');
+            // تعبئة المصغرات
+            gallery.forEach(url => {
+                const img = document.createElement('img');
+                img.src = url;
+                img.alt = 'عمل الصالون';
+                img.style.width = '60px';
+                img.style.height = '60px';
+                img.style.objectFit = 'cover';
+                img.style.borderRadius = '6px';
+                img.style.cursor = 'pointer';
+                img.style.border = '2px solid transparent';
+                img.style.transition = '0.3s';
+                img.onmouseover = () => img.style.borderColor = 'var(--gold)';
+                img.onmouseout = () => img.style.borderColor = 'transparent';
+                img.onclick = () => openLightbox(url);
+                thumbnailsContainer.appendChild(img);
+            });
+            
+            // عرض أول صورة في النافذة الرئيسية
+            galleryImage.src = gallery[0];
+            galleryImage.style.display = 'block';
+            
+            // تحديث أزرار التنقل لتعمل على قائمة الصور
+            let currentIndex = 0;
+            const totalImages = gallery.length;
+            
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            
+            // إزالة المستمعين القديمين (لتجنب التكرار)
+            const newPrev = prevBtn.cloneNode(true);
+            const newNext = nextBtn.cloneNode(true);
+            prevBtn.parentNode.replaceChild(newPrev, prevBtn);
+            nextBtn.parentNode.replaceChild(newNext, nextBtn);
+            
+            newPrev.addEventListener('click', () => {
+                currentIndex = (currentIndex - 1 + totalImages) % totalImages;
+                galleryImage.src = gallery[currentIndex];
+                // تحديث الفعالية في المصغرات
+                document.querySelectorAll('#galleryThumbnails img').forEach((thumb, i) => {
+                    thumb.style.borderColor = i === currentIndex ? 'var(--gold)' : 'transparent';
+                });
+            });
+            
+            newNext.addEventListener('click', () => {
+                currentIndex = (currentIndex + 1) % totalImages;
+                galleryImage.src = gallery[currentIndex];
+                document.querySelectorAll('#galleryThumbnails img').forEach((thumb, i) => {
+                    thumb.style.borderColor = i === currentIndex ? 'var(--gold)' : 'transparent';
+                });
+            });
+            
+            // تفعيل أول صورة
+            document.querySelectorAll('#galleryThumbnails img').forEach((thumb, i) => {
+                if (i === 0) thumb.style.borderColor = 'var(--gold)';
+            });
         }
         
-        // تحديث عنوان النافذة
-        document.querySelector('#galleryModal h2').innerHTML = `
-            <i class="fas fa-images"></i> ألبوم الصور ${salon.name}
-        `;
-        
+        // فتح النافذة
         openModal('galleryModal');
         
     } catch (error) {
