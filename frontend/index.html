@@ -111,6 +111,13 @@
     box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
 }
 
+@media (max-width: 480px) {
+    #galleryContent {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 0.3rem;
+    }
+}
+        
 /* تحسين الأزرار على الهواتف */
 @media (max-width: 480px) {
     .btn-action {
@@ -1794,10 +1801,42 @@ input, textarea, select {
     <div class="modal-box" style="max-width:650px;">
         <button class="modal-close" onclick="closeModal('galleryModal')">&times;</button>
         <h2 style="color:var(--gold);text-align:center;margin-bottom:0.5rem;">
-            <i class="fas fa-images"></i> معرض الأعمال
+            <i class="fas fa-images"></i> ألبوم الصور
         </h2>
-        <div id="galleryContent" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:0.5rem;max-height:70vh;overflow-y:auto;padding:0.5rem 0;">
-            <!-- سيتم تعبئته بواسطة JavaScript -->
+#galleryContent {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 0.5rem;
+    max-height: 70vh;
+    overflow-y: auto;
+    padding: 0.5rem 0;
+    justify-items: center;
+    align-items: center;
+}
+
+/* ✅ تحسين مظهر الصور في المعرض */
+#galleryContent .gallery-item {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    aspect-ratio: 1;
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    width: 100%;
+    transition: transform 0.3s ease;
+}
+
+#galleryContent .gallery-item:hover {
+    transform: scale(1.03);
+}
+
+#galleryContent .gallery-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
         </div>
     </div>
 </div>
@@ -2932,21 +2971,18 @@ async function openSalonGallery(salonId) {
                 </div>
             `;
         } else {
-            container.innerHTML = gallery.map(url => `
-                <div style="position:relative;border-radius:8px;overflow:hidden;aspect-ratio:1;background:var(--input-bg);border:1px solid var(--border-color);cursor:pointer;" 
-                     onclick="openLightbox('${url}')">
-                    <img src="${url}" alt="عمل الصالون" 
-                         style="width:100%;height:100%;object-fit:cover;transition:transform 0.3s ease;"
-                         onerror="this.style.display='none';this.parentElement.innerHTML='<div style=\\'display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-color);opacity:0.3;\\'><i class=\\'fas fa-image\\' style=\\'font-size:2rem;\\'></i></div>'"
-                         onmouseover="this.style.transform='scale(1.05)'"
-                         onmouseout="this.style.transform='scale(1)'">
-                </div>
-            `).join('');
+container.innerHTML = gallery.map(url => `
+    <div class="gallery-item" onclick="openLightbox('${url}')">
+        <img src="${url}" alt="عمل الصالون" 
+             loading="lazy"
+             onerror="this.style.display='none';this.parentElement.innerHTML='<div style=\\'display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-color);opacity:0.3;\\'><i class=\\'fas fa-image\\' style=\\'font-size:2rem;\\'></i></div>'">
+    </div>
+`).join('');
         }
         
         // تحديث عنوان النافذة
         document.querySelector('#galleryModal h2').innerHTML = `
-            <i class="fas fa-images"></i> معرض أعمال ${salon.name}
+            <i class="fas fa-images"></i> ألبوم الصور ${salon.name}
         `;
         
         openModal('galleryModal');
