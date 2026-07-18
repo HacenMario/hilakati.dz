@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const ReviewSchema = new mongoose.Schema({
     salonId: { type: mongoose.Schema.Types.ObjectId, ref: 'Salon', required: true },
     customerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', required: true },
