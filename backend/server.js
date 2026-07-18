@@ -177,10 +177,41 @@ const Admin = require('./models/Admin');
 const Notification = require('./models/Notification');
 
 const admin = require('firebase-admin');
-const serviceAccount = require('./hilakatidz-firebase-adminsdk-fbsvc-900634e426.json');
+
+app.post('/api/notifications/register-token', async (req, res) => {
+  const { userId, userType, token } = req.body;
+  if (!userId || !token) return res.status(400).json({ error: 'بيانات ناقصة' });
+
+  try {
+    await db.collection('devices').insertOne({
+      userId, userType, token,
+      createdAt: new Date()
+    });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// إذا كنت تستخدم متغيرات البيئة (يفضل)
+const serviceAccount = {
+  type: process.env.FIREBASE_TYPE,
+  project_id: process.env.FIREBASE_PROJECT_ID,
+  private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
+  private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+  client_email: process.env.FIREBASE_CLIENT_EMAIL,
+  client_id: process.env.FIREBASE_CLIENT_ID,
+  auth_uri: "https://accounts.google.com/o/oauth2/auth",
+  token_uri: "https://oauth2.googleapis.com/token",
+  auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
+  client_x509_cert_url: process.env.FIREBASE_CLIENT_CERT_URL
+};
+
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
+
+console.log('✅ Firebase Admin مهيأ');
 
 // ============================================================
 // ✅ التحقق من صلاحية الكوبون (مسار عام - لا يحتاج مصادقة)
@@ -2273,24 +2304,50 @@ app.post('/api/contact', async (req, res) => {
     }
 });
 
-async function sendPushNotification(userId, title, body, data = {}) {
-    // جلب جميع أجهزة المستخدم
-    const devices = await getDeviceTokens(userId);
-    
-    const message = {
-        notification: { title, body },
-        data: data,
-        tokens: devices
-    };
-    
-    try {
-        const response = await admin.messaging().sendEachForMulticast(message);
-        console.log('✅ تم إرسال الإشعارات:', response);
-        return response;
-    } catch (error) {
-        console.error('❌ فشل إرسال الإشعارات:', error);
+async function sendPushNotification(userId, userType, title, body, data = {}) {
+  try {
+    // جلب جميع توكنات هذا المستخدم
+    const devices = await db.collection('devices')
+      .find({ userId, userType })
+      .toArray();
+
+    if (devices.length === 0) {
+      console.log(`⚠️ لا توجد أجهزة مسجلة للمستخدم ${userId}`);
+      return;
     }
+
+    const tokens = devices.map(d => d.token);
+
+    const message = {
+      notification: { title, body },
+      data: data, // بيانات إضافية (مثل معرف الحجز)
+      tokens: tokens
+    };
+
+    const response = await admin.messaging().sendEachForMulticast(message);
+
+    console.log(`✅ أرسل الإشعار إلى ${response.successCount} جهاز`);
+    if (response.failureCount > 0) {
+      console.warn(`❌ فشل الإرسال إلى ${response.failureCount} جهاز`);
+    }
+  } catch (error) {
+    console.error('❌ فشل إرسال الإشعار:', error);
+  }
 }
+// بعد إنشاء الحجز بنجاح
+await sendPushNotification(
+  salonId, 'salon',
+  'حجز جديد 🆕',
+  `طلب حجز من ${clientName} في ${date}`,
+  { appointmentId: newAppointment._id, type: 'new_booking' }
+);
+
+await sendPushNotification(
+  customerId, 'customer',
+  'تم تأكيد حجزك ✅',
+  `تم تأكيد حجزك في ${salonName}`,
+  { appointmentId: newAppointment._id, type: 'confirmed' }
+);
 
 // ============================================================
 // تحميل الكوبونات
