@@ -3232,6 +3232,30 @@ input, textarea, select {
 
 <script>
 
+import { requestPermissionAndGetToken, onForegroundMessage } from './firebase-init.js';
+
+// عند تسجيل دخول العميل
+async function registerDevice() {
+  const token = await requestPermissionAndGetToken();
+  if (token) {
+    // أرسل التوكن إلى الخادم لحفظه مع معرف المستخدم
+    await fetch(`${API_BASE}/notifications/register-token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: localStorage.getItem('customerId'), // أو salonId
+        userType: 'customer', // أو 'salon'
+        token: token
+      })
+    });
+  }
+}
+
+// استماع للإشعارات في المقدمة
+onForegroundMessage((payload) => {
+  showToast(`🔔 ${payload.notification.title}: ${payload.notification.body}`);
+});
+
 // تهيئة Firebase (ضع config الخاص بك)
 const firebaseConfig = {
   apiKey: "AIzaSyBvVft2tK7uCW2lK1BzFfJEqcfi2BfRKIY",
