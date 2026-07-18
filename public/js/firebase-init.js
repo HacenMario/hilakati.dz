@@ -1,8 +1,6 @@
-// firebase-init.js
 import { initializeApp } from "firebase/app";
 import { getMessaging, getToken, onMessage } from "firebase/messaging";
 
-// تكوين Firebase (استخدم المتغيرات البيئية إن أمكن)
 const firebaseConfig = {
   apiKey: "AIzaSyBvVft2tK7uCW2lK1BzFfJEqcfi2BfRKIY",
   authDomain: "hilakatidz.firebaseapp.com",
@@ -16,22 +14,19 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const messaging = getMessaging(app);
 
-// دالة لطلب الإذن والحصول على التوكن
+// ✅ استخدم المفتاح العام هنا
+const VAPID_KEY = "BNkIuGv3eNZ4GVRc4M7l7UtOdOz6Uw0c3wXazo9g8JxDPOnw3eUt9o-A5djfc2UwxG_b89LDWkeND0TyhKNc-s0";
+
 export async function requestPermissionAndGetToken() {
   try {
-    // طلب الإذن
     const permission = await Notification.requestPermission();
     if (permission !== "granted") {
       console.warn("❌ الإذن مرفوض");
       return null;
     }
 
-    // الحصول على التوكن (VAPID key مطلوب)
-    // ستحتاج إلى إضافة VAPID key من Firebase Console > Project Settings > Cloud Messaging
-    const token = await getToken(messaging, {
-      vapidKey: "YOUR_VAPID_KEY" // استبدل بالمفتاح العام
-    });
-
+    // ✅ تمرير المفتاح هنا
+    const token = await getToken(messaging, { vapidKey: VAPID_KEY });
     console.log("✅ توكن الجهاز:", token);
     return token;
   } catch (error) {
@@ -40,10 +35,9 @@ export async function requestPermissionAndGetToken() {
   }
 }
 
-// استماع للإشعارات أثناء فتح التطبيق (foreground)
 export function onForegroundMessage(callback) {
   onMessage(messaging, (payload) => {
-    console.log("📨 إشعار ورد أثناء التطبيق مفتوح:", payload);
+    console.log("📨 إشعار ورد:", payload);
     callback(payload);
   });
 }
