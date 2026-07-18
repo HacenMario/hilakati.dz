@@ -1933,7 +1933,7 @@ app.get('/api/reviews/:id', async (req, res) => {
 // ✅ إضافة تقييم جديد
 app.post('/api/reviews', customerAuthMiddleware, async (req, res) => {
     try {
-        const { salonId, rating, comment } = req.body;
+        const { salonId, rating, comment, image } = req.body;
         
         const customer = await Customer.findById(req.customerId);
         if (!customer) {
@@ -1969,10 +1969,12 @@ app.post('/api/reviews', customerAuthMiddleware, async (req, res) => {
             customerName: customer.name,
             rating,
             comment,
+            image: image || null, // ✅ حفظ الصورة
             date: new Date().toISOString().split('T')[0]
         });
         await review.save();
 
+        // تحديث متوسط التقييم
         const reviews = await Review.find({ salonId });
         const avg = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
         await Salon.findByIdAndUpdate(salonId, {
