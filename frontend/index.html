@@ -3251,6 +3251,55 @@ async function registerDevice() {
   }
 }
 
+// بعد تسجيل دخول العميل أو الصالون
+async function registerDeviceForPush() {
+    try {
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+            console.warn('❌ إذن الإشعارات مرفوض');
+            return;
+        }
+
+        // ✅ تهيئة Firebase في الواجهة
+        const { initializeApp } = await import('firebase/app');
+        const { getMessaging, getToken } = await import('firebase/messaging');
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBvVft2tK7uCW2lK1BzFfJEqcfi2BfRKIY",
+            authDomain: "hilakatidz.firebaseapp.com",
+            projectId: "hilakatidz",
+            storageBucket: "hilakatidz.firebasestorage.app",
+            messagingSenderId: "254055907785",
+            appId: "1:254055907785:web:c3d2164dcc8cc110aa2818",
+            measurementId: "G-5H5C0Q83H1"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const messaging = getMessaging(app);
+
+        // ✅ احصل على VAPID Key من Firebase Console
+        const token = await getToken(messaging, {
+            vapidKey: "BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" // استبدل بالمفتاح العام
+        });
+
+        console.log('✅ توكن الجهاز:', token);
+
+        // ✅ أرسل التوكن إلى الخادم
+        const userId = localStorage.getItem('customerId') || localStorage.getItem('salonId');
+        const userType = localStorage.getItem('customerId') ? 'customer' : 'salon';
+
+        await fetch(`${API_BASE}/notifications/register-token`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, userType, token })
+        });
+
+        console.log('✅ تم تسجيل الجهاز للإشعارات');
+    } catch (error) {
+        console.error('❌ فشل تسجيل الجهاز:', error);
+    }
+}
+
 // استماع للإشعارات في المقدمة
 onForegroundMessage((payload) => {
   showToast(`🔔 ${payload.notification.title}: ${payload.notification.body}`);
