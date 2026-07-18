@@ -2428,7 +2428,6 @@ const axios = require('axios');
 cron.schedule('0 * * * *', async () => {
     console.log('⏰ تشغيل مجدول تذكيرات واتساب...');
     
-    // التحقق من وجود متغيرات البيئة
     const apiUrl = process.env.WHATSAPP_API_URL;
     const idInstance = process.env.WHATSAPP_ID_INSTANCE;
     const apiToken = process.env.WHATSAPP_API_TOKEN;
@@ -2443,7 +2442,6 @@ cron.schedule('0 * * * *', async () => {
         const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
         const tomorrowStr = tomorrow.toISOString().split('T')[0];
         
-        // جلب الحجوزات المؤكدة ليوم الغد
         const appointments = await Appointment.find({
             date: tomorrowStr,
             status: 'confirmed',
@@ -2454,21 +2452,15 @@ cron.schedule('0 * * * *', async () => {
         
         for (const app of appointments) {
             try {
-                // تنظيف رقم الهاتف
                 let phone = app.clientPhone.replace(/[^0-9]/g, '');
                 if (phone.startsWith('0')) phone = phone.substring(1);
                 if (!phone.startsWith('213')) phone = '213' + phone;
                 
-                // رسالة التذكير
                 const salonName = app.salonId?.name || 'الصالون';
                 const message = `🔔 تذكير بحجزك غداً!\n\nمرحباً ${app.clientName}،\nنود تذكيرك بحجزك في ${salonName} غداً.\n\n📅 التاريخ: ${app.date}\n🕐 الوقت: ${app.time}\n✂️ الخدمات: ${app.services?.map(s => s.name).join(', ') || 'خدمات متنوعة'}\n👨‍💼 الموظف: ${app.staff}\n\nنحن في انتظارك! 💈`;
                 
-                // إرسال الرسالة عبر واتساب (Green-API)
                 const url = `${apiUrl}/waInstance${idInstance}/sendMessage/${apiToken}`;
-                const payload = {
-                    chatId: `${phone}@c.us`,
-                    message: message
-                };
+                const payload = { chatId: `${phone}@c.us`, message: message };
                 
                 const response = await axios.post(url, payload);
                 
@@ -2476,15 +2468,11 @@ cron.schedule('0 * * * *', async () => {
                     console.log(`✅ تم إرسال تذكير واتساب للعميل ${app.clientName} (${phone})`);
                     app.reminderSent = true;
                     await app.save();
-                } else {
-                    console.warn(`⚠️ فشل إرسال التذكير للعميل ${app.clientName}`);
                 }
-                
             } catch (err) {
                 console.error(`❌ فشل إرسال تذكير واتساب للحجز ${app._id}:`, err.message);
             }
         }
-        
         console.log('✅ انتهى تشغيل مجدول تذكيرات واتساب');
     } catch (error) {
         console.error('❌ فشل مجدول التذكيرات:', error);
