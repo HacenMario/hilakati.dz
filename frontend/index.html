@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     <!-- ============================================================
     ✅ تحسين الأداء
     ============================================================ -->
@@ -3230,130 +3228,7 @@ input, textarea, select {
     </a>
 </nav>
 
-<script type="module">
-  import { requestPermissionAndGetToken, onForegroundMessage } from './firebase-init.js';
-</script>
-
-// عند تسجيل دخول العميل
-async function registerDevice() {
-  const token = await requestPermissionAndGetToken();
-  if (token) {
-    // أرسل التوكن إلى الخادم لحفظه مع معرف المستخدم
-    await fetch(`${API_BASE}/notifications/register-token`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userId: localStorage.getItem('customerId'), // أو salonId
-        userType: 'customer', // أو 'salon'
-        token: token
-      })
-    });
-  }
-}
-
-// بعد تسجيل دخول العميل أو الصالون
-async function registerDeviceForPush() {
-    try {
-        const permission = await Notification.requestPermission();
-        if (permission !== 'granted') {
-            console.warn('❌ إذن الإشعارات مرفوض');
-            return;
-        }
-
-        // ✅ تهيئة Firebase في الواجهة
-        const { initializeApp } = await import('firebase/app');
-        const { getMessaging, getToken } = await import('firebase/messaging');
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyBvVft2tK7uCW2lK1BzFfJEqcfi2BfRKIY",
-            authDomain: "hilakatidz.firebaseapp.com",
-            projectId: "hilakatidz",
-            storageBucket: "hilakatidz.firebasestorage.app",
-            messagingSenderId: "254055907785",
-            appId: "1:254055907785:web:c3d2164dcc8cc110aa2818",
-            measurementId: "G-5H5C0Q83H1"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const messaging = getMessaging(app);
-
-        // ✅ احصل على VAPID Key من Firebase Console
-        const token = await getToken(messaging, {
-            vapidKey: "BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" // استبدل بالمفتاح العام
-        });
-
-        console.log('✅ توكن الجهاز:', token);
-
-        // ✅ أرسل التوكن إلى الخادم
-        const userId = localStorage.getItem('customerId') || localStorage.getItem('salonId');
-        const userType = localStorage.getItem('customerId') ? 'customer' : 'salon';
-
-        await fetch(`${API_BASE}/notifications/register-token`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId, userType, token })
-        });
-
-        console.log('✅ تم تسجيل الجهاز للإشعارات');
-    } catch (error) {
-        console.error('❌ فشل تسجيل الجهاز:', error);
-    }
-}
-
-// استماع للإشعارات في المقدمة
-onForegroundMessage((payload) => {
-  showToast(`🔔 ${payload.notification.title}: ${payload.notification.body}`);
-});
-
-// تهيئة Firebase (ضع config الخاص بك)
-const firebaseConfig = {
-  apiKey: "AIzaSyBvVft2tK7uCW2lK1BzFfJEqcfi2BfRKIY",
-  authDomain: "hilakatidz.firebaseapp.com",
-  projectId: "hilakatidz",
-  storageBucket: "hilakatidz.firebasestorage.app",
-  messagingSenderId: "254055907785",
-  appId: "1:254055907785:web:c3d2164dcc8cc110aa2818",
-  measurementId: "G-5H5C0Q83H1"
-};
-firebase.initializeApp(firebaseConfig);
-const messaging = firebase.messaging();
-
-// طلب إذن الإشعارات
-async function requestNotificationPermission() {
-    try {
-        const token = await messaging.getToken({
-            vapidKey: "YOUR_VAPID_KEY" // من إعدادات Firebase
-        });
-        console.log('📱 Token FCM:', token);
-        
-        // حفظ token في الخادم
-        await fetch(`${API_BASE}/notifications/register-device`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                token,
-                userId: localStorage.getItem('customerId') || localStorage.getItem('salonId'),
-                userType: localStorage.getItem('customerToken') ? 'customer' : 'salon'
-            })
-        });
-        return token;
-    } catch (error) {
-        console.error('❌ فشل الحصول على token:', error);
-    }
-}
-
-// استقبال إشعارات في الخلفية
-messaging.onBackgroundMessage((payload) => {
-    console.log('📨 إشعار في الخلفية:', payload);
-    // سيظهر تلقائياً إذا كان service worker مسجلاً
-});
-
-// استقبال إشعارات في المقدمة
-messaging.onMessage((payload) => {
-    console.log('📨 إشعار في المقدمة:', payload);
-    showToast(`🔔 ${payload.notification.title}: ${payload.notification.body}`, 'info');
-});
-
+<script>
 
 // ✅ تحديث إصدار PWA تلقائياً عند كل تحميل للصفحة
 const APP_VERSION = Date.now();
@@ -3388,7 +3263,7 @@ async function openSalonGallery(salonId) {
                 <div class="gallery-item ${index === 0 ? 'active-thumb' : ''}" 
                      onclick="changeGalleryImage('${url}', ${index})">
                     <img src="${url}" alt="عمل الصالون" 
-                         onerror="this.style.display='none';this.parentElement.innerHTML='<div style=\"display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-color);opacity:0.3;\"><i class=\"fas fa-image\" style=\"font-size:2rem;\"></i></div>'"
+                         onerror="this.style.display='none';this.parentElement.innerHTML='<div style=\\'display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-color);opacity:0.3;\\'><i class=\\'fas fa-image\\' style=\\'font-size:2rem;\\'></i></div>'">
                 </div>
             `).join('');
             
@@ -5780,6 +5655,7 @@ function createSalonCard(salon) {
         </div>
     `;
 }
+
 // ===== تطبيق الفلاتر =====
 function applyFilters() {
     // قراءة قيم الفلاتر
