@@ -12,6 +12,8 @@ const http = require('http');
 const socketIo = require('socket.io');
 const app = express();
 const server = http.createServer(app);
+const notificationsRouter = require('./routes/notifications');
+app.use('/api/notifications', notificationsRouter);
 
 // ===== تهيئة Firebase Admin (اختياري) =====
 let admin = null;
