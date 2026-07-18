@@ -2091,12 +2091,37 @@ input, textarea, select {
 <div class="modal-overlay" id="reviewModal"><div class="modal-box">
     <button class="modal-close" onclick="closeModal('reviewModal')">&times;</button>
     <h2 data-i18n="review"><i class="fas fa-star"></i> تقييم الصالون</h2>
-    <form id="reviewForm">
-        <div class="form-group"><label data-i18n="rating">تقييمك (1-5)</label><select id="reviewRating" required><option value="5">⭐ 5 - ممتاز</option><option value="4">⭐ 4 - جيد جداً</option><option value="3">⭐ 3 - جيد</option><option value="2">⭐ 2 - مقبول</option><option value="1">⭐ 1 - سيء</option></select></div>
-        <div class="form-group"><label data-i18n="comment">تعليقك</label><textarea id="reviewComment" required></textarea></div>
-        <input type="hidden" id="reviewSalonId">
-        <button type="submit" class="btn-gold" style="width:100%;padding:0.5rem;"><i class="fas fa-paper-plane"></i> إرسال التقييم</button>
-    </form>
+<form id="reviewForm">
+    <div class="form-group">
+        <label data-i18n="rating">تقييمك (1-5)</label>
+        <select id="reviewRating" required>
+            <option value="5">⭐ 5 - ممتاز</option>
+            <option value="4">⭐ 4 - جيد جداً</option>
+            <option value="3">⭐ 3 - جيد</option>
+            <option value="2">⭐ 2 - مقبول</option>
+            <option value="1">⭐ 1 - سيء</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label data-i18n="comment">تعليقك</label>
+        <textarea id="reviewComment" required></textarea>
+    </div>
+    <!-- ✅ حقل رفع الصورة الجديد -->
+    <div class="form-group">
+        <label>📸 أضف صورة لنتيجة الخدمة (اختياري)</label>
+        <input type="file" id="reviewImage" accept="image/*" style="width:100%;padding:0.5rem;border-radius:8px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--text-color);">
+        <div id="reviewImagePreview" style="display:none;margin-top:0.3rem;">
+            <img id="reviewImagePreviewImg" src="" alt="معاينة الصورة" style="max-width:100px;max-height:100px;border-radius:8px;border:1px solid var(--border-color);">
+            <button type="button" class="btn-danger btn-sm" onclick="removeReviewImage()" style="margin-right:0.3rem;">✕ إزالة</button>
+        </div>
+        <small style="color:var(--text-color);opacity:0.5;font-size:0.7rem;">يمكنك إرفاق صورة لنتيجة الخدمة (اختياري)</small>
+    </div>
+    <input type="hidden" id="reviewSalonId">
+    <input type="hidden" id="reviewImageBase64">
+    <button type="submit" class="btn-gold" style="width:100%;padding:0.5rem;">
+        <i class="fas fa-paper-plane"></i> إرسال التقييم
+    </button>
+</form>
 </div></div>
 
 <!-- تغيير كلمة المرور (صالون) -->
@@ -2714,6 +2739,29 @@ input, textarea, select {
 </nav>
 
 <script>
+
+// ============================================================
+// ✅ معالجة صورة التقييم
+// ============================================================
+document.getElementById('reviewImage')?.addEventListener('change', function(e) {
+    const file = this.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        const base64 = event.target.result;
+        document.getElementById('reviewImageBase64').value = base64;
+        document.getElementById('reviewImagePreviewImg').src = base64;
+        document.getElementById('reviewImagePreview').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+});
+
+function removeReviewImage() {
+    document.getElementById('reviewImage').value = '';
+    document.getElementById('reviewImageBase64').value = '';
+    document.getElementById('reviewImagePreview').style.display = 'none';
+}
 
 // ✅ تحديث إصدار PWA تلقائياً عند كل تحميل للصفحة
 const APP_VERSION = Date.now();
@@ -5374,14 +5422,35 @@ document.getElementById('reviewForm').addEventListener('submit', async (e) => {
     const salonId = document.getElementById('reviewSalonId').value;
     const rating = parseInt(document.getElementById('reviewRating').value);
     const comment = document.getElementById('reviewComment').value.trim();
+    const image = document.getElementById('reviewImageBase64').value || null;
     const token = localStorage.getItem('customerToken');
-    if (!token) { showToast('❌ يرجى تسجيل الدخول كعميل'); return; }
+    
+    if (!token) {
+        showToast('❌ يرجى تسجيل الدخول كعميل', 'error');
+        return;
+    }
+    
     try {
-        const res = await fetch(`${API_BASE}/reviews`, { method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`}, body:JSON.stringify({ salonId, rating, comment }) });
+        const res = await fetch(`${API_BASE}/reviews`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ salonId, rating, comment, image })
+        });
         const data = await res.json();
-        if (res.ok) { showToast('✅ شكراً لتقييمك!'); closeModal('reviewModal'); loadSalons(); refreshNotifications(); }
-        else showToast(`❌ ${data.message}`);
-    } catch { showToast('❌ فشل الاتصال'); }
+        if (res.ok) {
+            showToast('✅ شكراً لتقييمك!', 'success');
+            closeModal('reviewModal');
+            loadSalons();
+            refreshNotifications();
+        } else {
+            showToast(`❌ ${data.message}`, 'error');
+        }
+    } catch {
+        showToast('❌ فشل الاتصال', 'error');
+    }
 });
 
 // ============================================================
