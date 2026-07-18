@@ -3232,7 +3232,9 @@ input, textarea, select {
 
 <script>
 
-import { requestPermissionAndGetToken, onForegroundMessage } from './firebase-init.js';
+<script type="module">
+  import { requestPermissionAndGetToken, onForegroundMessage } from './firebase-init.js';
+</script>
 
 // عند تسجيل دخول العميل
 async function registerDevice() {
