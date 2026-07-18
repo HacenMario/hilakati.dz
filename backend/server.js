@@ -176,6 +176,12 @@ const Review = require('./models/Review');
 const Admin = require('./models/Admin');
 const Notification = require('./models/Notification');
 
+const admin = require('firebase-admin');
+const serviceAccount = require('./hilakatidz-firebase-adminsdk-fbsvc-900634e426.json');
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
+
 // ============================================================
 // ✅ التحقق من صلاحية الكوبون (مسار عام - لا يحتاج مصادقة)
 // ============================================================
