@@ -1024,13 +1024,14 @@ td { color: var(--text-color); }
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0,0,0,0.6);
+    background: rgba(0,0,0,0.7);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     z-index: 2000;
     justify-content: center;
     align-items: center;
-    padding: 1rem;
+    padding: 1.5rem;
+    overflow-y: auto;
 }
 
 .modal-overlay.active {
@@ -1040,49 +1041,154 @@ td { color: var(--text-color); }
 .modal-box {
     background: var(--card-bg);
     border-radius: 16px;
-    max-width: 540px;
+    max-width: 560px;
     width: 100%;
-    padding: 1.2rem;
+    padding: 1.5rem;
     border: 1px solid var(--border-color);
     max-height: 85vh;
     overflow-y: auto;
     box-shadow: var(--shadow-hover);
     transition: var(--transition);
     animation: modalIn 0.35s ease;
+    margin: auto;
+    position: relative;
 }
 
-@keyframes modalIn {
-    from { opacity: 0; transform: scale(0.85) translateY(40px); }
-    to { opacity: 1; transform: scale(1) translateY(0); }
+/* ===== نوافذ بأحجام مختلفة ===== */
+#salonDetailsModal .modal-box {
+    max-width: 650px;
 }
 
-.modal-box .modal-close {
-    float: left;
-    font-size: 1.4rem;
-    color: var(--text-color);
-    background: none;
+#galleryModal .modal-box {
+    max-width: 750px;
+}
+
+#myBookingsModal .modal-box {
+    max-width: 750px;
+}
+
+#editCouponModal .modal-box {
+    max-width: 540px;
+}
+
+/* ===== Lightbox (الصورة المكبرة) ===== */
+#imageLightbox .modal-box {
+    max-width: 95vw;
+    max-height: 95vh;
+    padding: 0.5rem;
+    background: rgba(0,0,0,0.9);
     border: none;
-    transition: var(--transition);
-    cursor: pointer;
-    width: 32px;
-    height: 32px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
+    position: relative;
+    margin: 0.5rem;
 }
 
-.modal-box .modal-close:hover {
-    color: var(--accent);
-    background: rgba(255,255,255,0.05);
-    transform: rotate(90deg);
+#imageLightbox .modal-box img {
+    max-width: 92vw;
+    max-height: 85vh;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
 }
 
-.modal-box h2 {
-    color: var(--gold);
-    margin-bottom: 1rem;
-    text-align: center;
-    font-size: 1.2rem;
+/* ===== تحسينات للحاسوب فقط ===== */
+@media (min-width: 769px) {
+    .modal-box {
+        max-width: 560px;
+        padding: 1.8rem;
+    }
+    
+    #salonDetailsModal .modal-box,
+    #myBookingsModal .modal-box {
+        max-width: 700px;
+    }
+    
+    #galleryModal .modal-box {
+        max-width: 800px;
+        padding: 1.5rem;
+    }
+    
+    .modal-overlay {
+        padding: 2rem;
+    }
+    
+    .modal-box .modal-close {
+        font-size: 1.6rem;
+        width: 36px;
+        height: 36px;
+        position: absolute;
+        top: 0.5rem;
+        left: 0.5rem;
+        z-index: 10;
+        background: rgba(0,0,0,0.3);
+        border-radius: 50%;
+        color: var(--text-color);
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    }
+    
+    .modal-box .modal-close:hover {
+        background: var(--accent);
+        color: #fff;
+        transform: rotate(90deg);
+    }
+}
+
+/* ===== تحسينات للهواتف ===== */
+@media (max-width: 768px) {
+    .modal-overlay {
+        padding: 0.5rem;
+        align-items: flex-end;
+    }
+    
+    .modal-box {
+        max-width: 100%;
+        max-height: 92vh;
+        padding: 1rem;
+        border-radius: 16px 16px 0 0;
+        margin: 0;
+        animation: modalSlideUp 0.35s ease;
+    }
+    
+    @keyframes modalSlideUp {
+        from {
+            opacity: 0;
+            transform: translateY(40px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    #salonDetailsModal .modal-box,
+    #myBookingsModal .modal-box,
+    #galleryModal .modal-box {
+        max-width: 100%;
+        border-radius: 16px 16px 0 0;
+    }
+    
+    #imageLightbox .modal-box {
+        max-width: 98vw;
+        max-height: 98vh;
+        padding: 0.3rem;
+        border-radius: 8px;
+        background: rgba(0,0,0,0.95);
+    }
+    
+    #imageLightbox .modal-box img {
+        max-width: 96vw;
+        max-height: 90vh;
+    }
 }
 
 /* ========== Forms ========== */
