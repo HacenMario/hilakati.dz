@@ -155,7 +155,7 @@ const Admin = require('./models/Admin');
 const Notification = require('./models/Notification');
 
 // ============================================================
-// ✅ خصم المخزون تلقائياً عند إكمال الحجز
+// ✅ خصم المخزون باستخدام اسم الخدمة (محسّن للخدمات المتعددة)
 // ============================================================
 async function deductInventoryForBooking(appointmentId) {
     try {
@@ -172,83 +172,131 @@ async function deductInventoryForBooking(appointmentId) {
         const salonId = appointment.salonId;
         const services = appointment.services || [];
         
-        // استخراج أسماء الخدمات (أو معرفاتها)
-        const serviceIds = services.map(s => s._id || s.id || s.name).filter(Boolean);
-        
-        if (serviceIds.length === 0) {
+        if (services.length === 0) {
             console.log('ℹ️ لا توجد خدمات في الحجز، تخطي خصم المخزون');
             return [];
         }
 
-        // جلب جميع منتجات المخزون المرتبطة بهذه الخدمات مع كمية استهلاك > 0
-        const inventoryItems = await Inventory.find({
-            salonId: salonId,
-            serviceId: { $in: serviceIds },
-            consumptionPerBooking: { $gt: 0 },
-            isActive: true
-        });
+        // ✅ استخراج أسماء الخدمات (serviceName) من الحجز
+        const serviceNames = services
+            .map(s => s.name || s.serviceName)
+            .filter(Boolean)
+            .map(name => name.trim());
 
-        if (inventoryItems.length === 0) {
-            console.log('ℹ️ لا توجد منتجات مرتبطة بهذه الخدمات');
+        if (serviceNames.length === 0) {
+            console.log('ℹ️ لا توجد أسماء خدمات صالحة في الحجز');
             return [];
         }
 
-        const deductions = [];
-        const notifications = [];
+        console.log(`📋 عدد الخدمات في الحجز: ${services.length}`);
+        console.log(`📋 أسماء الخدمات: ${serviceNames.join(', ')}`);
 
-        for (const item of inventoryItems) {
-            const quantityNeeded = item.consumptionPerBooking;
+        // ✅ البحث عن منتجات المخزون المرتبطة بهذه الخدمات باستخدام serviceName
+        const inventoryItems = await Inventory.find({
+            salonId: salonId,
+            isActive: true,
+            consumptionPerBooking: { $gt: 0 },
+            serviceName: { $in: serviceNames }  // ربط باسم الخدمة بدلاً من المعرف
+        });
+
+        console.log(`📦 عدد المنتجات المرتبطة (باستخدام serviceName): ${inventoryItems.length}`);
+
+        if (inventoryItems.length === 0) {
+            console.log('ℹ️ لا توجد منتجات مرتبطة بهذه الخدمات (باستخدام serviceName)');
             
-            // التحقق من كفاية المخزون
-            if (item.quantity < quantityNeeded) {
-                console.warn(`⚠️ المخزون غير كافٍ للمنتج "${item.name}": الموجود ${item.quantity}، المطلوب ${quantityNeeded}`);
-                notifications.push({
-                    title: '⚠️ مخزون غير كافٍ',
-                    message: `المنتج "${item.name}" غير كافٍ لتلبية الحجز (المتبقي ${item.quantity}، المطلوب ${quantityNeeded})`
+            // ✅ محاولة بديلة: البحث باستخدام serviceId أيضاً (للتوافق مع الإصدارات السابقة)
+            const serviceIds = services.map(s => s._id || s.id).filter(Boolean);
+            if (serviceIds.length > 0) {
+                const fallbackItems = await Inventory.find({
+                    salonId: salonId,
+                    isActive: true,
+                    consumptionPerBooking: { $gt: 0 },
+                    serviceId: { $in: serviceIds.map(id => id.toString()) }
                 });
-                continue;
+                if (fallbackItems.length > 0) {
+                    console.log(`📦 تم العثور على ${fallbackItems.length} منتج باستخدام serviceId (احتياطي)`);
+                    // استخدم النتائج من البحث الاحتياطي
+                    return await processInventoryItems(fallbackItems, salonId);
+                }
             }
-
-            // خصم الكمية
-            item.quantity -= quantityNeeded;
-            item.totalConsumed = (item.totalConsumed || 0) + quantityNeeded;
-            await item.save();
-
-            deductions.push({
-                productId: item._id,
-                productName: item.name,
-                quantityDeducted: quantityNeeded,
-                remaining: item.quantity,
-                unit: item.unit
-            });
-
-            // ✅ تنبيه إذا أصبح المخزون منخفضاً
-            if (item.quantity <= item.minQuantity) {
-                notifications.push({
-                    title: '⚠️ مخزون منخفض',
-                    message: `المنتج "${item.name}" أصبح منخفضاً (${item.quantity} ${item.unit} متبقية)`
-                });
-            }
+            return [];
         }
 
-        // إرسال الإشعارات
-        for (const notif of notifications) {
-            await createNotification(
-                salonId,
-                'salon',
-                notif.title,
-                notif.message
-            );
-        }
-
-        return deductions;
+        // ✅ معالجة المنتجات وخصم الكميات
+        return await processInventoryItems(inventoryItems, salonId);
 
     } catch (error) {
         console.error('❌ فشل خصم المخزون:', error);
         return [];
     }
 }
-// دالة مساعدة لإعادة المخزون عند إلغاء الحجز (اختياري)
+
+// ============================================================
+// ✅ دالة مساعدة لمعالجة المنتجات وخصم الكميات
+// ============================================================
+async function processInventoryItems(inventoryItems, salonId) {
+    const deductions = [];
+    const notifications = [];
+
+    for (const item of inventoryItems) {
+        const quantityNeeded = item.consumptionPerBooking;
+        
+        console.log(`🔍 المنتج: ${item.name}, الخدمة المرتبطة: ${item.serviceName || item.serviceId}, المطلوب: ${quantityNeeded}, الموجود: ${item.quantity}`);
+        
+        // التحقق من كفاية المخزون
+        if (item.quantity < quantityNeeded) {
+            console.warn(`⚠️ المخزون غير كافٍ للمنتج "${item.name}": الموجود ${item.quantity}، المطلوب ${quantityNeeded}`);
+            notifications.push({
+                title: '⚠️ مخزون غير كافٍ',
+                message: `المنتج "${item.name}" غير كافٍ لتلبية الحجز (المتبقي ${item.quantity}، المطلوب ${quantityNeeded})`
+            });
+            continue;
+        }
+
+        // خصم الكمية
+        item.quantity -= quantityNeeded;
+        item.totalConsumed = (item.totalConsumed || 0) + quantityNeeded;
+        await item.save();
+
+        deductions.push({
+            productId: item._id,
+            productName: item.name,
+            quantityDeducted: quantityNeeded,
+            remaining: item.quantity,
+            unit: item.unit
+        });
+
+        // ✅ تنبيه إذا أصبح المخزون منخفضاً
+        if (item.quantity <= item.minQuantity) {
+            notifications.push({
+                title: '⚠️ مخزون منخفض',
+                message: `المنتج "${item.name}" أصبح منخفضاً (${item.quantity} ${item.unit} متبقية)`
+            });
+        }
+    }
+
+    // إرسال الإشعارات
+    for (const notif of notifications) {
+        await createNotification(
+            salonId,
+            'salon',
+            notif.title,
+            notif.message
+        );
+    }
+
+    console.log(`✅ تم خصم ${deductions.length} منتج من المخزون`);
+    return deductions;
+}
+
+    } catch (error) {
+        console.error('❌ فشل خصم المخزون:', error);
+        return [];
+    }
+}
+// ============================================================
+// ✅ استعادة المخزون عند إلغاء الحجز (محسّن للخدمات المتعددة)
+// ============================================================
 async function restoreInventoryForBooking(appointmentId) {
     try {
         const Inventory = require('./models/Inventory');
@@ -258,17 +306,50 @@ async function restoreInventoryForBooking(appointmentId) {
         if (!appointment) return;
 
         const services = appointment.services || [];
-        const serviceIds = services.map(s => s._id || s.id || s.name).filter(Boolean);
-        
-        if (serviceIds.length === 0) return;
+        if (services.length === 0) return;
 
+        // ✅ استخراج أسماء الخدمات
+        const serviceNames = services
+            .map(s => s.name || s.serviceName)
+            .filter(Boolean)
+            .map(name => name.trim());
+
+        if (serviceNames.length === 0) return;
+
+        // ✅ البحث عن المنتجات المرتبطة بهذه الخدمات باستخدام serviceName
         const inventoryItems = await Inventory.find({
             salonId: appointment.salonId,
-            serviceId: { $in: serviceIds },
+            isActive: true,
             consumptionPerBooking: { $gt: 0 },
-            isActive: true
+            serviceName: { $in: serviceNames }
         });
 
+        // ✅ محاولة بديلة باستخدام serviceId
+        if (inventoryItems.length === 0) {
+            const serviceIds = services.map(s => s._id || s.id).filter(Boolean);
+            if (serviceIds.length > 0) {
+                const fallbackItems = await Inventory.find({
+                    salonId: appointment.salonId,
+                    isActive: true,
+                    consumptionPerBooking: { $gt: 0 },
+                    serviceId: { $in: serviceIds.map(id => id.toString()) }
+                });
+                if (fallbackItems.length > 0) {
+                    // استعادة من البحث الاحتياطي
+                    for (const item of fallbackItems) {
+                        const quantityToRestore = item.consumptionPerBooking;
+                        item.quantity += quantityToRestore;
+                        item.totalConsumed = Math.max(0, (item.totalConsumed || 0) - quantityToRestore);
+                        await item.save();
+                    }
+                    console.log(`✅ تم استعادة المخزون للحجز ${appointmentId} (${fallbackItems.length} منتج باستخدام serviceId)`);
+                    return;
+                }
+            }
+            return;
+        }
+
+        // ✅ استعادة الكميات
         for (const item of inventoryItems) {
             const quantityToRestore = item.consumptionPerBooking;
             item.quantity += quantityToRestore;
@@ -276,7 +357,8 @@ async function restoreInventoryForBooking(appointmentId) {
             await item.save();
         }
 
-        console.log(`✅ تم استعادة المخزون للحجز ${appointmentId}`);
+        console.log(`✅ تم استعادة المخزون للحجز ${appointmentId} (${inventoryItems.length} منتج باستخدام serviceName)`);
+
     } catch (error) {
         console.error('❌ فشل استعادة المخزون:', error);
     }
