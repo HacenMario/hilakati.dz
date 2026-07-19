@@ -256,6 +256,7 @@ app.post('/api/coupons/validate', async (req, res) => {
         });
     }
 });
+
 // دالة ترجمة نوع الخدمة
 function translateServiceType(type) {
     const map = {
