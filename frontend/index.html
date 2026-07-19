@@ -8352,6 +8352,27 @@ async function deleteInventory(id) {
     }
 }
 
+// ===== إعادة تعبئة المخزون =====
+async function restockInventory(itemId, quantity) {
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`${API_BASE}/inventory/${itemId}/restock`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ quantity })
+        });
+        if (res.ok) {
+            showToast('✅ تم إعادة التعبئة', 'success');
+            loadInventory();
+        }
+    } catch (error) {
+        console.error('❌ فشل إعادة التعبئة:', error);
+    }
+}
+
 function openCouponModal() {
     document.getElementById('couponForm').reset();
     // ✅ تعيين التواريخ الافتراضية
