@@ -154,76 +154,13 @@ const Review = require('./models/Review');
 const Admin = require('./models/Admin');
 const Notification = require('./models/Notification');
 
-// ============================================================
-// ✅ خصم المخزون باستخدام اسم الخدمة (محسّن للخدمات المتعددة)
-// ============================================================
-async function deductInventoryForBooking(appointmentId) {
-    try {
-        const Inventory = require('./models/Inventory');
-        const Appointment = require('./models/Appointment');
-        
-        // جلب الحجز مع بيانات الخدمات
-        const appointment = await Appointment.findById(appointmentId);
-        if (!appointment) {
-            console.error('❌ الحجز غير موجود');
-            return [];
+
+        for (const notif of notifications) {
+            await createNotification(salonId, 'salon', notif.title, notif.message);
         }
 
-        const salonId = appointment.salonId;
-        const services = appointment.services || [];
-        
-        if (services.length === 0) {
-            console.log('ℹ️ لا توجد خدمات في الحجز، تخطي خصم المخزون');
-            return [];
-        }
-
-        // ✅ استخراج أسماء الخدمات (serviceName) من الحجز
-        const serviceNames = services
-            .map(s => s.name || s.serviceName)
-            .filter(Boolean)
-            .map(name => name.trim());
-
-        if (serviceNames.length === 0) {
-            console.log('ℹ️ لا توجد أسماء خدمات صالحة في الحجز');
-            return [];
-        }
-
-        console.log(`📋 عدد الخدمات في الحجز: ${services.length}`);
-        console.log(`📋 أسماء الخدمات: ${serviceNames.join(', ')}`);
-
-        // ✅ البحث عن منتجات المخزون المرتبطة بهذه الخدمات باستخدام serviceName
-        const inventoryItems = await Inventory.find({
-            salonId: salonId,
-            isActive: true,
-            consumptionPerBooking: { $gt: 0 },
-            serviceName: { $in: serviceNames }  // ربط باسم الخدمة بدلاً من المعرف
-        });
-
-        console.log(`📦 عدد المنتجات المرتبطة (باستخدام serviceName): ${inventoryItems.length}`);
-
-        if (inventoryItems.length === 0) {
-            console.log('ℹ️ لا توجد منتجات مرتبطة بهذه الخدمات (باستخدام serviceName)');
-            
-            // ✅ محاولة بديلة: البحث باستخدام serviceId أيضاً (للتوافق مع الإصدارات السابقة)
-            const serviceIds = services.map(s => s._id || s.id).filter(Boolean);
-            if (serviceIds.length > 0) {
-                const fallbackItems = await Inventory.find({
-                    salonId: salonId,
-                    isActive: true,
-                    consumptionPerBooking: { $gt: 0 },
-                    serviceId: { $in: serviceIds.map(id => id.toString()) }
-                });
-                if (fallbackItems.length > 0) {
-                    console.log(`📦 تم العثور على ${fallbackItems.length} منتج باستخدام serviceId (احتياطي)`);
-                    // استخدم النتائج من البحث الاحتياطي
-                    return await processInventoryItems(fallbackItems, salonId);
-                }
-            }
-            return [];
-        }
-
-        // ✅ معالجة المنتجات وخصم الكميات
-        return await processInventoryItems(inventoryItems, salonId);
+        console.log(`✅ تم خصم ${deductions.length} منتج`);
+        return deductions;
 
     } catch (error) {
         console.error('❌ فشل خصم المخزون:', error);
