@@ -5913,19 +5913,24 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
         const res = await fetch(`${API_BASE}/auth/login`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email, password}) });
         const data = await res.json();
         if (res.ok) {
-            localStorage.setItem('token', data.token); localStorage.setItem('salonId', data.salonId);
-            showToast(`✅ مرحباً ${data.name}`); closeModal('loginModal');
-            updateUI(); navigateTo('dashboard'); loadDashboard(); refreshNotifications();
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('salonId', data.salonId);
+            showToast(`✅ مرحباً ${data.name}`);
+            closeModal('loginModal');
+            updateUI();
+            navigateTo('dashboard');
+            loadDashboard();
+            refreshNotifications();
             if (socket) socket.emit('join-salon', data.salonId);
+            // ✅ تسجيل الإشعارات
             await autoRegisterNotifications();
-            await registerUserWithOneSignal(data.salonId, 'salon');
-            if (!localStorage.getItem('notificationPermissionAsked')) {
-            localStorage.setItem('notificationPermissionAsked', 'true');
+        } else {
+            showToast(`❌ ${data.message}`);
         }
+    } catch (error) {
+        console.error('❌ خطأ في تسجيل الدخول:', error);
+        showToast('❌ فشل الاتصال');
     }
-
-        } else showToast(`❌ ${data.message}`);
-    } catch { showToast('❌ فشل الاتصال'); }
 });
 
 document.getElementById('registerForm').addEventListener('submit', async (e) => {
@@ -5943,22 +5948,48 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
     const lng = parseFloat(document.getElementById('regLngManual').value) || parseFloat(document.getElementById('regLng').value) || null;
     const logoFile = document.getElementById('regLogo').files[0];
     let logo = '';
-    if (logoFile) { const reader = new FileReader(); logo = await new Promise(resolve => { reader.onload = e => resolve(e.target.result); reader.readAsDataURL(logoFile); }); }
-    if (!name || !city || !address || !email || !phone || password.length < 6) { showToast('❌ الرجاء ملء جميع الحقول وكلمة مرور لا تقل عن 6 أحرف'); return; }
+    if (logoFile) {
+        const reader = new FileReader();
+        logo = await new Promise(resolve => {
+            reader.onload = e => resolve(e.target.result);
+            reader.readAsDataURL(logoFile);
+        });
+    }
+    if (!name || !city || !address || !email || !phone || password.length < 6) {
+        showToast('❌ الرجاء ملء جميع الحقول وكلمة مرور لا تقل عن 6 أحرف');
+        return;
+    }
     try {
         const res = await fetch(`${API_BASE}/auth/register`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ name, city, address, email, phone, password, desc, logo, salonType, isMobile, lat, lng }) });
         const data = await res.json();
         if (res.ok) {
-            localStorage.setItem('token', data.token); localStorage.setItem('salonId', data.salonId);
-            showToast(`✅ تم تسجيل ${data.name} بنجاح!`); closeModal('registerModal');
-            updateUI(); navigateTo('dashboard'); loadDashboard();
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('salonId', data.salonId);
+            showToast(`✅ تم تسجيل ${data.name} بنجاح!`);
+            closeModal('registerModal');
+            updateUI();
+            navigateTo('dashboard');
+            loadDashboard();
+            // ✅ تسجيل الإشعارات
             await autoRegisterNotifications();
+        } else {
+            showToast(`❌ ${data.message}`);
+        }
+    } catch (error) {
+        console.error('❌ خطأ في التسجيل:', error);
+        showToast('❌ فشل الاتصال');
     }
-        } else showToast(`❌ ${data.message}`);
-    } catch { showToast('❌ فشل الاتصال'); }
 });
 
-function logout() { localStorage.removeItem('token'); localStorage.removeItem('salonId'); showToast('👋 تم تسجيل الخروج'); updateUI(); navigateTo('home'); loadSalons(); refreshNotifications(); }
+function logout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('salonId');
+    showToast('👋 تم تسجيل الخروج');
+    updateUI();
+    navigateTo('home');
+    loadSalons();
+    refreshNotifications();
+}
 
 // Customer Auth
 document.getElementById('customerRegisterForm').addEventListener('submit', async (e) => {
@@ -5971,19 +6002,23 @@ document.getElementById('customerRegisterForm').addEventListener('submit', async
         const res = await fetch(`${API_BASE}/customer/auth/register`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ name, email, phone, password }) });
         const data = await res.json();
         if (res.ok) {
-            localStorage.setItem('customerToken', data.token); localStorage.setItem('customerId', data.customerId); localStorage.setItem('customerName', data.name);
-            showToast('✅ تم تسجيل حسابك'); closeModal('customerRegisterModal');
-            updateCustomerUI(); refreshNotifications();
+            localStorage.setItem('customerToken', data.token);
+            localStorage.setItem('customerId', data.customerId);
+            localStorage.setItem('customerName', data.name);
+            showToast('✅ تم تسجيل حسابك');
+            closeModal('customerRegisterModal');
+            updateCustomerUI();
+            refreshNotifications();
             if (socket) socket.emit('join-customer', data.customerId);
+            // ✅ تسجيل الإشعارات
             await autoRegisterNotifications();
-            await registerUserWithOneSignal(data.salonId, 'salon');
-            if (!localStorage.getItem('notificationPermissionAsked')) {
-            localStorage.setItem('notificationPermissionAsked', 'true');
+        } else {
+            showToast(`❌ ${data.message}`);
         }
+    } catch (error) {
+        console.error('❌ خطأ في تسجيل العميل:', error);
+        showToast('❌ فشل الاتصال');
     }
-
-        } else showToast(`❌ ${data.message}`);
-    } catch { showToast('❌ فشل الاتصال'); }
 });
 
 document.getElementById('customerLoginForm').addEventListener('submit', async (e) => {
@@ -5994,22 +6029,34 @@ document.getElementById('customerLoginForm').addEventListener('submit', async (e
         const res = await fetch(`${API_BASE}/customer/auth/login`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ email, password }) });
         const data = await res.json();
         if (res.ok) {
-            localStorage.setItem('customerToken', data.token); localStorage.setItem('customerId', data.customerId); localStorage.setItem('customerName', data.name);
-            showToast(`✅ مرحباً ${data.name}`); closeModal('customerLoginModal');
-            updateCustomerUI(); refreshNotifications();
+            localStorage.setItem('customerToken', data.token);
+            localStorage.setItem('customerId', data.customerId);
+            localStorage.setItem('customerName', data.name);
+            showToast(`✅ مرحباً ${data.name}`);
+            closeModal('customerLoginModal');
+            updateCustomerUI();
+            refreshNotifications();
             if (socket) socket.emit('join-customer', data.customerId);
+            // ✅ تسجيل الإشعارات
             await autoRegisterNotifications();
-            await registerUserWithOneSignal(data.customerId, 'customer');
-            if (!localStorage.getItem('notificationPermissionAsked')) {
-            localStorage.setItem('notificationPermissionAsked', 'true');
+        } else {
+            showToast(`❌ ${data.message}`);
         }
-    }  
-        } else showToast(`❌ ${data.message}`);
-    } catch { showToast('❌ فشل الاتصال'); }
+    } catch (error) {
+        console.error('❌ خطأ في تسجيل دخول العميل:', error);
+        showToast('❌ فشل الاتصال');
+    }
 });
 
-function customerLogout() { localStorage.removeItem('customerToken'); localStorage.removeItem('customerId'); localStorage.removeItem('customerName'); showToast('👋 تم تسجيل الخروج'); updateCustomerUI(); refreshNotifications(); }
-
+function customerLogout() {
+    localStorage.removeItem('customerToken');
+    localStorage.removeItem('customerId');
+    localStorage.removeItem('customerName');
+    showToast('👋 تم تسجيل الخروج');
+    updateCustomerUI();
+    refreshNotifications();
+}
+    
 // Admin Auth
 document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
