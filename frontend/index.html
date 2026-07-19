@@ -57,7 +57,6 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="/icons/icon-192.png?v=1">
-</head>
     
     <style>
 /* ===== إصلاح نافذة تعديل الكوبون ===== */
@@ -217,6 +216,12 @@
     --header-shadow: 0 4px 30px rgba(0,0,0,0.3);
     --stat-bg: rgba(255,255,255,0.03);
     --skeleton: rgba(255,255,255,0.05);
+
+    /* ===== إضافات متقدمة ===== */
+    --gradient-main: linear-gradient(135deg, #6C5CE7, #a29bfe);
+    --shadow-elevated: 0 20px 60px rgba(108, 92, 231, 0.3);
+    --border-radius-xl: 24px;
+    --transition-smooth: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 [data-theme="light"] {
@@ -492,6 +497,34 @@ input, select, textarea {
     font-size: 0.75rem;
 }
 
+/* ===== زر تبديل اللغة المتقدم ===== */
+.lang-switch-btn {
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 50px;
+    padding: 0.3rem 1rem;
+    color: var(--text-color);
+    transition: var(--transition-smooth);
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.lang-switch-btn:hover {
+    background: var(--gradient-main);
+    color: #fff;
+    border-color: transparent;
+    transform: scale(1.05);
+}
+
+.lang-switch-btn span {
+    display: inline-block;
+}
+
 /* ========== Notifications ========== */
 .notif-bell {
     position: relative;
@@ -641,14 +674,15 @@ input, select, textarea {
 
 .salon-card {
     background: var(--card-bg);
-    border-radius: var(--radius);
+    border-radius: var(--border-radius-xl);
     overflow: hidden;
-    border: 1px solid var(--border-color);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: 1px solid rgba(255,255,255,0.06);
+    transition: var(--transition-smooth);
     cursor: pointer;
     box-shadow: var(--shadow);
     animation: cardAppear 0.6s ease both;
     position: relative;
+    backdrop-filter: blur(4px);
 }
 
 .salon-card:active {
@@ -661,14 +695,14 @@ input, select, textarea {
 }
 
 .salon-card:hover {
-    transform: translateY(-4px);
-    border-color: var(--gold);
-    box-shadow: var(--shadow-hover);
+    transform: translateY(-10px) scale(1.01);
+    border-color: var(--primary);
+    box-shadow: var(--shadow-elevated);
 }
 
 .salon-card .cover {
     height: 140px;
-    background: linear-gradient(135deg, var(--secondary), var(--primary));
+    background: var(--gradient-main);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -677,19 +711,21 @@ input, select, textarea {
     overflow: hidden;
 }
 
-.salon-card .cover::before {
+.salon-card .cover::after {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(45deg, transparent, rgba(245,176,66,0.1), transparent);
-    transition: var(--transition);
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+    opacity: 0;
+    transition: var(--transition-smooth);
 }
 
-.salon-card:hover .cover::before {
-    background: linear-gradient(45deg, transparent, rgba(245,176,66,0.2), transparent);
+.salon-card:hover .cover::after {
+    opacity: 1;
+    transform: scale(1.2);
 }
 
 .salon-card .cover img {
@@ -830,18 +866,19 @@ input, select, textarea {
     width: 100%;
     padding: 0.4rem;
     border-radius: 12px;
-    background: linear-gradient(135deg, var(--gold), #e67e22);
-    color: var(--dark);
+    background: var(--gradient-main);
+    color: #fff;
     font-weight: 700;
     font-size: 0.85rem;
-    transition: var(--transition);
+    transition: var(--transition-smooth);
     margin-top: 0.2rem;
-    box-shadow: 0 4px 12px rgba(245,176,66,0.2);
+    box-shadow: 0 4px 15px rgba(108, 92, 231, 0.3);
+    border: none;
 }
 
 .salon-card .body .btn-book:hover {
-    transform: scale(1.04);
-    box-shadow: 0 6px 20px rgba(245,176,66,0.4);
+    transform: scale(1.05) translateY(-2px);
+    box-shadow: 0 8px 30px rgba(108, 92, 231, 0.5);
 }
 
 /* ========== Dashboard ========== */
@@ -2260,7 +2297,12 @@ input, textarea, select {
 
         <!-- ===== أزرار التحكم ===== -->
         <button class="btn-outline btn-sm" onclick="toggleTheme()" id="themeToggle"><i class="fas fa-moon"></i></button>
-        <button class="btn-outline btn-sm" onclick="toggleLang()" id="langToggle">🇫🇷 FR</button>
+        
+        <!-- ===== زر تبديل اللغة المتقدم ===== -->
+        <button class="lang-switch-btn" onclick="toggleLang()" id="langToggle">
+            <span id="langFlag">🇸🇦</span>
+            <span id="langName">العربية</span>
+        </button>
 
         <!-- ===== أزرار الأدوار ===== -->
 <div class="role-buttons" style="display:flex;flex-wrap:wrap;gap:0.3rem;align-items:center;">
@@ -3109,7 +3151,7 @@ input, textarea, select {
         <h2 class="section-title">من <span class="highlight">نحن</span></h2>
         <div style="background:var(--card-bg);border-radius:var(--radius);padding:1.5rem;border:1px solid var(--border-color);box-shadow:var(--shadow);">
             <p style="font-size:1.1rem;line-height:2;color:var(--text-color);">
-                منصة <strong style="color:var(--gold);">حلاقتي</strong> هي منصة جزائرية متكاملة متخصصة في حجز مواعيد صالونات الحلاقة والتجميل عبر الإنترنت. 
+                منصة <strong style="color:var(--gold);">حلاقتي</strong> هي أول منصة جزائرية متخصصة في حجز مواعيد صالونات الحلاقة والتجميل عبر الإنترنت. 
                 نهدف إلى تسهيل عملية البحث عن أفضل الصالونات في مدينتك وحجز موعدك بسهولة.
             </p>
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-top:1.5rem;">
@@ -3334,7 +3376,6 @@ input, textarea, select {
 </nav>
 
 <script>
-
 // ✅ تحديث إصدار PWA تلقائياً عند كل تحميل للصفحة
 const APP_VERSION = Date.now();
 document.querySelector('link[rel="manifest"]').href = `/manifest.json?v=${APP_VERSION}`;
@@ -3541,8 +3582,6 @@ function displayExistingGallery(images) {
         wrapper.appendChild(deleteBtn);
         container.appendChild(wrapper);
     });
-    // ❌ تم إزالة السطر المسبب للخطأ:
-    // document.getElementById('setGallery').value = images.join('\n');
 }
         
 // ✅ عرض تفاصيل طلب عرض سعر
@@ -4675,30 +4714,97 @@ const translations = {
         deleteAccount: 'حذف الحساب', exportExcel: 'تحميل التفاصيل إلى Excel',
         recentAppointments: 'أحدث المواعيد', price: 'السعر', status: 'الحالة', action: 'إجراء',
         totalAppointments: 'إجمالي المواعيد', pending: 'قيد الانتظار', completed: 'مكتملة',
-        revenue: 'الإيرادات (دج)', addService: 'إضافة خدمة', addStaff: 'إضافة موظف', save: 'حفظ'
+        revenue: 'الإيرادات (دج)', addService: 'إضافة خدمة', addStaff: 'إضافة موظف', save: 'حفظ',
+        about: 'من نحن', contact: 'اتصل بنا', bookNow: 'احجز الآن', quickBook: 'حجز سريع',
+        welcomeMsg: 'مرحباً بك في حلاقتي ✂️', bestSalons: 'أفضل صالونات الحلاقة والتجميل في الجزائر'
+    },
+    en: {
+        home: 'Home', salons: 'Salons', dashboard: 'Dashboard', admin: 'Admin Panel',
+        myAccount: 'My Account', myBookings: 'My Bookings', customerLogin: 'Customer Login', customerRegister: 'Create Account',
+        logout: 'Logout', login: 'Login', registerSalon: 'Register Salon', loginSalon: 'Salon Login',
+        adminLogin: 'Admin Login', booking: 'Book Appointment', review: 'Review Salon',
+        homeSub: 'Book your appointment easily with the best barbers and beauty experts in your city',
+        findSalon: 'Find a Salon', totalSalons: 'Registered Salons', todayBookings: "Today's Bookings",
+        avgRating: 'Average Rating', algerianService: '100% Algerian Service', featuredSalons: '🔥 Featured Salons',
+        salonName: 'Salon Name', city: 'City', address: 'Address', email: 'Email',
+        phone: 'Phone', password: 'Password', desc: 'Description', logo: 'Salon Logo', gps: 'GPS Location',
+        services: 'Services', totalPrice: 'Total Price', staff: 'Staff', date: 'Date', time: 'Time',
+        clientName: 'Full Name', clientPhone: 'Phone Number', clientEmail: 'Email',
+        payment: 'Payment Method', notes: 'Notes', rating: 'Your Rating (1-5)', comment: 'Your Comment',
+        overview: 'Overview', appointments: 'Appointments', hours: 'Working Hours', reviews: 'Reviews',
+        notifications: 'Notifications', settings: 'Settings', changePassword: 'Change Password',
+        deleteAccount: 'Delete Account', exportExcel: 'Download to Excel',
+        recentAppointments: 'Recent Appointments', price: 'Price', status: 'Status', action: 'Action',
+        totalAppointments: 'Total Appointments', pending: 'Pending', completed: 'Completed',
+        revenue: 'Revenue (DZD)', addService: 'Add Service', addStaff: 'Add Staff', save: 'Save',
+        about: 'About Us', contact: 'Contact Us', bookNow: 'Book Now', quickBook: 'Quick Book',
+        welcomeMsg: 'Welcome to Halakati ✂️', bestSalons: 'Best Hair & Beauty Salons in Algeria'
     },
     fr: {
-        home: 'Accueil', salons: 'Salons', dashboard: 'Tableau de bord', admin: 'Tableau admin',
-        myAccount: 'Mon compte', myBookings: 'Mes réservations', customerLogin: 'Client',
-        customerRegister: 'Créer un compte', logout: 'Déconnexion', login: 'Connexion',
-        registerSalon: 'Ajouter un salon', loginSalon: 'Connexion salon', adminLogin: 'Connexion admin',
-        booking: 'Réserver', review: 'Évaluer le salon',
-        homeSub: 'Réservez facilement avec les meilleurs coiffeurs et experts en beauté',
-        findSalon: 'Trouver un salon', totalSalons: 'Salons enregistrés',
-        todayBookings: 'Rendez-vous aujourd\'hui', avgRating: 'Note moyenne',
-        algerianService: 'Service algérien 100%', featuredSalons: '🔥 Salons populaires',
-        salonName: 'Nom du salon', city: 'Ville', address: 'Adresse', email: 'Email', phone: 'Téléphone',
-        password: 'Mot de passe', desc: 'Description', logo: 'Logo du salon', gps: 'Position GPS',
+        home: 'Accueil', salons: 'Salons', dashboard: 'Tableau de bord', admin: 'Panel Admin',
+        myAccount: 'Mon compte', myBookings: 'Mes réservations', customerLogin: 'Connexion client', customerRegister: 'Créer un compte',
+        logout: 'Déconnexion', login: 'Connexion', registerSalon: 'Ajouter un salon', loginSalon: 'Connexion salon',
+        adminLogin: 'Connexion Admin', booking: 'Réserver', review: 'Évaluer le salon',
+        homeSub: 'Réservez facilement avec les meilleurs coiffeurs et experts en beauté de votre ville',
+        findSalon: 'Trouver un salon', totalSalons: 'Salons enregistrés', todayBookings: 'Rendez-vous aujourd\'hui',
+        avgRating: 'Note moyenne', algerianService: 'Service algérien 100%', featuredSalons: '🔥 Salons populaires',
+        salonName: 'Nom du salon', city: 'Ville', address: 'Adresse', email: 'Email',
+        phone: 'Téléphone', password: 'Mot de passe', desc: 'Description', logo: 'Logo du salon', gps: 'Position GPS',
         services: 'Services', totalPrice: 'Prix total', staff: 'Employé', date: 'Date', time: 'Heure',
         clientName: 'Nom complet', clientPhone: 'Téléphone', clientEmail: 'Email',
-        payment: 'Moyen de paiement', notes: 'Remarques', rating: 'Votre note (1-5)',
-        comment: 'Votre commentaire', overview: 'Aperçu', appointments: 'Rendez-vous',
-        hours: 'Horaires', reviews: 'Avis', notifications: 'Notifications', settings: 'Paramètres',
-        changePassword: 'Changer le mot de passe', deleteAccount: 'Supprimer le compte',
-        exportExcel: 'Télécharger en Excel', recentAppointments: 'Derniers rendez-vous',
-        price: 'Prix', status: 'Statut', action: 'Action', totalAppointments: 'Total rendez-vous',
-        pending: 'En attente', completed: 'Terminé', revenue: 'Revenus (DZD)',
-        addService: 'Ajouter un service', addStaff: 'Ajouter un employé', save: 'Enregistrer'
+        payment: 'Moyen de paiement', notes: 'Remarques', rating: 'Votre note (1-5)', comment: 'Votre commentaire',
+        overview: 'Aperçu', appointments: 'Rendez-vous', hours: 'Horaires', reviews: 'Avis',
+        notifications: 'Notifications', settings: 'Paramètres', changePassword: 'Changer le mot de passe',
+        deleteAccount: 'Supprimer le compte', exportExcel: 'Télécharger en Excel',
+        recentAppointments: 'Derniers rendez-vous', price: 'Prix', status: 'Statut', action: 'Action',
+        totalAppointments: 'Total rendez-vous', pending: 'En attente', completed: 'Terminé',
+        revenue: 'Revenus (DZD)', addService: 'Ajouter un service', addStaff: 'Ajouter un employé', save: 'Enregistrer',
+        about: 'À propos', contact: 'Contactez-nous', bookNow: 'Réservez', quickBook: 'Réservation rapide',
+        welcomeMsg: 'Bienvenue sur Halakati ✂️', bestSalons: 'Meilleurs salons de coiffure et beauté en Algérie'
+    },
+    es: {
+        home: 'Inicio', salons: 'Salones', dashboard: 'Panel', admin: 'Panel Admin',
+        myAccount: 'Mi Cuenta', myBookings: 'Mis Reservas', customerLogin: 'Inicio Cliente', customerRegister: 'Crear Cuenta',
+        logout: 'Cerrar Sesión', login: 'Iniciar Sesión', registerSalon: 'Registrar Salón', loginSalon: 'Inicio Salón',
+        adminLogin: 'Inicio Admin', booking: 'Reservar', review: 'Valorar',
+        homeSub: 'Reserva fácilmente con los mejores barberos y expertos en belleza de tu ciudad',
+        findSalon: 'Buscar Salón', totalSalons: 'Salones Registrados', todayBookings: 'Reservas Hoy',
+        avgRating: 'Calificación Media', algerianService: '100% Servicio Argelino', featuredSalons: '🔥 Salones Destacados',
+        salonName: 'Nombre del Salón', city: 'Ciudad', address: 'Dirección', email: 'Correo',
+        phone: 'Teléfono', password: 'Contraseña', desc: 'Descripción', logo: 'Logo', gps: 'Ubicación GPS',
+        services: 'Servicios', totalPrice: 'Precio Total', staff: 'Empleado', date: 'Fecha', time: 'Hora',
+        clientName: 'Nombre Completo', clientPhone: 'Teléfono', clientEmail: 'Correo',
+        payment: 'Método de Pago', notes: 'Notas', rating: 'Calificación (1-5)', comment: 'Comentario',
+        overview: 'Resumen', appointments: 'Citas', hours: 'Horario', reviews: 'Opiniones',
+        notifications: 'Notificaciones', settings: 'Configuración', changePassword: 'Cambiar Contraseña',
+        deleteAccount: 'Eliminar Cuenta', exportExcel: 'Descargar a Excel',
+        recentAppointments: 'Citas Recientes', price: 'Precio', status: 'Estado', action: 'Acción',
+        totalAppointments: 'Total Citas', pending: 'Pendiente', completed: 'Completado',
+        revenue: 'Ingresos (DZD)', addService: 'Añadir Servicio', addStaff: 'Añadir Empleado', save: 'Guardar',
+        about: 'Sobre Nosotros', contact: 'Contáctenos', bookNow: 'Reservar Ahora', quickBook: 'Reserva Rápida',
+        welcomeMsg: 'Bienvenido a Halakati ✂️', bestSalons: 'Mejores Salones de Belleza y Peluquería en Argelia'
+    },
+    tr: {
+        home: 'Ana Sayfa', salons: 'Salonlar', dashboard: 'Kontrol Paneli', admin: 'Admin Paneli',
+        myAccount: 'Hesabım', myBookings: 'Rezervasyonlarım', customerLogin: 'Müşteri Girişi', customerRegister: 'Hesap Oluştur',
+        logout: 'Çıkış Yap', login: 'Giriş Yap', registerSalon: 'Salon Kaydı', loginSalon: 'Salon Girişi',
+        adminLogin: 'Admin Girişi', booking: 'Randevu Al', review: 'Salonu Değerlendir',
+        homeSub: 'Şehrinizdeki en iyi berberler ve güzellik uzmanları ile kolayca randevu alın',
+        findSalon: 'Salon Bul', totalSalons: 'Kayıtlı Salonlar', todayBookings: 'Bugünkü Randevular',
+        avgRating: 'Ortalama Puan', algerianService: '%100 Cezayir Hizmeti', featuredSalons: '🔥 Öne Çıkan Salonlar',
+        salonName: 'Salon Adı', city: 'Şehir', address: 'Adres', email: 'E-posta',
+        phone: 'Telefon', password: 'Şifre', desc: 'Açıklama', logo: 'Logo', gps: 'GPS Konumu',
+        services: 'Hizmetler', totalPrice: 'Toplam Fiyat', staff: 'Personel', date: 'Tarih', time: 'Saat',
+        clientName: 'Ad Soyad', clientPhone: 'Telefon Numarası', clientEmail: 'E-posta',
+        payment: 'Ödeme Yöntemi', notes: 'Notlar', rating: 'Puanınız (1-5)', comment: 'Yorumunuz',
+        overview: 'Genel Bakış', appointments: 'Randevular', hours: 'Çalışma Saatleri', reviews: 'Yorumlar',
+        notifications: 'Bildirimler', settings: 'Ayarlar', changePassword: 'Şifre Değiştir',
+        deleteAccount: 'Hesabı Sil', exportExcel: 'Excel\'e İndir',
+        recentAppointments: 'Son Randevular', price: 'Fiyat', status: 'Durum', action: 'İşlem',
+        totalAppointments: 'Toplam Randevu', pending: 'Bekliyor', completed: 'Tamamlandı',
+        revenue: 'Gelir (DZD)', addService: 'Hizmet Ekle', addStaff: 'Personel Ekle', save: 'Kaydet',
+        about: 'Hakkımızda', contact: 'İletişim', bookNow: 'Hemen Randevu Al', quickBook: 'Hızlı Randevu',
+        welcomeMsg: 'Halakati\'ye Hoş Geldiniz ✂️', bestSalons: 'Cezayir\'deki En İyi Kuaför ve Güzellik Salonları'
     }
 };
 
@@ -4710,11 +4816,25 @@ function updateLang() {
         const translation = translations[currentLang]?.[key];
         if (translation) el.textContent = translation;
     });
-    document.getElementById('langToggle').textContent = currentLang === 'ar' ? '🇫🇷 FR' : '🇸🇦 AR';
+    // تحديث زر اللغة
+    updateLangButton();
+}
+
+function updateLangButton() {
+    const lang = currentLang;
+    const flagMap = { ar: '🇸🇦', en: '🇬🇧', fr: '🇫🇷', es: '🇪🇸', tr: '🇹🇷' };
+    const nameMap = { ar: 'العربية', en: 'English', fr: 'Français', es: 'Español', tr: 'Türkçe' };
+    
+    const flagEl = document.getElementById('langFlag');
+    const nameEl = document.getElementById('langName');
+    if (flagEl) flagEl.textContent = flagMap[lang] || '🌍';
+    if (nameEl) nameEl.textContent = nameMap[lang] || lang;
 }
 
 function toggleLang() {
-    currentLang = currentLang === 'ar' ? 'fr' : 'ar';
+    const langs = ['ar', 'en', 'fr', 'es', 'tr'];
+    const currentIndex = langs.indexOf(currentLang);
+    currentLang = langs[(currentIndex + 1) % langs.length];
     localStorage.setItem('lang', currentLang);
     updateLang();
 }
@@ -5857,60 +5977,6 @@ document.getElementById('filterSort')?.addEventListener('change', applyFilters);
 document.getElementById('filterPrice')?.addEventListener('change', applyFilters);
 document.getElementById('filterRating')?.addEventListener('change', applyFilters);
 document.getElementById('filterOpen')?.addEventListener('change', applyFilters);
-
-// ===== بحث ذكي مع اقتراحات =====
-const searchInput = document.getElementById('searchSalon');
-const searchSuggestions = document.createElement('div');
-searchSuggestions.id = 'searchSuggestions';
-searchSuggestions.style.cssText = `
-    position: absolute;
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    max-height: 200px;
-    overflow-y: auto;
-    width: 100%;
-    z-index: 1000;
-    display: none;
-    box-shadow: var(--shadow);
-`;
-searchInput.parentElement.style.position = 'relative';
-searchInput.parentElement.appendChild(searchSuggestions);
-
-searchInput.addEventListener('input', function() {
-    const query = this.value.trim().toLowerCase();
-    if (query.length < 1) {
-        searchSuggestions.style.display = 'none';
-        return;
-    }
-    
-    const suggestions = allSalons
-        .filter(s => s.name.toLowerCase().includes(query) || (s.city && s.city.toLowerCase().includes(query)))
-        .slice(0, 5);
-    
-    if (suggestions.length === 0) {
-        searchSuggestions.style.display = 'none';
-        return;
-    }
-    
-    searchSuggestions.innerHTML = suggestions.map(s => `
-        <div style="padding:0.5rem 0.8rem;cursor:pointer;border-bottom:1px solid var(--border-color);hover:background:var(--input-bg);"
-             onclick="document.getElementById('searchSalon').value='${s.name}';searchSuggestions.style.display='none';applyFilters();">
-            <strong>${s.name}</strong>
-            <span style="font-size:0.7rem;opacity:0.5;margin-right:0.5rem;">${s.city}</span>
-            <span style="font-size:0.7rem;color:var(--gold);">⭐ ${s.rating || 0}</span>
-        </div>
-    `).join('');
-    
-    searchSuggestions.style.display = 'block';
-});
-
-// إخفاء الاقتراحات عند النقر خارجها
-document.addEventListener('click', function(e) {
-    if (!searchSuggestions.contains(e.target) && e.target !== searchInput) {
-        searchSuggestions.style.display = 'none';
-    }
-});
     
 // ===== الحصول على الصالونات القريبة =====
 function getNearbySalons() {
@@ -8563,7 +8629,7 @@ function sendContactMessage(e) {
     // قراءة القيم مع التحقق من وجود العناصر
     const nameInput = document.getElementById('contactName');
     const emailInput = document.getElementById('contactEmail');
-    const phoneInput = document.getElementById('contactPhone');
+    const phoneInput = document.getElementById('contactPhone'); // ✅ جديد
     const messageInput = document.getElementById('contactMessage');
 
     // ✅ التحقق من وجود العناصر
@@ -8575,7 +8641,7 @@ function sendContactMessage(e) {
 
     const name = nameInput.value.trim();
     const email = emailInput.value.trim();
-    const phone = phoneInput.value.trim();
+    const phone = phoneInput.value.trim(); // ✅ جديد
     const message = messageInput.value.trim();
 
     console.log('📝 القيم المقروءة:', { name, email, phone, message });
@@ -8590,15 +8656,15 @@ function sendContactMessage(e) {
 
     // ✅ إرسال عبر EmailJS مع تمرير المفتاح العمومي كمعامل رابع
     emailjs.send(
-        'service_206xiaz',
-        'template_cac0ccs',
+        'service_206xiaz',                 // Service ID
+        'template_cac0ccs',                // Template ID
         {
-            from_name: name,      // ✅ يطابق {{from_name}}
-            from_email: email,    // ✅ يطابق {{from_email}}
-            from_phone: phone,    // ✅ يطابق {{from_phone}}
-            message: message      // ✅ يطابق {{message}}
+            from_name: name,
+            from_email: email,
+            from_phone: phone,
+            message: message
         },
-        'zYIcaJnLsBBaPgfdi'
+        'zYIcaJnLsBBaPgfdi'                // ✅ Public Key (يُضاف كمعامل رابع)
     )
     .then(() => {
         showToast('✅ تم إرسال رسالتك! سنتواصل معك قريباً', 'success');
@@ -8611,7 +8677,7 @@ function sendContactMessage(e) {
         showToast('❌ فشل الإرسال، حاول مرة أخرى', 'error');
     });
 }
-    
+
 init();
 
 // ✅ تعديل موظف
@@ -8862,52 +8928,6 @@ async function editQuote(quoteId) {
         showToast('❌ فشل الاتصال', 'error');
     }
 }
-
-// ===== الوضع المظلم التلقائي =====
-function setThemeBasedOnSystem() {
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const savedTheme = localStorage.getItem('theme');
-    
-    if (savedTheme) {
-        document.documentElement.setAttribute('data-theme', savedTheme);
-        updateThemeIcon(savedTheme);
-    } else {
-        const theme = prefersDark ? 'dark' : 'light';
-        document.documentElement.setAttribute('data-theme', theme);
-        localStorage.setItem('theme', theme);
-        updateThemeIcon(theme);
-    }
-}
-
-function updateThemeIcon(theme) {
-    const toggle = document.getElementById('themeToggle');
-    if (toggle) {
-        toggle.innerHTML = theme === 'dark' ? '<i class="fas fa-moon"></i>' : '<i class="fas fa-sun"></i>';
-    }
-}
-
-// استمع لتغييرات النظام
-window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-    if (!localStorage.getItem('theme')) {
-        const theme = e.matches ? 'dark' : 'light';
-        document.documentElement.setAttribute('data-theme', theme);
-        updateThemeIcon(theme);
-    }
-});
-
-// استدعاء عند التحميل
-setThemeBasedOnSystem();
-
-// دالة تبديل الوضع يدوياً (تعديل الدالة الموجودة)
-const originalToggleTheme = toggleTheme;
-toggleTheme = function() {
-    const currentTheme = document.documentElement.getAttribute('data-theme');
-    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', newTheme);
-    localStorage.setItem('theme', newTheme);
-    updateThemeIcon(newTheme);
-};
-
 </script>
 </body>
 </html>
