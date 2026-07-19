@@ -6930,143 +6930,6 @@ async function loadDashboard() {
             document.getElementById('setGpsStatus').textContent = `✅ ${salon.lat.toFixed(4)}, ${salon.lng.toFixed(4)}`;
         }
 
-// ===== عرض ربط المخزون بالخدمات =====
-// ============================================================
-// ✅ ربط المخزون بالخدمات (نسخة محسّنة مع عرض الأخطاء)
-// ============================================================
-async function loadInventoryServiceMapping() {
-    const container = document.getElementById('inventoryServiceMapping');
-    if (!container) {
-        console.error('❌ container #inventoryServiceMapping غير موجود');
-        return;
-    }
-
-    const token = localStorage.getItem('token');
-    const salonId = localStorage.getItem('salonId');
-
-    console.log('🔍 loadInventoryServiceMapping - token:', token ? '✅ موجود' : '❌ غير موجود');
-    console.log('🔍 loadInventoryServiceMapping - salonId:', salonId);
-
-    if (!token || !salonId) {
-        container.innerHTML = `
-            <div style="text-align:center;padding:1rem;color:var(--text-color);opacity:0.5;">
-                <i class="fas fa-lock" style="font-size:1.5rem;display:block;margin-bottom:0.5rem;"></i>
-                يرجى تسجيل الدخول كصالون لعرض هذا القسم
-            </div>
-        `;
-        return;
-    }
-
-    try {
-        // ✅ 1. جلب المنتجات من المخزون
-        console.log(`📡 جلب المنتجات من: ${API_BASE}/inventory/${salonId}`);
-        const invRes = await fetch(`${API_BASE}/inventory/${salonId}`, {
-            headers: { 
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-
-        if (!invRes.ok) {
-            const errorText = await invRes.text();
-            console.error('❌ فشل جلب المنتجات - الحالة:', invRes.status, errorText);
-            throw new Error(`فشل جلب المنتجات (${invRes.status})`);
-        }
-
-        const inventory = await invRes.json();
-        console.log('📦 المنتجات المستلمة:', inventory);
-
-        // ✅ 2. جلب الخدمات من الصالون
-        console.log(`📡 جلب الخدمات من: ${API_BASE}/salons/${salonId}`);
-        const salonRes = await fetch(`${API_BASE}/salons/${salonId}`);
-        if (!salonRes.ok) {
-            const errorText = await salonRes.text();
-            console.error('❌ فشل جلب الخدمات - الحالة:', salonRes.status, errorText);
-            throw new Error(`فشل جلب الخدمات (${salonRes.status})`);
-        }
-        const salon = await salonRes.json();
-        const services = salon.services || [];
-        console.log('📦 الخدمات المستلمة:', services);
-
-        // ✅ 3. عرض النتائج
-        if (inventory.length === 0) {
-            container.innerHTML = `
-                <div style="text-align:center;padding:1rem;color:var(--text-color);opacity:0.5;">
-                    <i class="fas fa-box" style="font-size:1.5rem;display:block;margin-bottom:0.5rem;"></i>
-                    لا توجد منتجات في المخزون. أضف منتجات أولاً!
-                </div>
-            `;
-            return;
-        }
-
-        if (services.length === 0) {
-            container.innerHTML = `
-                <div style="text-align:center;padding:1rem;color:var(--text-color);opacity:0.5;">
-                    <i class="fas fa-scissors" style="font-size:1.5rem;display:block;margin-bottom:0.5rem;"></i>
-                    لا توجد خدمات. أضف خدمات أولاً!
-                </div>
-            `;
-            return;
-        }
-
-        // ✅ 4. بناء الجدول
-        let html = `
-            <div style="display:grid;grid-template-columns:1fr 1.5fr 1fr 0.8fr;gap:0.5rem;font-weight:600;padding:0.3rem 0;border-bottom:2px solid var(--border-color);color:var(--gold);font-size:0.8rem;">
-                <span>المنتج</span>
-                <span>الخدمة المرتبطة</span>
-                <span>الاستهلاك لكل حجز</span>
-                <span>المتبقي</span>
-            </div>
-        `;
-
-        inventory.forEach(item => {
-            const currentServiceId = item.serviceId || '';
-            html += `
-                <div style="display:grid;grid-template-columns:1fr 1.5fr 1fr 0.8fr;gap:0.5rem;padding:0.3rem 0;border-bottom:1px solid var(--border-color);align-items:center;font-size:0.85rem;">
-                    <span style="font-weight:500;">${item.name}</span>
-                    
-                    <select onchange="updateInventoryService('${item._id}', this.value)" 
-                            style="padding:0.3rem 0.5rem;border-radius:6px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--text-color);font-size:0.8rem;width:100%;">
-                        <option value="">-- لا توجد خدمة --</option>
-                        ${services.map(s => `
-                            <option value="${s._id || s.name}" ${currentServiceId === (s._id || s.name) ? 'selected' : ''}>
-                                ${s.name}
-                            </option>
-                        `).join('')}
-                    </select>
-                    
-                    <input type="number" 
-                           id="consumption_${item._id}" 
-                           value="${item.consumptionPerBooking || 0}" 
-                           min="0" 
-                           step="0.5"
-                           placeholder="0"
-                           style="width:100%;padding:0.3rem 0.5rem;border-radius:6px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--text-color);font-size:0.8rem;"
-                           onchange="updateInventoryConsumption('${item._id}', this.value)">
-                    
-                    <span style="font-size:0.8rem;opacity:0.7;">
-                        ${item.quantity} ${item.unit || ''}
-                        ${item.quantity <= item.minQuantity ? ' ⚠️' : ''}
-                    </span>
-                </div>
-            `;
-        });
-
-        container.innerHTML = html;
-        console.log('✅ تم تحميل ربط المخزون بنجاح');
-
-    } catch (error) {
-        console.error('❌ فشل تحميل ربط المخزون:', error);
-        container.innerHTML = `
-            <div style="text-align:center;padding:1rem;color:var(--danger);">
-                <i class="fas fa-exclamation-triangle" style="font-size:1.5rem;display:block;margin-bottom:0.5rem;"></i>
-                ${error.message || 'فشل تحميل البيانات'}
-                <br>
-                <small style="opacity:0.5;">تحقق من اتصال الخادم وسجلات Console لمزيد من التفاصيل</small>
-            </div>
-        `;
-    }
-}
 // ===== تحديث ربط المنتج بخدمة =====
 async function updateInventoryService(itemId, serviceId) {
     const token = localStorage.getItem('token');
@@ -8205,16 +8068,17 @@ document.querySelectorAll('.sidebar .menu a').forEach(link => {
         const target = document.getElementById(map[page]);
         if (target) {
             target.classList.remove('hidden');
-            
-            // ✅ تحميل ربط المخزون عند فتح الإعدادات
             if (page === 'settings') {
+                // ✅ تحميل ربط المخزون عند فتح الإعدادات
                 setTimeout(() => {
                     loadInventoryServiceMapping();
                 }, 300);
             }
-            
             if (['overview', 'appointments', 'reviews'].includes(page)) {
                 loadDashboard();
+            }
+            if (page === 'inventory') {
+                loadInventory();
             }
         }
     });
@@ -9298,6 +9162,199 @@ async function editQuote(quoteId) {
     } catch (error) {
         console.error('❌ فشل تعديل الطلب:', error);
         showToast('❌ فشل الاتصال', 'error');
+    }
+}
+
+// ============================================================
+// ✅ ربط المخزون بالخدمات (تحميل وعرض)
+// ============================================================
+
+async function loadInventoryServiceMapping() {
+    console.log('🔄 loadInventoryServiceMapping تم استدعاؤها');
+    const container = document.getElementById('inventoryServiceMapping');
+    if (!container) {
+        console.error('❌ العنصر inventoryServiceMapping غير موجود في DOM');
+        return;
+    }
+
+    const token = localStorage.getItem('token');
+    const salonId = localStorage.getItem('salonId');
+
+    if (!token || !salonId) {
+        container.innerHTML = `
+            <div style="text-align:center;padding:1rem;color:var(--text-color);opacity:0.5;">
+                <i class="fas fa-lock" style="font-size:1.5rem;display:block;margin-bottom:0.5rem;"></i>
+                يرجى تسجيل الدخول كصالون لعرض هذا القسم
+            </div>
+        `;
+        return;
+    }
+
+    try {
+        // 1. جلب المنتجات من المخزون
+        console.log('📡 جلب المنتجات من:', `${API_BASE}/inventory/${salonId}`);
+        const invRes = await fetch(`${API_BASE}/inventory/${salonId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (!invRes.ok) {
+            const errorData = await invRes.json().catch(() => ({}));
+            throw new Error(errorData.message || 'فشل جلب المنتجات');
+        }
+        const inventory = await invRes.json();
+        console.log('📦 المنتجات:', inventory.length);
+
+        // 2. جلب الخدمات من الصالون
+        const salonRes = await fetch(`${API_BASE}/salons/${salonId}`);
+        if (!salonRes.ok) throw new Error('فشل جلب الخدمات');
+        const salon = await salonRes.json();
+        const services = salon.services || [];
+        console.log('✂️ الخدمات:', services.length);
+
+        // 3. عرض النتائج
+        if (inventory.length === 0) {
+            container.innerHTML = `
+                <div style="text-align:center;padding:1rem;color:var(--text-color);opacity:0.5;">
+                    <i class="fas fa-box" style="font-size:1.5rem;display:block;margin-bottom:0.5rem;"></i>
+                    لا توجد منتجات في المخزون. أضف منتجات أولاً!
+                </div>
+            `;
+            return;
+        }
+
+        if (services.length === 0) {
+            container.innerHTML = `
+                <div style="text-align:center;padding:1rem;color:var(--text-color);opacity:0.5;">
+                    <i class="fas fa-scissors" style="font-size:1.5rem;display:block;margin-bottom:0.5rem;"></i>
+                    لا توجد خدمات. أضف خدمات أولاً!
+                </div>
+            `;
+            return;
+        }
+
+        // 4. بناء الجدول
+        let html = `
+            <div style="display:grid;grid-template-columns:1fr 1.5fr 1fr 0.8fr;gap:0.5rem;font-weight:600;padding:0.3rem 0;border-bottom:2px solid var(--border-color);color:var(--gold);font-size:0.8rem;">
+                <span>المنتج</span>
+                <span>الخدمة المرتبطة</span>
+                <span>الاستهلاك لكل حجز</span>
+                <span>المتبقي</span>
+            </div>
+        `;
+
+        inventory.forEach(item => {
+            const currentServiceId = item.serviceId || '';
+            const serviceIdForSelect = typeof currentServiceId === 'object' ? currentServiceId._id || currentServiceId : currentServiceId;
+            
+            html += `
+                <div style="display:grid;grid-template-columns:1fr 1.5fr 1fr 0.8fr;gap:0.5rem;padding:0.3rem 0;border-bottom:1px solid var(--border-color);align-items:center;font-size:0.85rem;">
+                    <span style="font-weight:500;">${item.name}</span>
+                    
+                    <select onchange="updateInventoryService('${item._id}', this.value)" 
+                            style="padding:0.3rem 0.5rem;border-radius:6px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--text-color);font-size:0.8rem;width:100%;">
+                        <option value="">-- لا توجد خدمة --</option>
+                        ${services.map(s => {
+                            const serviceId = s._id || s.name;
+                            const selected = (serviceIdForSelect === serviceId || serviceIdForSelect === s.name) ? 'selected' : '';
+                            return `<option value="${serviceId}" ${selected}>${s.name}</option>`;
+                        }).join('')}
+                    </select>
+                    
+                    <input type="number" 
+                           id="consumption_${item._id}" 
+                           value="${item.consumptionPerBooking || 0}" 
+                           min="0" 
+                           step="0.5"
+                           placeholder="0"
+                           style="width:100%;padding:0.3rem 0.5rem;border-radius:6px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--text-color);font-size:0.8rem;"
+                           onchange="updateInventoryConsumption('${item._id}', this.value)">
+                    
+                    <span style="font-size:0.8rem;opacity:0.7;">
+                        ${item.quantity} ${item.unit || ''}
+                        ${item.quantity <= item.minQuantity ? ' ⚠️' : ''}
+                    </span>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+        console.log('✅ تم عرض ربط المخزون بنجاح');
+
+    } catch (error) {
+        console.error('❌ فشل تحميل ربط المخزون:', error);
+        container.innerHTML = `
+            <div style="text-align:center;padding:1rem;color:var(--danger);">
+                <i class="fas fa-exclamation-triangle" style="font-size:1.5rem;display:block;margin-bottom:0.5rem;"></i>
+                ${error.message || 'فشل تحميل البيانات'}
+                <br>
+                <small style="opacity:0.5;">تأكد من اتصالك بالإنترنت ومن صحة بيانات الدخول</small>
+            </div>
+        `;
+    }
+}
+
+// ============================================================
+// ✅ تحديث ربط المنتج بخدمة
+// ============================================================
+async function updateInventoryService(itemId, serviceId) {
+    console.log(`🔄 تحديث ربط المنتج ${itemId} بخدمة ${serviceId}`);
+    const token = localStorage.getItem('token');
+    if (!token) {
+        showToast('❌ يرجى تسجيل الدخول', 'error');
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/inventory/${itemId}/service`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ serviceId: serviceId || null })
+        });
+        if (res.ok) {
+            showToast('✅ تم تحديث الربط', 'success');
+        } else {
+            const data = await res.json();
+            showToast(`❌ ${data.message || 'فشل التحديث'}`, 'error');
+        }
+    } catch (error) {
+        console.error('❌ فشل التحديث:', error);
+        showToast('❌ فشل الاتصال بالخادم', 'error');
+    }
+}
+
+// ============================================================
+// ✅ تحديث كمية الاستهلاك لكل حجز
+// ============================================================
+async function updateInventoryConsumption(itemId, value) {
+    console.log(`🔄 تحديث استهلاك المنتج ${itemId} إلى ${value}`);
+    const token = localStorage.getItem('token');
+    const consumption = parseFloat(value) || 0;
+    if (!token) {
+        showToast('❌ يرجى تسجيل الدخول', 'error');
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/inventory/${itemId}/consumption`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ consumptionPerBooking: consumption })
+        });
+        if (res.ok) {
+            showToast('✅ تم تحديث الاستهلاك', 'success');
+        } else {
+            const data = await res.json();
+            showToast(`❌ ${data.message || 'فشل التحديث'}`, 'error');
+        }
+    } catch (error) {
+        console.error('❌ فشل التحديث:', error);
+        showToast('❌ فشل الاتصال بالخادم', 'error');
     }
 }
 </script>
