@@ -155,6 +155,116 @@ const Admin = require('./models/Admin');
 const Notification = require('./models/Notification');
 
 // ============================================================
+// ✅ خصم المخزون تلقائياً عند إنشاء حجز
+// ============================================================
+async function deductInventoryForBooking(appointment) {
+    try {
+        const Inventory = require('./models/Inventory');
+        const salonId = appointment.salonId;
+        const services = appointment.services || [];
+        
+        // استخراج أسماء الخدمات (أو معرفاتها)
+        const serviceIds = services.map(s => s._id || s.id || s.name).filter(Boolean);
+        
+        if (serviceIds.length === 0) {
+            console.log('ℹ️ لا توجد خدمات في الحجز، تخطي خصم المخزون');
+            return [];
+        }
+
+        // جلب جميع منتجات المخزون المرتبطة بهذه الخدمات مع كمية استهلاك > 0
+        const inventoryItems = await Inventory.find({
+            salonId: salonId,
+            serviceId: { $in: serviceIds },
+            consumptionPerBooking: { $gt: 0 },
+            isActive: true
+        });
+
+        if (inventoryItems.length === 0) {
+            console.log('ℹ️ لا توجد منتجات مرتبطة بهذه الخدمات');
+            return [];
+        }
+
+        const deductions = [];
+        const notifications = [];
+
+        for (const item of inventoryItems) {
+            const quantityNeeded = item.consumptionPerBooking;
+            
+            // التحقق من كفاية المخزون
+            if (item.quantity < quantityNeeded) {
+                console.warn(`⚠️ المخزون غير كافٍ للمنتج "${item.name}": الموجود ${item.quantity}، المطلوب ${quantityNeeded}`);
+                // يمكن إرسال إشعار فوري للصالون
+                notifications.push({
+                    title: '⚠️ مخزون غير كافٍ',
+                    message: `المنتج "${item.name}" غير كافٍ لتلبية الحجز (المتبقي ${item.quantity}، المطلوب ${quantityNeeded})`
+                });
+                continue; // تخطي هذا المنتج ولا نخصم
+            }
+
+            // خصم الكمية
+            item.quantity -= quantityNeeded;
+            item.totalConsumed = (item.totalConsumed || 0) + quantityNeeded;
+            await item.save();
+
+            deductions.push({
+                productId: item._id,
+                productName: item.name,
+                quantityDeducted: quantityNeeded,
+                remaining: item.quantity,
+                unit: item.unit
+            });
+
+            // ✅ تنبيه إذا أصبح المخزون منخفضاً
+            if (item.quantity <= item.minQuantity) {
+                notifications.push({
+                    title: '⚠️ مخزون منخفض',
+                    message: `المنتج "${item.name}" أصبح منخفضاً (${item.quantity} ${item.unit} متبقية)`
+                });
+            }
+        }
+
+        // إرسال الإشعارات (إذا وجدت)
+        for (const notif of notifications) {
+            await createNotification(
+                salonId,
+                'salon',
+                notif.title,
+                notif.message
+            );
+        }
+
+        return deductions;
+
+    } catch (error) {
+        console.error('❌ فشل خصم المخزون:', error);
+        return []; // نعيد مصفوفة فارغة حتى لا نوقف الحجز
+    }
+}
+
+// دالة مساعدة لإنشاء إشعار (إذا لم تكن موجودة)
+async function createNotification(userId, userType, title, message) {
+    try {
+        const Notification = require('./models/Notification');
+        const notification = new Notification({
+            userId,
+            userType,
+            title,
+            message,
+            read: false,
+            createdAt: new Date()
+        });
+        await notification.save();
+        
+        // إرسال عبر Socket.io
+        const io = require('socket.io')();
+        io.to(`${userType}-${userId}`).emit('new-notification', { title, message });
+    } catch (error) {
+        console.error('❌ فشل إنشاء الإشعار:', error);
+    }
+}
+
+
+// ============================================================
 // ✅ التحقق من صلاحية الكوبون (مسار عام - لا يحتاج مصادقة)
 // ============================================================
 app.post('/api/coupons/validate', async (req, res) => {
@@ -1524,12 +1634,8 @@ app.post('/api/appointments/request', async (req, res) => {
         });
         await appointment.save();
 
-        // ============================================================
-        // ✅ خصم المخزون (معلق مؤقتاً حتى إضافة الدالة)
-        // ============================================================
-        // const deductions = await deductInventoryForBooking(appointment);
-        // ✅ إضافة تفاصيل الخصم في الرد (معلق)
-        // inventoryDeductions: deductions,
+// ✅ خصم المخزون
+const deductions = await deductInventoryForBooking(appointment);
 
         // 7. إشعار للصالون
         try {
@@ -1580,11 +1686,13 @@ app.post('/api/appointments/request', async (req, res) => {
             }
         }
 
-        res.status(201).json({
-            message: '✅ تم إرسال طلب الحجز بنجاح!',
-            appointment,
-            couponUpdated: couponId ? true : false
-        });
+// ✅ تضمين تفاصيل الخصم في الرد
+res.status(201).json({
+    message: '✅ تم إرسال طلب الحجز بنجاح!',
+    appointment,
+    inventoryDeductions: deductions,
+    couponUpdated: couponId ? true : false
+});
 
     } catch (err) {
         console.error('❌ فشل إنشاء الحجز:', err);
