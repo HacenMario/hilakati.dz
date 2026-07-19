@@ -6937,12 +6937,15 @@ async function loadDashboard() {
 async function loadInventoryServiceMapping() {
     const container = document.getElementById('inventoryServiceMapping');
     if (!container) {
-        console.error('❌ العنصر inventoryServiceMapping غير موجود في DOM');
+        console.error('❌ container #inventoryServiceMapping غير موجود');
         return;
     }
 
     const token = localStorage.getItem('token');
     const salonId = localStorage.getItem('salonId');
+
+    console.log('🔍 loadInventoryServiceMapping - token:', token ? '✅ موجود' : '❌ غير موجود');
+    console.log('🔍 loadInventoryServiceMapping - salonId:', salonId);
 
     if (!token || !salonId) {
         container.innerHTML = `
@@ -6955,9 +6958,8 @@ async function loadInventoryServiceMapping() {
     }
 
     try {
-        console.log('📡 جلب المنتجات من:', `${API_BASE}/inventory/${salonId}`);
-        
-        // 1. جلب المنتجات من المخزون
+        // ✅ 1. جلب المنتجات من المخزون
+        console.log(`📡 جلب المنتجات من: ${API_BASE}/inventory/${salonId}`);
         const invRes = await fetch(`${API_BASE}/inventory/${salonId}`, {
             headers: { 
                 'Authorization': `Bearer ${token}`,
@@ -6965,49 +6967,49 @@ async function loadInventoryServiceMapping() {
             }
         });
 
-        console.log('📦 استجابة المنتجات:', invRes.status);
-
         if (!invRes.ok) {
             const errorText = await invRes.text();
-            throw new Error(`فشل جلب المنتجات (${invRes.status}): ${errorText}`);
+            console.error('❌ فشل جلب المنتجات - الحالة:', invRes.status, errorText);
+            throw new Error(`فشل جلب المنتجات (${invRes.status})`);
         }
+
         const inventory = await invRes.json();
-        console.log('📦 المنتجات:', inventory);
+        console.log('📦 المنتجات المستلمة:', inventory);
 
-        // 2. جلب الخدمات من الصالون
+        // ✅ 2. جلب الخدمات من الصالون
+        console.log(`📡 جلب الخدمات من: ${API_BASE}/salons/${salonId}`);
         const salonRes = await fetch(`${API_BASE}/salons/${salonId}`);
-        console.log('📦 استجابة الخدمات:', salonRes.status);
-
         if (!salonRes.ok) {
             const errorText = await salonRes.text();
-            throw new Error(`فشل جلب الخدمات (${salonRes.status}): ${errorText}`);
+            console.error('❌ فشل جلب الخدمات - الحالة:', salonRes.status, errorText);
+            throw new Error(`فشل جلب الخدمات (${salonRes.status})`);
         }
         const salon = await salonRes.json();
         const services = salon.services || [];
-        console.log('📦 الخدمات:', services);
+        console.log('📦 الخدمات المستلمة:', services);
 
-        // 3. عرض النتائج
-        if (!inventory || inventory.length === 0) {
+        // ✅ 3. عرض النتائج
+        if (inventory.length === 0) {
             container.innerHTML = `
                 <div style="text-align:center;padding:1rem;color:var(--text-color);opacity:0.5;">
                     <i class="fas fa-box" style="font-size:1.5rem;display:block;margin-bottom:0.5rem;"></i>
-                    لا توجد منتجات في المخزون. <a href="#" onclick="document.querySelector('[data-dash=\\'inventory\\']').click();return false;" style="color:var(--gold);">أضف منتجات الآن</a>
+                    لا توجد منتجات في المخزون. أضف منتجات أولاً!
                 </div>
             `;
             return;
         }
 
-        if (!services || services.length === 0) {
+        if (services.length === 0) {
             container.innerHTML = `
                 <div style="text-align:center;padding:1rem;color:var(--text-color);opacity:0.5;">
                     <i class="fas fa-scissors" style="font-size:1.5rem;display:block;margin-bottom:0.5rem;"></i>
-                    لا توجد خدمات. <a href="#" onclick="document.querySelector('[data-dash=\\'services\\']').click();return false;" style="color:var(--gold);">أضف خدمات الآن</a>
+                    لا توجد خدمات. أضف خدمات أولاً!
                 </div>
             `;
             return;
         }
 
-        // 4. بناء الجدول
+        // ✅ 4. بناء الجدول
         let html = `
             <div style="display:grid;grid-template-columns:1fr 1.5fr 1fr 0.8fr;gap:0.5rem;font-weight:600;padding:0.3rem 0;border-bottom:2px solid var(--border-color);color:var(--gold);font-size:0.8rem;">
                 <span>المنتج</span>
@@ -7051,18 +7053,16 @@ async function loadInventoryServiceMapping() {
         });
 
         container.innerHTML = html;
-        console.log('✅ تم عرض ربط المخزون بنجاح');
+        console.log('✅ تم تحميل ربط المخزون بنجاح');
 
     } catch (error) {
         console.error('❌ فشل تحميل ربط المخزون:', error);
         container.innerHTML = `
             <div style="text-align:center;padding:1rem;color:var(--danger);">
                 <i class="fas fa-exclamation-triangle" style="font-size:1.5rem;display:block;margin-bottom:0.5rem;"></i>
-                <strong>خطأ:</strong> ${error.message || 'فشل تحميل البيانات'}
+                ${error.message || 'فشل تحميل البيانات'}
                 <br>
-                <button class="btn-outline btn-sm" onclick="loadInventoryServiceMapping()" style="margin-top:0.5rem;">
-                    <i class="fas fa-sync"></i> إعادة المحاولة
-                </button>
+                <small style="opacity:0.5;">تحقق من اتصال الخادم وسجلات Console لمزيد من التفاصيل</small>
             </div>
         `;
     }
@@ -8190,10 +8190,33 @@ document.querySelectorAll('.sidebar .menu a').forEach(link => {
         this.classList.add('active');
         const page = this.dataset.dash;
         document.querySelectorAll('#dashContent > div').forEach(div => div.classList.add('hidden'));
-        const map = { 'overview':'dashOverview', 'appointments':'dashAppointments', 'services':'dashServices', 'staff':'dashStaff', 'hours':'dashHours', 'reviews':'dashReviews', 'inventory':'dashInventory','coupons':'dashCoupons','quotes':'dashQuotes','settings':'dashSettings'};
+        const map = {
+            'overview': 'dashOverview',
+            'appointments': 'dashAppointments',
+            'services': 'dashServices',
+            'staff': 'dashStaff',
+            'hours': 'dashHours',
+            'reviews': 'dashReviews',
+            'inventory': 'dashInventory',
+            'coupons': 'dashCoupons',
+            'quotes': 'dashQuotes',
+            'settings': 'dashSettings'
+        };
         const target = document.getElementById(map[page]);
-        if (target) { target.classList.remove('hidden'); if (['overview','appointments','reviews'].includes(page)) loadDashboard(); }
-        
+        if (target) {
+            target.classList.remove('hidden');
+            
+            // ✅ تحميل ربط المخزون عند فتح الإعدادات
+            if (page === 'settings') {
+                setTimeout(() => {
+                    loadInventoryServiceMapping();
+                }, 300);
+            }
+            
+            if (['overview', 'appointments', 'reviews'].includes(page)) {
+                loadDashboard();
+            }
+        }
     });
 });
 // ============================================================
