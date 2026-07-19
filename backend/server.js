@@ -428,7 +428,6 @@ app.use('/api/staff', authMiddleware, staffRoutes);
 app.use('/api/inventory', authMiddleware, inventoryRoutes);
 app.use('/api/coupons', authMiddleware, couponRoutes);
 app.use('/api/quotes', quoteRoutes);
-app.use('/api/inventory', authMiddleware, inventoryRoutes);
 
 // ============================================================
 // مسارات المصادقة (صالون)
@@ -1474,23 +1473,6 @@ app.post('/api/appointments/request', async (req, res) => {
             });
         }
 
-        // ===== التحقق من توفر الوقت (للحجز السريع) =====
-app.post('/api/appointments/check', async (req, res) => {
-    const { salonId, date, time } = req.body;
-    try {
-        const existing = await Appointment.findOne({
-            salonId,
-            date,
-            time,
-            status: { $in: ['pending', 'confirmed'] }
-        });
-        res.json({ exists: !!existing });
-    } catch (error) {
-        console.error('❌ فشل التحقق من توفر الوقت:', error);
-        res.status(500).json({ exists: false });
-    }
-});
-
         // ============================================================
         // ✅ 5. تحديث عدد استخدامات الكوبون (إذا وجد)
         // ============================================================
@@ -1500,13 +1482,11 @@ app.post('/api/appointments/check', async (req, res) => {
                 const coupon = await Coupon.findById(couponId);
                 
                 if (coupon) {
-                    // ✅ زيادة عدد الاستخدامات
                     coupon.usedCount = (coupon.usedCount || 0) + 1;
                     await coupon.save();
                     
                     console.log(`✅ تم تحديث الكوبون ${coupon.code}: استخدام ${coupon.usedCount}/${coupon.usageLimit}`);
                     
-                    // ✅ إذا وصل الكوبون إلى الحد الأقصى، قم بتعطيله تلقائياً
                     if (coupon.usedCount >= coupon.usageLimit) {
                         coupon.isActive = false;
                         await coupon.save();
@@ -1517,7 +1497,6 @@ app.post('/api/appointments/check', async (req, res) => {
                 }
             } catch (couponError) {
                 console.error('❌ فشل تحديث الكوبون:', couponError);
-                // لا نوقف الحجز إذا فشل تحديث الكوبون
             }
         }
 
@@ -1537,7 +1516,6 @@ app.post('/api/appointments/check', async (req, res) => {
             notes,
             recurring, 
             status: 'pending',
-            // ✅ حفظ معلومات الكوبون في الحجز
             couponId: couponId || null,
             couponCode: couponCode || null,
             discountAmount: discountAmount || 0,
@@ -1545,18 +1523,14 @@ app.post('/api/appointments/check', async (req, res) => {
         });
         await appointment.save();
 
-// ✅ خصم المخزون (جديد)
-const deductions = await deductInventoryForBooking(appointment);
+        // ============================================================
+        // ✅ خصم المخزون (معلق مؤقتاً حتى إضافة الدالة)
+        // ============================================================
+        // const deductions = await deductInventoryForBooking(appointment);
+        // ✅ إضافة تفاصيل الخصم في الرد (معلق)
+        // inventoryDeductions: deductions,
 
-// ✅ إضافة تفاصيل الخصم في الرد
-res.status(201).json({
-    message: '✅ تم إرسال طلب الحجز بنجاح!',
-    appointment,
-    inventoryDeductions: deductions, // معلومات عن ما تم خصمه
-    couponUpdated: couponId ? true : false
-});
-
-        // 7. إشعار للصالون (مع اسم الصالون)
+        // 7. إشعار للصالون
         try {
             const salonName = salon.name || 'الصالون';
             const notification = new Notification({
@@ -1580,7 +1554,7 @@ res.status(201).json({
             console.error('❌ فشل إنشاء الإشعار:', notifError);
         }
 
-        // 8. إشعار للعميل (إذا كان مسجلاً)
+        // 8. إشعار للعميل
         if (customerId) {
             try {
                 const customerNotification = new Notification({
@@ -1614,6 +1588,25 @@ res.status(201).json({
     } catch (err) {
         console.error('❌ فشل إنشاء الحجز:', err);
         res.status(500).json({ message: '❌ فشل إنشاء الحجز: ' + err.message });
+    }
+});
+
+// ============================================================
+// ✅ التحقق من توفر الوقت (للحجز السريع) - تم نقله إلى الخارج
+// ============================================================
+app.post('/api/appointments/check', async (req, res) => {
+    const { salonId, date, time } = req.body;
+    try {
+        const existing = await Appointment.findOne({
+            salonId,
+            date,
+            time,
+            status: { $in: ['pending', 'confirmed'] }
+        });
+        res.json({ exists: !!existing });
+    } catch (error) {
+        console.error('❌ فشل التحقق من توفر الوقت:', error);
+        res.status(500).json({ exists: false });
     }
 });
 
