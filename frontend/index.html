@@ -58,17 +58,21 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="/icons/icon-192.png?v=1">
 
-<!-- Google Translate Widget -->
-<script type="text/javascript">
-    function googleTranslateElementInit() {
-        new google.translate.TranslateElement({
-            pageLanguage: 'ar',
-            includedLanguages: 'ar,en,fr,es,tr,ru', // اللغات المدعومة
-            layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
-            autoDisplay: false
-        }, 'google_translate_element');
-    }
-</script>
+    <!-- ============================================================
+    ✅ Google Translate Widget (يجب أن يكون هنا)
+    ============================================================ -->
+    <script type="text/javascript">
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement({
+                pageLanguage: 'ar',
+                includedLanguages: 'ar,en,fr,es,tr,ru',
+                layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+                autoDisplay: false
+            }, 'google_translate_element');
+        }
+    </script>
+    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit">
+    </script>
     
     <style>
 
@@ -2257,6 +2261,58 @@ input, textarea, select {
         min-height: auto !important;
     }
 }
+
+/* ===== تخصيص Google Translate Widget ===== */
+#google_translate_element {
+    display: inline-block;
+    vertical-align: middle;
+    margin: 0 0.3rem;
+}
+
+.goog-te-gadget-simple {
+    background: transparent !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 50px !important;
+    padding: 0.2rem 0.6rem !important;
+    font-family: 'Tajawal', sans-serif !important;
+    font-size: 0.75rem !important;
+    color: var(--text-color) !important;
+    transition: all 0.3s ease !important;
+}
+
+.goog-te-gadget-simple:hover {
+    background: var(--gold) !important;
+    color: var(--dark) !important;
+    border-color: var(--gold) !important;
+}
+
+.goog-te-gadget-simple .goog-te-menu-value {
+    color: var(--text-color) !important;
+    font-size: 0.75rem !important;
+}
+
+.goog-te-gadget-simple:hover .goog-te-menu-value {
+    color: var(--dark) !important;
+}
+
+.goog-te-gadget-simple .goog-te-menu-value span {
+    color: var(--text-color) !important;
+}
+
+.goog-te-gadget-simple:hover .goog-te-menu-value span {
+    color: var(--dark) !important;
+}
+
+/* إخفاء شريط الإعلانات المزعج (اختياري) */
+.goog-te-banner-frame {
+    display: none !important;
+}
+
+/* منع إزاحة الصفحة عند الترجمة */
+body {
+    top: 0px !important;
+}
+        
     </style>
 </head>
 <body>
@@ -2301,6 +2357,9 @@ input, textarea, select {
         <span id="customerNameDisplay" style="display:none;color:var(--gold);font-weight:500;font-size:0.7rem;"></span>
         <!-- ✅ زر تثبيت PWA (دائم) -->
         <button class="btn-gold btn-sm" onclick="installPWA()" id="pwaInstallBtn" style="display:inline-block;"><i class="fas fa-download"></i> تثبيت التطبيق</button>
+
+       <!-- زر ترجمة جوجل -->
+       <div id="google_translate_element" style="display:inline-block; margin-right: 0.5rem;"></div>
         
         <!-- ===== زر الإشعارات ===== -->
         <div class="notif-bell" id="notifBell" style="position:relative;display:inline-block;cursor:pointer;margin-left:0.5rem;">
@@ -2333,9 +2392,6 @@ input, textarea, select {
             <span id="langFlag">🇸🇦</span>
             <span id="langName">العربية</span>
         </button>
-
-        <!-- زر ترجمة جوجل -->
-       <div id="google_translate_element" style="display:inline-block; margin-right: 0.5rem;"></div>
 
         <!-- ===== أزرار الأدوار ===== -->
         <div class="role-buttons" style="display:flex;flex-wrap:wrap;gap:0.3rem;align-items:center;">
@@ -9692,11 +9748,7 @@ async function updateInventoryConsumption(itemId, value) {
         showToast('❌ فشل الاتصال بالخادم', 'error');
     }
 }
-
-<!-- Google Translate Widget Script -->
-<script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit">
-</script>
-            
+          
 </script>
 </body>
 </html>
