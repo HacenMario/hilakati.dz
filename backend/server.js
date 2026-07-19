@@ -1451,6 +1451,23 @@ app.post('/api/appointments/request', async (req, res) => {
             });
         }
 
+        // ===== التحقق من توفر الوقت (للحجز السريع) =====
+app.post('/api/appointments/check', async (req, res) => {
+    const { salonId, date, time } = req.body;
+    try {
+        const existing = await Appointment.findOne({
+            salonId,
+            date,
+            time,
+            status: { $in: ['pending', 'confirmed'] }
+        });
+        res.json({ exists: !!existing });
+    } catch (error) {
+        console.error('❌ فشل التحقق من توفر الوقت:', error);
+        res.status(500).json({ exists: false });
+    }
+});
+
         // ============================================================
         // ✅ 5. تحديث عدد استخدامات الكوبون (إذا وجد)
         // ============================================================
