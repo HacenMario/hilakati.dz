@@ -64,11 +64,9 @@
   window.OneSignalDeferred = window.OneSignalDeferred || [];
   OneSignalDeferred.push(async function(OneSignal) {
     await OneSignal.init({
-      appId: "28130865-8d08-4f19-b8ef-24af170d41af", // استبدل بـ App ID
-      serviceWorkerOverrideForTypical: true,
-      path: "https://hilakatidz.vercel.app/push/onesignal/",
-      serviceWorkerParam: { scope: "/" },
-      serviceWorkerPath: "OneSignalSDKWorker.js",
+      appId: "28130865-8d08-4f19-b8ef-24af170d41af",
+      serviceWorkerParam: { scope: '/push/onesignal/' },     // 🔑 النطاق
+      serviceWorkerPath: 'push/onesignal/OneSignalSDKWorker.js' // 🔑 المسار
     });
   });
 </script>
