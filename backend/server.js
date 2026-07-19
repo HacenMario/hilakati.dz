@@ -155,11 +155,20 @@ const Admin = require('./models/Admin');
 const Notification = require('./models/Notification');
 
 // ============================================================
-// ✅ خصم المخزون تلقائياً عند إنشاء حجز
+// ✅ خصم المخزون تلقائياً عند إكمال الحجز
 // ============================================================
-async function deductInventoryForBooking(appointment) {
+async function deductInventoryForBooking(appointmentId) {
     try {
         const Inventory = require('./models/Inventory');
+        const Appointment = require('./models/Appointment');
+        
+        // جلب الحجز مع بيانات الخدمات
+        const appointment = await Appointment.findById(appointmentId);
+        if (!appointment) {
+            console.error('❌ الحجز غير موجود');
+            return [];
+        }
+
         const salonId = appointment.salonId;
         const services = appointment.services || [];
         
@@ -193,12 +202,11 @@ async function deductInventoryForBooking(appointment) {
             // التحقق من كفاية المخزون
             if (item.quantity < quantityNeeded) {
                 console.warn(`⚠️ المخزون غير كافٍ للمنتج "${item.name}": الموجود ${item.quantity}، المطلوب ${quantityNeeded}`);
-                // يمكن إرسال إشعار فوري للصالون
                 notifications.push({
                     title: '⚠️ مخزون غير كافٍ',
                     message: `المنتج "${item.name}" غير كافٍ لتلبية الحجز (المتبقي ${item.quantity}، المطلوب ${quantityNeeded})`
                 });
-                continue; // تخطي هذا المنتج ولا نخصم
+                continue;
             }
 
             // خصم الكمية
@@ -223,7 +231,7 @@ async function deductInventoryForBooking(appointment) {
             }
         }
 
-        // إرسال الإشعارات (إذا وجدت)
+        // إرسال الإشعارات
         for (const notif of notifications) {
             await createNotification(
                 salonId,
@@ -237,7 +245,40 @@ async function deductInventoryForBooking(appointment) {
 
     } catch (error) {
         console.error('❌ فشل خصم المخزون:', error);
-        return []; // نعيد مصفوفة فارغة حتى لا نوقف الحجز
+        return [];
+    }
+}
+// دالة مساعدة لإعادة المخزون عند إلغاء الحجز (اختياري)
+async function restoreInventoryForBooking(appointmentId) {
+    try {
+        const Inventory = require('./models/Inventory');
+        const Appointment = require('./models/Appointment');
+        
+        const appointment = await Appointment.findById(appointmentId);
+        if (!appointment) return;
+
+        const services = appointment.services || [];
+        const serviceIds = services.map(s => s._id || s.id || s.name).filter(Boolean);
+        
+        if (serviceIds.length === 0) return;
+
+        const inventoryItems = await Inventory.find({
+            salonId: appointment.salonId,
+            serviceId: { $in: serviceIds },
+            consumptionPerBooking: { $gt: 0 },
+            isActive: true
+        });
+
+        for (const item of inventoryItems) {
+            const quantityToRestore = item.consumptionPerBooking;
+            item.quantity += quantityToRestore;
+            item.totalConsumed = Math.max(0, (item.totalConsumed || 0) - quantityToRestore);
+            await item.save();
+        }
+
+        console.log(`✅ تم استعادة المخزون للحجز ${appointmentId}`);
+    } catch (error) {
+        console.error('❌ فشل استعادة المخزون:', error);
     }
 }
 
@@ -1634,8 +1675,6 @@ app.post('/api/appointments/request', async (req, res) => {
         });
         await appointment.save();
 
-// ✅ خصم المخزون
-const deductions = await deductInventoryForBooking(appointment);
 
         // 7. إشعار للصالون
         try {
@@ -1690,7 +1729,6 @@ const deductions = await deductInventoryForBooking(appointment);
 res.status(201).json({
     message: '✅ تم إرسال طلب الحجز بنجاح!',
     appointment,
-    inventoryDeductions: deductions,
     couponUpdated: couponId ? true : false
 });
 
@@ -1865,7 +1903,7 @@ app.put('/api/appointments/:id/reschedule', customerAuthMiddleware, async (req, 
 });
 
 // ============================================================
-// إلغاء الحجز (مع اسم الصالون في الإشعار)
+// إلغاء الحجز (مع اسم الصالون في الإشعار + استعادة المخزون)
 // ============================================================
 app.put('/api/appointments/:id/cancel', authMiddleware, async (req, res) => {
     try {
@@ -1878,8 +1916,20 @@ app.put('/api/appointments/:id/cancel', authMiddleware, async (req, res) => {
             return res.status(403).json({ message: '❌ غير مصرح لك بإلغاء هذا الحجز' });
         }
         
+        // تحديث حالة الحجز إلى ملغى
         appointment.status = 'cancelled';
         await appointment.save();
+
+        // ===== ✅ استعادة المخزون عند إلغاء الحجز =====
+        let inventoryRestored = false;
+        try {
+            await restoreInventoryForBooking(req.params.id);
+            inventoryRestored = true;
+            console.log(`✅ تم استعادة المخزون للحجز ${req.params.id}`);
+        } catch (inventoryError) {
+            console.error('❌ فشل استعادة المخزون:', inventoryError);
+            // لا نوقف تنفيذ الطلب، فقط نسجل الخطأ
+        }
 
         // ===== إشعار للعميل بإلغاء الحجز (مع اسم الصالون) =====
         if (appointment.customerId) {
@@ -1902,7 +1952,11 @@ app.put('/api/appointments/:id/cancel', authMiddleware, async (req, res) => {
             }
         }
 
-        res.json({ message: '✅ تم إلغاء الموعد' });
+        res.json({
+            message: '✅ تم إلغاء الموعد',
+            inventoryRestored: inventoryRestored // إعلام العميل بأن المخزون تمت استعادته
+        });
+
     } catch (error) {
         console.error('❌ خطأ في إلغاء الموعد:', error);
         res.status(500).json({ message: '❌ فشل إلغاء الموعد' });
@@ -1912,14 +1966,29 @@ app.put('/api/appointments/:id/cancel', authMiddleware, async (req, res) => {
 // ============================================================
 // إكمال الحجز (مع اسم الصالون في الإشعار)
 // ============================================================
+// ============================================================
+// إكمال الحجز (مع اسم الصالون في الإشعار + خصم المخزون)
+// ============================================================
 app.put('/api/appointments/:id/complete', authMiddleware, async (req, res) => {
     try {
         const appointment = await Appointment.findById(req.params.id);
         if (!appointment) {
             return res.status(404).json({ message: '❌ الحجز غير موجود' });
         }
+
+        // تحديث حالة الحجز إلى مكتمل
         appointment.status = 'completed';
         await appointment.save();
+
+        // ===== ✅ خصم المخزون بعد إكمال الحجز =====
+        let inventoryDeductions = [];
+        try {
+            inventoryDeductions = await deductInventoryForBooking(req.params.id);
+            console.log(`📦 تم خصم ${inventoryDeductions.length} منتج من المخزون`);
+        } catch (inventoryError) {
+            console.error('❌ فشل خصم المخزون:', inventoryError);
+            // لا نوقف تنفيذ الطلب، فقط نسجل الخطأ
+        }
 
         // ===== إشعار للعميل بإكمال الحجز (مع اسم الصالون) =====
         if (appointment.customerId) {
@@ -1942,7 +2011,11 @@ app.put('/api/appointments/:id/complete', authMiddleware, async (req, res) => {
             }
         }
 
-        res.json({ message: '✅ تم إكمال الموعد' });
+        res.json({
+            message: '✅ تم إكمال الموعد',
+            inventoryDeductions: inventoryDeductions // تفاصيل الخصم (اختياري)
+        });
+
     } catch (error) {
         console.error('❌ خطأ في إكمال الموعد:', error);
         res.status(500).json({ message: '❌ فشل إكمال الموعد' });
