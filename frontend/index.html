@@ -3021,15 +3021,7 @@ input, textarea, select {
     <button class="btn-danger btn-sm" onclick="getLowStockItems()"><i class="fas fa-exclamation-triangle"></i> المنتجات المنخفضة</button>
     <div id="inventoryList" style="margin-top:0.5rem;"></div>
 </div>
-<!-- ===== ربط المخزون بالخدمات ===== -->
-<div class="form-group" style="margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 0.8rem;">
-    <h4 style="color: var(--gold);">🔗 ربط المخزون بالخدمات</h4>
-    <p style="font-size: 0.8rem; opacity: 0.6;">اختر الخدمة التي يستهلكها كل منتج</p>
-    
-    <div id="inventoryServiceMapping">
-        <!-- سيتم تعبئته بواسطة JavaScript -->
-    </div>
-</div>
+
 <!-- ===== الكوبونات ===== -->
 <div id="dashCoupons" class="hidden">
     <h3 style="color:var(--gold);margin-bottom:0.6rem;font-size:1rem;"><i class="fas fa-ticket-alt"></i> الكوبونات والخصومات</h3>
@@ -3116,6 +3108,23 @@ input, textarea, select {
             </div>
             <div id="dashSettings" class="hidden">
                 <h3 style="color:var(--gold);margin-bottom:0.6rem;font-size:1rem;"><i class="fas fa-cog"></i> <span data-i18n="settings">الإعدادات</span></h3>
+                <!-- ===== 🔗 ربط المخزون بالخدمات ===== -->
+<div class="form-group" style="margin-top: 1.5rem; border-top: 2px solid var(--border-color); padding-top: 1rem;">
+    <h4 style="color: var(--gold); margin-bottom: 0.5rem;">
+        <i class="fas fa-link"></i> ربط المخزون بالخدمات
+    </h4>
+    <p style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 0.8rem;">
+        اختر الخدمة التي يستهلكها كل منتج، وحدد الكمية المستهلكة في كل حجز
+    </p>
+    
+    <!-- حاوية لعرض المنتجات والخدمات -->
+    <div id="inventoryServiceMapping" style="max-height: 400px; overflow-y: auto; padding: 0.5rem 0;">
+        <div style="text-align: center; padding: 1rem; color: var(--text-color); opacity: 0.5;">
+            <i class="fas fa-spinner fa-spin" style="font-size: 1.5rem; display: block; margin-bottom: 0.5rem;"></i>
+            جاري تحميل المنتجات...
+        </div>
+    </div>
+</div>
                 <form id="settingsForm">
     <div class="form-group">
     <label>📷 معرض الصور (اختر صوراً من جهازك)</label>
