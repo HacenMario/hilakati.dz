@@ -8590,11 +8590,16 @@ function sendContactMessage(e) {
 
     // ✅ إرسال عبر EmailJS مع تمرير المفتاح العمومي كمعامل رابع
    emailjs.sendForm(
-    'service_206xiaz',
-    'template_cac0ccs',
-    '#contactFormMain',
-    'zYIcaJnLsBBaPgfdi'
-)
+         'service_206xiaz',
+        'template_cac0ccs',
+        {
+            from_name: name,      // ✅ يطابق {{from_name}}
+            from_email: email,    // ✅ يطابق {{from_email}}
+            from_phone: phone,    // ✅ يطابق {{from_phone}}
+            message: message      // ✅ يطابق {{message}}
+        },
+        'zYIcaJnLsBBaPgfdi'
+    )
 .then(() => {
     showToast('✅ تم إرسال رسالتك!', 'success');
     document.getElementById('contactFormMain').reset();
