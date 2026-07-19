@@ -6625,6 +6625,9 @@ document.addEventListener('click', function(e) {
     
 // ===== Booking =====
 let bookingSalonId = null;
+// ============================================================
+// ✅ فتح نافذة الحجز (محسّن لتخزين _id مع الخدمات)
+// ============================================================
 async function openBooking(salonId) {
     bookingSalonId = salonId;
     try {
@@ -6632,95 +6635,7 @@ async function openBooking(salonId) {
         const salon = await res.json();
 
         document.getElementById('bookSalonName').value = salon.name;
-// ============================================================
-// معالج نموذج الحجز
-// ============================================================
-document.getElementById('bookingForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    console.log('🟢 محاولة تأكيد الحجز...');
 
-    const salonId = bookingSalonId;
-    const select = document.getElementById('bookService');
-    const selectedOptions = Array.from(select.selectedOptions);
-    const services = selectedOptions.map(opt => ({ name: opt.value, price: parseInt(opt.dataset.price) || 0 }));
-    
-    // ✅ حساب السعر مع الخصم
-    let originalPrice = services.reduce((s, item) => s + item.price, 0);
-    let totalPrice = originalPrice;
-    let discountAmount = 0;
-    let couponId = null;
-    let couponCode = null;
-    
-    if (appliedCoupon) {
-        if (appliedCoupon.type === 'percentage') {
-            discountAmount = (originalPrice * appliedCoupon.value) / 100;
-            if (appliedCoupon.maxDiscount > 0) {
-                discountAmount = Math.min(discountAmount, appliedCoupon.maxDiscount);
-            }
-        } else {
-            discountAmount = appliedCoupon.value;
-        }
-        discountAmount = Math.round(discountAmount);
-        totalPrice = Math.max(0, originalPrice - discountAmount);
-        couponId = appliedCoupon._id;
-        couponCode = appliedCoupon.code;
-    }
-    
-    const staff = document.getElementById('bookStaff').value;
-    const date = document.getElementById('bookDate').value;
-    const time = document.getElementById('bookTime').value;
-    const clientName = document.getElementById('bookClientName').value.trim();
-    const clientPhone = document.getElementById('bookClientPhone').value.trim();
-    const clientEmail = document.getElementById('bookClientEmail').value.trim();
-    const payment = document.getElementById('bookPayment').value;
-    const notes = document.getElementById('bookNotes').value.trim();
-    const recurring = document.getElementById('bookRecurring').value;
-    const customerId = localStorage.getItem('customerId') || null;
-
-    if (!services.length || !staff || !date || !time || !clientName || !clientPhone) {
-        showToast('❌ الرجاء اختيار خدمة وملء جميع الحقول المطلوبة', 'error');
-        return;
-    }
-
-    try {
-        const res = await fetch(`${API_BASE}/appointments/request`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                salonId, customerId, clientName, clientPhone, clientEmail,
-                services, 
-                totalPrice,        // ✅ السعر بعد الخصم
-                originalPrice,     // ✅ السعر الأصلي
-                discountAmount,    // ✅ قيمة الخصم
-                couponId,          // ✅ معرف الكوبون المطبق
-                couponCode,        // ✅ كود الكوبون
-                staff, date, time, payment, notes, recurring
-            })
-        });
-        const data = await res.json();
-        console.log('📨 رد الخادم:', data);
-
-        if (res.ok) {
-            showToast('✅ تم إرسال طلب الحجز بنجاح!', 'success');
-            closeModal('bookingModal');
-            document.getElementById('bookingForm').reset();
-            document.getElementById('bookTotalPrice').value = '';
-            document.getElementById('discountDisplay').style.display = 'none';
-            document.getElementById('finalPriceDisplay').style.display = 'none';
-            document.getElementById('removeCouponBtn').style.display = 'none';
-            document.getElementById('couponFeedback').innerHTML = '';
-            appliedCoupon = null;
-            refreshNotifications();
-            if (localStorage.getItem('token')) loadDashboard();
-        } else {
-            showToast(`❌ ${data.message || 'فشل الحجز'}`, 'error');
-        }
-    } catch (error) {
-        console.error('❌ خطأ في الحجز:', error);
-        showToast('❌ فشل الاتصال بالخادم', 'error');
-    }
-});
-   
         // ============================================================
         // جلب بيانات العميل إذا كان مسجلاً
         // ============================================================
@@ -6746,15 +6661,25 @@ document.getElementById('bookingForm').addEventListener('submit', async (e) => {
         if (!salon.staff?.length) staffSelect.innerHTML += '<option value="موظف رئيسي">موظف رئيسي</option>';
 
         // ============================================================
-        // تعبئة الخدمات (مع التأكد من تشغيل updateTotalPrice)
+        // تعبئة الخدمات (مع تخزين _id في data-id)
         // ============================================================
         const serviceSelect = document.getElementById('bookService');
         serviceSelect.innerHTML = '';
         (salon.services || []).forEach(s => {
-            serviceSelect.innerHTML += `<option value="${s.name}" data-price="${s.price}">${s.name} - ${s.price} دج</option>`;
+            // ✅ تخزين _id في data-id (مهم للربط بالمخزون)
+            const serviceId = s._id || s.id || '';
+            serviceSelect.innerHTML += `
+                <option value="${s.name}" data-id="${serviceId}" data-price="${s.price}">
+                    ${s.name} - ${s.price} دج
+                </option>
+            `;
         });
         if (!salon.services?.length) {
-            serviceSelect.innerHTML += '<option value="حلاقة رجالي" data-price="500">حلاقة رجالي - 500 دج</option>';
+            serviceSelect.innerHTML += `
+                <option value="حلاقة رجالي" data-id="" data-price="500">
+                    حلاقة رجالي - 500 دج
+                </option>
+            `;
         }
         // إعادة تعيين السعر الإجمالي
         document.getElementById('bookTotalPrice').value = '';
@@ -6765,47 +6690,36 @@ document.getElementById('bookingForm').addEventListener('submit', async (e) => {
         const timeSelect = document.getElementById('bookTime');
         timeSelect.innerHTML = '<option value="">اختر الوقت</option>';
 
-        // الحصول على اليوم الحالي واسم اليوم
         const today = new Date();
         const dayNames = ['الأحد', 'الإثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت'];
         const dayName = dayNames[today.getDay()];
-
-        // جلب ساعات العمل لهذا اليوم
         const dayHours = salon.hours ? salon.hours[dayName] : null;
 
         if (dayHours && dayHours !== 'مغلق' && dayHours !== 'closed') {
             const [openTime, closeTime] = dayHours.split('-').map(t => t.trim());
-            
-            // تحويل الأوقات إلى دقائق لتسهيل المقارنة
             const openMinutes = timeToMinutes(openTime);
             const closeMinutes = timeToMinutes(closeTime);
             const now = new Date();
             const todayStr = now.toISOString().split('T')[0];
             const selectedDateStr = document.getElementById('bookDate').value;
 
-            // توليد الأوقات بفواصل 30 دقيقة
             for (let minutes = openMinutes; minutes <= closeMinutes; minutes += 30) {
                 const hours = String(Math.floor(minutes / 60)).padStart(2, '0');
                 const mins = String(minutes % 60).padStart(2, '0');
                 const timeStr = `${hours}:${mins}`;
-                
-                // التحقق من أن الوقت ليس في الماضي (إذا كان اليوم هو اليوم)
                 let includeTime = true;
                 if (selectedDateStr === todayStr) {
                     const [h, m] = timeStr.split(':').map(Number);
                     const selectedDateTime = new Date();
                     selectedDateTime.setHours(h, m, 0, 0);
                     const minBookingTime = new Date(now.getTime() + 30 * 60 * 1000);
-                    if (selectedDateTime < minBookingTime) {
-                        includeTime = false;
-                    }
+                    if (selectedDateTime < minBookingTime) includeTime = false;
                 }
                 if (includeTime) {
                     timeSelect.innerHTML += `<option value="${timeStr}">${timeStr}</option>`;
                 }
             }
         } else {
-            // إذا لم توجد ساعات عمل، عرض الأوقات الافتراضية مع مراعاة الوقت الحالي
             const defaultTimes = ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00'];
             const now = new Date();
             const todayStr = now.toISOString().split('T')[0];
@@ -6817,16 +6731,13 @@ document.getElementById('bookingForm').addEventListener('submit', async (e) => {
                 const selectedDateTime = new Date();
                 selectedDateTime.setHours(hours, minutes, 0, 0);
                 let includeTime = true;
-                if (selectedDateStr === todayStr && selectedDateTime < minBookingTime) {
-                    includeTime = false;
-                }
+                if (selectedDateStr === todayStr && selectedDateTime < minBookingTime) includeTime = false;
                 if (includeTime) {
                     timeSelect.innerHTML += `<option value="${time}">${time}</option>`;
                 }
             });
         }
 
-        // إذا لم تظهر أي أوقات، أضف رسالة
         if (timeSelect.options.length <= 1) {
             timeSelect.innerHTML = '<option value="">لا توجد أوقات متاحة اليوم</option>';
         }
@@ -6837,6 +6748,11 @@ document.getElementById('bookingForm').addEventListener('submit', async (e) => {
         const todayDate = new Date().toISOString().split('T')[0];
         document.getElementById('bookDate').setAttribute('min', todayDate);
         document.getElementById('bookDate').value = todayDate;
+
+        // ✅ تحديث السعر عند تغيير الخدمات (ربط الدالة)
+        serviceSelect.onchange = function() {
+            updateTotalPrice();
+        };
 
         // فتح النافذة
         openModal('bookingModal');
