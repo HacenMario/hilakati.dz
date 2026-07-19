@@ -70,6 +70,69 @@
                 autoDisplay: false
             }, 'google_translate_element');
         }
+
+    // ============================================================
+// ✅ إزالة banner Google Translate بعد اختيار اللغة
+// ============================================================
+
+// دالة لإزالة البanner
+function removeGoogleBanner() {
+    setTimeout(function() {
+        // إخفاء البanner
+        var banner = document.querySelector('.goog-te-banner-frame');
+        if (banner) {
+            banner.style.display = 'none';
+            banner.style.visibility = 'hidden';
+            banner.style.height = '0';
+            banner.style.maxHeight = '0';
+            banner.style.overflow = 'hidden';
+        }
+        
+        // إصلاح المسافة العلوية
+        document.body.style.top = '0';
+        document.body.style.position = 'relative';
+        
+        // إعادة تعيين أي تأثير للهيدر
+        var header = document.getElementById('mainHeader');
+        if (header) {
+            header.style.top = '0';
+            header.style.position = 'sticky';
+        }
+    }, 500);
+}
+
+// مراقبة تغيير اللغة (عند اختيار لغة جديدة)
+function watchLanguageChange() {
+    // مراقبة النقر على عناصر القائمة
+    document.addEventListener('click', function(e) {
+        var target = e.target;
+        // إذا تم النقر على خيار لغة في القائمة المنسدلة
+        if (target.closest && target.closest('.goog-te-menu2-item') || 
+            target.closest && target.closest('.goog-te-gadget-simple')) {
+            setTimeout(removeGoogleBanner, 600);
+        }
+    });
+}
+
+// تشغيل عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', function() {
+    // إزالة البanner بعد 1 ثانية من التحميل
+    setTimeout(removeGoogleBanner, 1000);
+    
+    // بدء مراقبة تغيير اللغة
+    watchLanguageChange();
+});
+
+// مراقبة عند تغيير اللغة عبر Google Translate (حدث مخصص)
+// هذا يستمع للتغييرات التي قد لا تلتقطها مراقبة النقر
+setInterval(function() {
+    // التحقق كل 2 ثانية إذا ظهر البanner وأزالته
+    var banner = document.querySelector('.goog-te-banner-frame');
+    if (banner && banner.style.display !== 'none') {
+        removeGoogleBanner();
+    }
+}, 2000);
+        
     </script>
     <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit">
     </script>
@@ -2311,6 +2374,67 @@ input, textarea, select {
 /* منع إزاحة الصفحة عند الترجمة */
 body {
     top: 0px !important;
+}
+
+/* ===== إخفاء banner Google Translate ===== */
+.goog-te-banner-frame {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    height: 0 !important;
+    max-height: 0 !important;
+    overflow: hidden !important;
+}
+
+/* إصلاح المساحة الفارغة بعد إخفاء البanner */
+body {
+    top: 0 !important;
+    position: relative !important;
+}
+
+/* إخفاء الإطار العلوي */
+#goog-gt-tt {
+    display: none !important;
+}
+
+/* إخفاء رسالة "Traduit en : ..." */
+.goog-te-gadget-simple .goog-te-menu-value span:first-child {
+    display: none !important;
+}
+
+/* تخصيص مظهر الزر بشكل أنيق */
+.goog-te-gadget-simple {
+    background: var(--input-bg) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 50px !important;
+    padding: 4px 12px !important;
+    font-size: 0.75rem !important;
+    transition: all 0.3s ease !important;
+    cursor: pointer !important;
+}
+
+.goog-te-gadget-simple:hover {
+    background: var(--gold) !important;
+    border-color: var(--gold) !important;
+    color: var(--dark) !important;
+}
+
+/* تحسين عرض القائمة المنسدلة */
+.goog-te-menu2 {
+    max-width: 200px !important;
+    border-radius: 8px !important;
+    background: var(--card-bg) !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+.goog-te-menu2-item {
+    padding: 4px 8px !important;
+    font-size: 0.8rem !important;
+}
+
+.goog-te-menu2-item:hover {
+    background: var(--gold) !important;
+    color: var(--dark) !important;
 }
         
     </style>
