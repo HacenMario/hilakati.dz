@@ -428,6 +428,7 @@ app.use('/api/staff', authMiddleware, staffRoutes);
 app.use('/api/inventory', authMiddleware, inventoryRoutes);
 app.use('/api/coupons', authMiddleware, couponRoutes);
 app.use('/api/quotes', quoteRoutes);
+app.use('/api/inventory', authMiddleware, inventoryRoutes);
 
 // ============================================================
 // مسارات المصادقة (صالون)
@@ -1095,79 +1096,6 @@ app.get('/api/admin/appointments', adminAuthMiddleware, async (req, res) => {
     } catch (error) {
         console.error('❌ خطأ في admin/appointments:', error);
         res.status(500).json({ message: 'فشل في جلب الحجوزات' });
-    }
-});
-
-// ============================================================
-// ✅ خصم المخزون تلقائياً عند إنشاء حجز
-// ============================================================
-async function deductInventoryForBooking(appointment) {
-    try {
-        const Inventory = require('./models/Inventory');
-        const salonId = appointment.salonId;
-        const services = appointment.services || [];
-        
-        let deductions = [];
-        
-        // جلب جميع منتجات المخزون المرتبطة بالخدمات
-        const inventoryItems = await Inventory.find({
-            salonId: salonId,
-            serviceId: { $in: services.map(s => s._id || s.id) },
-            consumptionPerBooking: { $gt: 0 }
-        });
-        
-        for (const item of inventoryItems) {
-            const quantityNeeded = item.consumptionPerBooking;
-            
-            // التحقق من كفاية المخزون
-            if (item.quantity < quantityNeeded) {
-                console.warn(`⚠️ المخزون غير كافٍ للمنتج ${item.name}: الموجود ${item.quantity}، المطلوب ${quantityNeeded}`);
-                continue;
-            }
-            
-            // خصم الكمية
-            item.quantity -= quantityNeeded;
-            item.totalConsumed += quantityNeeded;
-            await item.save();
-            
-            deductions.push({
-                productName: item.name,
-                quantity: quantityNeeded,
-                remaining: item.quantity
-            });
-            
-            // ✅ تنبيه إذا أصبح المخزون منخفضاً
-            if (item.quantity <= item.minQuantity) {
-                await createNotification(
-                    salonId,
-                    'salon',
-                    '⚠️ مخزون منخفض',
-                    `المنتج "${item.name}" أصبح منخفضاً (${item.quantity} ${item.unit} متبقية)`
-                );
-            }
-        }
-        
-        return deductions;
-    } catch (error) {
-        console.error('❌ فشل خصم المخزون:', error);
-        return [];
-    }
-}
-
-// ===== إعادة تعبئة المخزون =====
-router.put('/:id/restock', auth, async (req, res) => {
-    try {
-        const { quantity } = req.body;
-        const item = await Inventory.findOne({ _id: req.params.id, salonId: req.userId });
-        if (!item) return res.status(404).json({ message: 'المنتج غير موجود' });
-        
-        item.quantity += quantity;
-        item.lastRestocked = new Date();
-        await item.save();
-        
-        res.json(item);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
     }
 });
 
