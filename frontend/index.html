@@ -8563,7 +8563,7 @@ function sendContactMessage(e) {
     // قراءة القيم مع التحقق من وجود العناصر
     const nameInput = document.getElementById('contactName');
     const emailInput = document.getElementById('contactEmail');
-    const phoneInput = document.getElementById('contactPhone'); // ✅ جديد
+    const phoneInput = document.getElementById('contactPhone');
     const messageInput = document.getElementById('contactMessage');
 
     // ✅ التحقق من وجود العناصر
@@ -8575,7 +8575,7 @@ function sendContactMessage(e) {
 
     const name = nameInput.value.trim();
     const email = emailInput.value.trim();
-    const phone = phoneInput.value.trim(); // ✅ جديد
+    const phone = phoneInput.value.trim();
     const message = messageInput.value.trim();
 
     console.log('📝 القيم المقروءة:', { name, email, phone, message });
@@ -8588,16 +8588,17 @@ function sendContactMessage(e) {
     // ✅ إظهار رسالة انتظار
     showToast('⏳ جاري إرسال رسالتك...', 'info');
 
-    // ✅ إرسال عبر EmailJS
+    // ✅ إرسال عبر EmailJS مع تمرير المفتاح العمومي كمعامل رابع
     emailjs.send(
         'service_206xiaz',                 // Service ID
-        'template_cac0ccs',                // ⚠️ استبدل بـ Template ID
+        'template_cac0ccs',                // Template ID
         {
             from_name: name,
             from_email: email,
-            from_phone: phone,             // ✅ جديد
+            from_phone: phone,
             message: message
-        }
+        },
+        'zYIcaJnLsBBaPgfdi'                // ✅ Public Key (يُضاف كمعامل رابع)
     )
     .then(() => {
         showToast('✅ تم إرسال رسالتك! سنتواصل معك قريباً', 'success');
