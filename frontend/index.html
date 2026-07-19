@@ -8589,28 +8589,20 @@ function sendContactMessage(e) {
     showToast('⏳ جاري إرسال رسالتك...', 'info');
 
     // ✅ إرسال عبر EmailJS مع تمرير المفتاح العمومي كمعامل رابع
-    emailjs.send(
-        'service_206xiaz',                 // Service ID
-        'template_cac0ccs',                // Template ID
-        {
-            from_name: name,
-            from_email: email,
-            from_phone: phone,
-            message: message
-        },
-        'zYIcaJnLsBBaPgfdi'                // ✅ Public Key (يُضاف كمعامل رابع)
-    )
-    .then(() => {
-        showToast('✅ تم إرسال رسالتك! سنتواصل معك قريباً', 'success');
-        const form = document.getElementById('contactFormMain');
-        if (form) form.reset();
-        navigateTo('home');
-    })
-    .catch((error) => {
-        console.error('❌ فشل الإرسال:', error);
-        showToast('❌ فشل الإرسال، حاول مرة أخرى', 'error');
-    });
-}
+   emailjs.sendForm(
+    'service_206xiaz',
+    'template_cac0ccs',
+    '#contactFormMain',
+    'zYIcaJnLsBBaPgfdi'
+)
+.then(() => {
+    showToast('✅ تم إرسال رسالتك!', 'success');
+    document.getElementById('contactFormMain').reset();
+})
+.catch((error) => {
+    console.error('❌ فشل الإرسال:', error);
+    showToast('❌ فشل الإرسال، حاول مرة أخرى', 'error');
+});
 
 init();
 
