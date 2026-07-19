@@ -6931,7 +6931,7 @@ async function loadDashboard() {
         }
 
 // ===== تحديث ربط المنتج بخدمة =====
-async function updateInventoryService(itemId, serviceId) {
+async function updateInventoryService(itemId, serviceId, serviceName) {
     const token = localStorage.getItem('token');
     try {
         const res = await fetch(`${API_BASE}/inventory/${itemId}/service`, {
@@ -6940,7 +6940,10 @@ async function updateInventoryService(itemId, serviceId) {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({ serviceId })
+            body: JSON.stringify({ 
+                serviceId: serviceId || null,
+                serviceName: serviceName || '' 
+            })
         });
         if (res.ok) {
             showToast('✅ تم تحديث الربط', 'success');
