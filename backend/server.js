@@ -14,6 +14,46 @@ const app = express();
 const server = http.createServer(app);
 
 // ============================================================
+// ✅ إرسال إشعار عبر OneSignal
+// ============================================================
+const ONESIGNAL_APP_ID = process.env.ONESIGNAL_APP_ID;
+const ONESIGNAL_API_KEY = process.env.ONESIGNAL_API_KEY;
+
+async function sendOneSignalNotification(userId, title, message, data = {}, userType = 'customer') {
+    try {
+        if (!ONESIGNAL_APP_ID || !ONESIGNAL_API_KEY) {
+            console.warn('⚠️ OneSignal غير مهيأ (مفاتيح ناقصة)');
+            return;
+        }
+        const response = await fetch('https://onesignal.com/api/v1/notifications', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Basic ${ONESIGNAL_API_KEY}`
+            },
+            body: JSON.stringify({
+                app_id: ONESIGNAL_APP_ID,
+                include_aliases: {
+                    external_id: [userId.toString()]
+                },
+                target_channel: "push",
+                headings: { en: title, ar: title },
+                contents: { en: message, ar: message },
+                data: data,
+                web_buttons: [
+                    { id: "view", text: "📋 عرض", icon: "" }
+                ]
+            })
+        });
+        const result = await response.json();
+        console.log(`✅ إشعار OneSignal أرسل إلى ${userType} (${userId})`, result);
+        return result;
+    } catch (error) {
+        console.error('❌ فشل إرسال إشعار OneSignal:', error);
+    }
+}
+
+// ============================================================
 // Socket.io
 // ============================================================
 const io = socketIo(server, {
