@@ -87,4 +87,66 @@ router.get('/report/:salonId', auth, async (req, res) => {
     }
 });
 
+// ===== تحديث ربط المنتج بخدمة =====
+router.put('/:id/service', auth, async (req, res) => {
+    try {
+        const { serviceId } = req.body;
+        const item = await Inventory.findOneAndUpdate(
+            { _id: req.params.id, salonId: req.userId },
+            { serviceId },
+            { new: true }
+        );
+        if (!item) return res.status(404).json({ message: 'المنتج غير موجود' });
+        res.json(item);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// ===== تحديث كمية الاستهلاك لكل حجز =====
+router.put('/:id/consumption', auth, async (req, res) => {
+    try {
+        const { consumptionPerBooking } = req.body;
+        const item = await Inventory.findOneAndUpdate(
+            { _id: req.params.id, salonId: req.userId },
+            { consumptionPerBooking },
+            { new: true }
+        );
+        if (!item) return res.status(404).json({ message: 'المنتج غير موجود' });
+        res.json(item);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// ===== تقرير استهلاك المخزون =====
+router.get('/report/:salonId', auth, async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+        const query = { salonId: req.params.salonId };
+        
+        if (startDate && endDate) {
+            query.updatedAt = {
+                $gte: new Date(startDate),
+                $lte: new Date(endDate)
+            };
+        }
+        
+        const items = await Inventory.find(query);
+        const report = items.map(item => ({
+            name: item.name,
+            category: item.category,
+            initialQuantity: item.quantity + item.totalConsumed,
+            consumed: item.totalConsumed,
+            currentQuantity: item.quantity,
+            consumptionPerBooking: item.consumptionPerBooking,
+            serviceId: item.serviceId
+        }));
+        
+        res.json(report);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
 module.exports = router;
