@@ -57,117 +57,9 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="/icons/icon-192.png?v=1">
-
-<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-<script>
-  window.OneSignalDeferred = window.OneSignalDeferred || [];
-  OneSignalDeferred.push(async function(OneSignal) {
-    await OneSignal.init({
-      appId: "28130865-8d08-4f19-b8ef-24af170d41af",
-      serviceWorkerParam: { scope: '/frontend/' },
-      serviceWorkerPath: 'frontend/OneSignalSDKWorker.js'
-    });
-  });
-</script>
-
-    <!-- ============================================================
-    ✅ Google Translate Widget (يجب أن يكون هنا)
-    ============================================================ -->
-    <script type="text/javascript">
-        function googleTranslateElementInit() {
-            new google.translate.TranslateElement({
-                pageLanguage: 'ar',
-                includedLanguages: 'ar,en,fr,es,tr,ru',
-                layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
-                autoDisplay: false
-            }, 'google_translate_element');
-        }
-
-    // ============================================================
-// ✅ إزالة banner Google Translate بعد اختيار اللغة
-// ============================================================
-
-// دالة لإزالة البanner
-function removeGoogleBanner() {
-    setTimeout(function() {
-        // إخفاء البanner
-        var banner = document.querySelector('.goog-te-banner-frame');
-        if (banner) {
-            banner.style.display = 'none';
-            banner.style.visibility = 'hidden';
-            banner.style.height = '0';
-            banner.style.maxHeight = '0';
-            banner.style.overflow = 'hidden';
-        }
-        
-        // إصلاح المسافة العلوية
-        document.body.style.top = '0';
-        document.body.style.position = 'relative';
-        
-        // إعادة تعيين أي تأثير للهيدر
-        var header = document.getElementById('mainHeader');
-        if (header) {
-            header.style.top = '0';
-            header.style.position = 'sticky';
-        }
-    }, 500);
-}
-
-// مراقبة تغيير اللغة (عند اختيار لغة جديدة)
-function watchLanguageChange() {
-    // مراقبة النقر على عناصر القائمة
-    document.addEventListener('click', function(e) {
-        var target = e.target;
-        // إذا تم النقر على خيار لغة في القائمة المنسدلة
-        if (target.closest && target.closest('.goog-te-menu2-item') || 
-            target.closest && target.closest('.goog-te-gadget-simple')) {
-            setTimeout(removeGoogleBanner, 600);
-        }
-    });
-}
-
-// تشغيل عند تحميل الصفحة
-document.addEventListener('DOMContentLoaded', function() {
-    // إزالة البanner بعد 1 ثانية من التحميل
-    setTimeout(removeGoogleBanner, 1000);
-    
-    // بدء مراقبة تغيير اللغة
-    watchLanguageChange();
-});
-
-// مراقبة عند تغيير اللغة عبر Google Translate (حدث مخصص)
-// هذا يستمع للتغييرات التي قد لا تلتقطها مراقبة النقر
-setInterval(function() {
-    // التحقق كل 2 ثانية إذا ظهر البanner وأزالته
-    var banner = document.querySelector('.goog-te-banner-frame');
-    if (banner && banner.style.display !== 'none') {
-        removeGoogleBanner();
-    }
-}, 2000);
-        
-    </script>
-    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit">
-    </script>
+</head>
     
     <style>
-
-/* تخصيص مظهر Google Translate Widget */
-.goog-te-gadget-simple {
-    background-color: transparent !important;
-    border: 1px solid var(--border-color) !important;
-    border-radius: 50px !important;
-    padding: 4px 8px !important;
-    font-family: 'Tajawal', sans-serif !important;
-    font-size: 0.75rem !important;
-    color: var(--text-color) !important;
-}
-.goog-te-gadget-simple .goog-te-menu-value {
-    color: var(--text-color) !important;
-}
-.goog-te-gadget-simple .goog-te-menu-value span {
-    color: var(--text-color) !important;
-}
-        
 /* ===== إصلاح نافذة تعديل الكوبون ===== */
 #editCouponModal {
     display: none !important;
@@ -325,12 +217,6 @@ setInterval(function() {
     --header-shadow: 0 4px 30px rgba(0,0,0,0.3);
     --stat-bg: rgba(255,255,255,0.03);
     --skeleton: rgba(255,255,255,0.05);
-
-    /* ===== إضافات متقدمة ===== */
-    --gradient-main: linear-gradient(135deg, #6C5CE7, #a29bfe);
-    --shadow-elevated: 0 20px 60px rgba(108, 92, 231, 0.3);
-    --border-radius-xl: 24px;
-    --transition-smooth: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 [data-theme="light"] {
@@ -606,34 +492,6 @@ input, select, textarea {
     font-size: 0.75rem;
 }
 
-/* ===== زر تبديل اللغة المتقدم ===== */
-.lang-switch-btn {
-    background: rgba(255,255,255,0.08);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 50px;
-    padding: 0.3rem 1rem;
-    color: var(--text-color);
-    transition: var(--transition-smooth);
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 0.75rem;
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
-}
-
-.lang-switch-btn:hover {
-    background: var(--gradient-main);
-    color: #fff;
-    border-color: transparent;
-    transform: scale(1.05);
-}
-
-.lang-switch-btn span {
-    display: inline-block;
-}
-
 /* ========== Notifications ========== */
 .notif-bell {
     position: relative;
@@ -783,15 +641,14 @@ input, select, textarea {
 
 .salon-card {
     background: var(--card-bg);
-    border-radius: var(--border-radius-xl);
+    border-radius: var(--radius);
     overflow: hidden;
-    border: 1px solid rgba(255,255,255,0.06);
-    transition: var(--transition-smooth);
+    border: 1px solid var(--border-color);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
     cursor: pointer;
     box-shadow: var(--shadow);
     animation: cardAppear 0.6s ease both;
     position: relative;
-    backdrop-filter: blur(4px);
 }
 
 .salon-card:active {
@@ -804,14 +661,14 @@ input, select, textarea {
 }
 
 .salon-card:hover {
-    transform: translateY(-10px) scale(1.01);
-    border-color: var(--primary);
-    box-shadow: var(--shadow-elevated);
+    transform: translateY(-4px);
+    border-color: var(--gold);
+    box-shadow: var(--shadow-hover);
 }
 
 .salon-card .cover {
     height: 140px;
-    background: var(--gradient-main);
+    background: linear-gradient(135deg, var(--secondary), var(--primary));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -820,21 +677,19 @@ input, select, textarea {
     overflow: hidden;
 }
 
-.salon-card .cover::after {
+.salon-card .cover::before {
     content: '';
     position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-    opacity: 0;
-    transition: var(--transition-smooth);
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(45deg, transparent, rgba(245,176,66,0.1), transparent);
+    transition: var(--transition);
 }
 
-.salon-card:hover .cover::after {
-    opacity: 1;
-    transform: scale(1.2);
+.salon-card:hover .cover::before {
+    background: linear-gradient(45deg, transparent, rgba(245,176,66,0.2), transparent);
 }
 
 .salon-card .cover img {
@@ -975,19 +830,18 @@ input, select, textarea {
     width: 100%;
     padding: 0.4rem;
     border-radius: 12px;
-    background: var(--gradient-main);
-    color: #fff;
+    background: linear-gradient(135deg, var(--gold), #e67e22);
+    color: var(--dark);
     font-weight: 700;
     font-size: 0.85rem;
-    transition: var(--transition-smooth);
+    transition: var(--transition);
     margin-top: 0.2rem;
-    box-shadow: 0 4px 15px rgba(108, 92, 231, 0.3);
-    border: none;
+    box-shadow: 0 4px 12px rgba(245,176,66,0.2);
 }
 
 .salon-card .body .btn-book:hover {
-    transform: scale(1.05) translateY(-2px);
-    box-shadow: 0 8px 30px rgba(108, 92, 231, 0.5);
+    transform: scale(1.04);
+    box-shadow: 0 6px 20px rgba(245,176,66,0.4);
 }
 
 /* ========== Dashboard ========== */
@@ -2336,119 +2190,6 @@ input, textarea, select {
         min-height: auto !important;
     }
 }
-
-/* ===== تخصيص Google Translate Widget ===== */
-#google_translate_element {
-    display: inline-block;
-    vertical-align: middle;
-    margin: 0 0.3rem;
-}
-
-.goog-te-gadget-simple {
-    background: transparent !important;
-    border: 1px solid var(--border-color) !important;
-    border-radius: 50px !important;
-    padding: 0.2rem 0.6rem !important;
-    font-family: 'Tajawal', sans-serif !important;
-    font-size: 0.75rem !important;
-    color: var(--text-color) !important;
-    transition: all 0.3s ease !important;
-}
-
-.goog-te-gadget-simple:hover {
-    background: var(--gold) !important;
-    color: var(--dark) !important;
-    border-color: var(--gold) !important;
-}
-
-.goog-te-gadget-simple .goog-te-menu-value {
-    color: var(--text-color) !important;
-    font-size: 0.75rem !important;
-}
-
-.goog-te-gadget-simple:hover .goog-te-menu-value {
-    color: var(--dark) !important;
-}
-
-.goog-te-gadget-simple .goog-te-menu-value span {
-    color: var(--text-color) !important;
-}
-
-.goog-te-gadget-simple:hover .goog-te-menu-value span {
-    color: var(--dark) !important;
-}
-
-/* إخفاء شريط الإعلانات المزعج (اختياري) */
-.goog-te-banner-frame {
-    display: none !important;
-}
-
-/* منع إزاحة الصفحة عند الترجمة */
-body {
-    top: 0px !important;
-}
-
-/* ===== إخفاء banner Google Translate ===== */
-.goog-te-banner-frame {
-    display: none !important;
-    visibility: hidden !important;
-    opacity: 0 !important;
-    height: 0 !important;
-    max-height: 0 !important;
-    overflow: hidden !important;
-}
-
-/* إصلاح المساحة الفارغة بعد إخفاء البanner */
-body {
-    top: 0 !important;
-    position: relative !important;
-}
-
-/* إخفاء الإطار العلوي */
-#goog-gt-tt {
-    display: none !important;
-}
-
-/* إخفاء رسالة "Traduit en : ..." */
-.goog-te-gadget-simple .goog-te-menu-value span:first-child {
-    display: none !important;
-}
-
-/* تخصيص مظهر الزر بشكل أنيق */
-.goog-te-gadget-simple {
-    background: var(--input-bg) !important;
-    border: 1px solid var(--border-color) !important;
-    border-radius: 50px !important;
-    padding: 4px 12px !important;
-    font-size: 0.75rem !important;
-    transition: all 0.3s ease !important;
-    cursor: pointer !important;
-}
-
-.goog-te-gadget-simple:hover {
-    background: var(--gold) !important;
-    border-color: var(--gold) !important;
-    color: var(--dark) !important;
-}
-
-/* تحسين عرض القائمة المنسدلة */
-.goog-te-menu2 {
-    max-width: 200px !important;
-    border-radius: 8px !important;
-    background: var(--card-bg) !important;
-    border: 1px solid var(--border-color) !important;
-}
-
-.goog-te-menu2-item {
-    padding: 4px 8px !important;
-    font-size: 0.8rem !important;
-}
-
-.goog-te-menu2-item:hover {
-    background: var(--gold) !important;
-    color: var(--dark) !important;
-}
-        
     </style>
 </head>
 <body>
@@ -2481,8 +2222,8 @@ body {
     <nav class="nav-links">
         <a href="#" class="active" onclick="navigateTo('home')" data-page="home" data-i18n="home">الرئيسية</a>
         <a href="#" onclick="navigateTo('salons')" data-page="salons" data-i18n="salons">الصالونات</a>
-        <a href="#" onclick="navigateTo('about')" data-page="about" data-i18n="about">من نحن</a>
-        <a href="#" onclick="navigateTo('contact')" data-page="contact" data-i18n="contact">اتصل بنا</a>
+        <a href="#" onclick="navigateTo('about')" data-page="about">من نحن</a>
+        <a href="#" onclick="navigateTo('contact')" data-page="contact">اتصل بنا</a>
         <a href="#" onclick="navigateTo('dashboard')" data-page="dashboard" id="dashNavLink" style="display:none;" data-i18n="dashboard">لوحة التحكم</a>
         <a href="#" onclick="navigateTo('admin')" data-page="admin" id="adminNavLink" style="display:none;" data-i18n="admin">لوحة Admin</a>
         <a href="#" onclick="navigateTo('customer-dashboard')" data-page="customer-dashboard" id="customerDashLink" style="display:none;" data-i18n="myAccount">حسابي</a>
@@ -2493,9 +2234,6 @@ body {
         <span id="customerNameDisplay" style="display:none;color:var(--gold);font-weight:500;font-size:0.7rem;"></span>
         <!-- ✅ زر تثبيت PWA (دائم) -->
         <button class="btn-gold btn-sm" onclick="installPWA()" id="pwaInstallBtn" style="display:inline-block;"><i class="fas fa-download"></i> تثبيت التطبيق</button>
-
-       <!-- زر ترجمة جوجل -->
-       <div id="google_translate_element" style="display:inline-block; margin-right: 0.5rem;"></div>
         
         <!-- ===== زر الإشعارات ===== -->
         <div class="notif-bell" id="notifBell" style="position:relative;display:inline-block;cursor:pointer;margin-left:0.5rem;">
@@ -2522,15 +2260,10 @@ body {
 
         <!-- ===== أزرار التحكم ===== -->
         <button class="btn-outline btn-sm" onclick="toggleTheme()" id="themeToggle"><i class="fas fa-moon"></i></button>
-        
-        <!-- ===== زر تبديل اللغة المتقدم ===== -->
-        <button class="lang-switch-btn" onclick="toggleLang()" id="langToggle">
-            <span id="langFlag">🇸🇦</span>
-            <span id="langName">العربية</span>
-        </button>
+        <button class="btn-outline btn-sm" onclick="toggleLang()" id="langToggle">🇫🇷 FR</button>
 
         <!-- ===== أزرار الأدوار ===== -->
-        <div class="role-buttons" style="display:flex;flex-wrap:wrap;gap:0.3rem;align-items:center;">
+<div class="role-buttons" style="display:flex;flex-wrap:wrap;gap:0.3rem;align-items:center;">
 
     <!-- ===== قسم العميل ===== -->
     <div style="display:flex;align-items:center;gap:0.2rem;background:rgba(255,255,255,0.05);padding:0.2rem 0.5rem;border-radius:50px;border:1px solid var(--border-color);">
@@ -2609,7 +2342,9 @@ body {
 <div class="modal-overlay" id="galleryModal">
     <div class="modal-box" style="max-width:650px;">
         <button class="modal-close" onclick="closeModal('galleryModal')">&times;</button>
-        <h2 style="color:var(--gold);text-align:center;margin-bottom:0.5rem;" data-i18n="gallery"><i class="fas fa-images"></i> معرض الأعمال</h2>
+        <h2 style="color:var(--gold);text-align:center;margin-bottom:0.5rem;">
+            <i class="fas fa-images"></i> معرض الأعمال
+        </h2>
         <!-- الصورة الرئيسية -->
         <div style="position:relative;margin-bottom:0.5rem;">
             <img id="galleryImage" src="" alt="صورة المعرض" 
@@ -3105,7 +2840,7 @@ body {
 <!-- الرئيسية -->
 <section class="section" id="page-home">
     <div style="text-align:center;padding:0.8rem 0;">
-        <h1 class="section-title">أفضل <span class="highlight" data-i18n="bestSalons">صالونات الحلاقة والتجميل</span> في الجزائر <span style="font-size:2rem;">🇩🇿</span></h1>
+        <h1 class="section-title">أفضل <span class="highlight">صالونات الحلاقة والتجميل</span> في الجزائر <span style="font-size:2rem;">🇩🇿</span></h1>
         <p class="section-subtitle" data-i18n="homeSub">احجز موعدك بسهولة مع أفضل الحلاقين وخبراء التجميل في مدينتك</p>
         <button class="btn-gold" style="padding:0.5rem 1.8rem;font-size:0.85rem;" onclick="navigateTo('salons')" data-i18n="findSalon"><i class="fas fa-search"></i> ابحث عن صالون</button>
     </div>
@@ -3244,7 +2979,6 @@ body {
     <button class="btn-danger btn-sm" onclick="getLowStockItems()"><i class="fas fa-exclamation-triangle"></i> المنتجات المنخفضة</button>
     <div id="inventoryList" style="margin-top:0.5rem;"></div>
 </div>
-
 <!-- ===== الكوبونات ===== -->
 <div id="dashCoupons" class="hidden">
     <h3 style="color:var(--gold);margin-bottom:0.6rem;font-size:1rem;"><i class="fas fa-ticket-alt"></i> الكوبونات والخصومات</h3>
@@ -3331,34 +3065,6 @@ body {
             </div>
             <div id="dashSettings" class="hidden">
                 <h3 style="color:var(--gold);margin-bottom:0.6rem;font-size:1rem;"><i class="fas fa-cog"></i> <span data-i18n="settings">الإعدادات</span></h3>
-                <div class="form-group" style="margin-top: 1rem; border-top: 2px solid var(--border-color); padding-top: 1rem;">
-    <h4 style="color: var(--gold); margin-bottom: 0.5rem;">
-        <i class="fas fa-bell"></i> إشعارات الجهاز
-    </h4>
-    <p style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 0.8rem;">
-        فعّل الإشعارات لتلقي تحديثات فورية حول الحجوزات والتأكيدات
-    </p>
-    <button class="btn-gold btn-sm" onclick="enableNotificationsManually()" id="enableNotificationsBtn">
-        <i class="fas fa-bell"></i> 🔔 تفعيل الإشعارات
-    </button>
-</div>
-                <!-- ===== 🔗 ربط المخزون بالخدمات ===== -->
-<div class="form-group" style="margin-top: 1.5rem; border-top: 2px solid var(--border-color); padding-top: 1rem;">
-    <h4 style="color: var(--gold); margin-bottom: 0.5rem;">
-        <i class="fas fa-link"></i> ربط المخزون بالخدمات
-    </h4>
-    <p style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 0.8rem;">
-        اختر الخدمة التي يستهلكها كل منتج، وحدد الكمية المستهلكة في كل حجز
-    </p>
-    
-    <!-- حاوية لعرض المنتجات والخدمات -->
-    <div id="inventoryServiceMapping" style="max-height: 400px; overflow-y: auto; padding: 0.5rem 0;">
-        <div style="text-align: center; padding: 1rem; color: var(--text-color); opacity: 0.5;">
-            <i class="fas fa-spinner fa-spin" style="font-size: 1.5rem; display: block; margin-bottom: 0.5rem;"></i>
-            جاري تحميل المنتجات...
-        </div>
-    </div>
-</div>
                 <form id="settingsForm">
     <div class="form-group">
     <label>📷 معرض الصور (اختر صوراً من جهازك)</label>
@@ -3403,7 +3109,7 @@ body {
         <h2 class="section-title">من <span class="highlight">نحن</span></h2>
         <div style="background:var(--card-bg);border-radius:var(--radius);padding:1.5rem;border:1px solid var(--border-color);box-shadow:var(--shadow);">
             <p style="font-size:1.1rem;line-height:2;color:var(--text-color);">
-                منصة <strong style="color:var(--gold);">حلاقتي</strong> هي أول منصة جزائرية متخصصة في حجز مواعيد صالونات الحلاقة والتجميل عبر الإنترنت. 
+                منصة <strong style="color:var(--gold);">حلاقتي</strong> هي منصة جزائرية متكاملة متخصصة في حجز مواعيد صالونات الحلاقة والتجميل عبر الإنترنت. 
                 نهدف إلى تسهيل عملية البحث عن أفضل الصالونات في مدينتك وحجز موعدك بسهولة.
             </p>
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-top:1.5rem;">
@@ -3628,106 +3334,7 @@ body {
 </nav>
 
 <script>
-// ============================================================
-// ✅ معالج نموذج الحجز (مع إرسال _id)
-// ============================================================
-document.getElementById('bookingForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    console.log('🟢 محاولة تأكيد الحجز...');
 
-    const salonId = bookingSalonId;
-    const select = document.getElementById('bookService');
-    const selectedOptions = Array.from(select.selectedOptions);
-    
-    // ✅ بناء مصفوفة الخدمات مع _id و name و price
-    const services = selectedOptions.map(opt => {
-        const id = opt.dataset.id || '';
-        return {
-            _id: id,                    // ✅ معرف الخدمة (مهم للربط بالمخزون)
-            name: opt.value,
-            price: parseInt(opt.dataset.price) || 0
-        };
-    });
-
-    console.log('📋 الخدمات المختارة:', services);
-    
-    // حساب السعر الأصلي
-    let originalPrice = services.reduce((s, item) => s + item.price, 0);
-    let totalPrice = originalPrice;
-    let discountAmount = 0;
-    let couponId = null;
-    let couponCode = null;
-    
-    if (appliedCoupon) {
-        if (appliedCoupon.type === 'percentage') {
-            discountAmount = (originalPrice * appliedCoupon.value) / 100;
-            if (appliedCoupon.maxDiscount > 0) {
-                discountAmount = Math.min(discountAmount, appliedCoupon.maxDiscount);
-            }
-        } else {
-            discountAmount = appliedCoupon.value;
-        }
-        discountAmount = Math.round(discountAmount);
-        totalPrice = Math.max(0, originalPrice - discountAmount);
-        couponId = appliedCoupon._id;
-        couponCode = appliedCoupon.code;
-    }
-    
-    const staff = document.getElementById('bookStaff').value;
-    const date = document.getElementById('bookDate').value;
-    const time = document.getElementById('bookTime').value;
-    const clientName = document.getElementById('bookClientName').value.trim();
-    const clientPhone = document.getElementById('bookClientPhone').value.trim();
-    const clientEmail = document.getElementById('bookClientEmail').value.trim();
-    const payment = document.getElementById('bookPayment').value;
-    const notes = document.getElementById('bookNotes').value.trim();
-    const recurring = document.getElementById('bookRecurring').value;
-    const customerId = localStorage.getItem('customerId') || null;
-
-    if (!services.length || !staff || !date || !time || !clientName || !clientPhone) {
-        showToast('❌ الرجاء اختيار خدمة وملء جميع الحقول المطلوبة', 'error');
-        return;
-    }
-
-    try {
-        const res = await fetch(`${API_BASE}/appointments/request`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                salonId, customerId, clientName, clientPhone, clientEmail,
-                services,                      // ✅ الآن تحتوي على _id
-                totalPrice,
-                originalPrice,
-                discountAmount,
-                couponId,
-                couponCode,
-                staff, date, time, payment, notes, recurring
-            })
-        });
-        const data = await res.json();
-        console.log('📨 رد الخادم:', data);
-
-        if (res.ok) {
-            showToast('✅ تم إرسال طلب الحجز بنجاح!', 'success');
-            closeModal('bookingModal');
-            document.getElementById('bookingForm').reset();
-            document.getElementById('bookTotalPrice').value = '';
-            document.getElementById('discountDisplay').style.display = 'none';
-            document.getElementById('finalPriceDisplay').style.display = 'none';
-            document.getElementById('removeCouponBtn').style.display = 'none';
-            document.getElementById('couponFeedback').innerHTML = '';
-            appliedCoupon = null;
-            refreshNotifications();
-            if (localStorage.getItem('token')) loadDashboard();
-        } else {
-            showToast(`❌ ${data.message || 'فشل الحجز'}`, 'error');
-        }
-    } catch (error) {
-        console.error('❌ خطأ في الحجز:', error);
-        showToast('❌ فشل الاتصال بالخادم', 'error');
-    }
-});
-    
 // ✅ تحديث إصدار PWA تلقائياً عند كل تحميل للصفحة
 const APP_VERSION = Date.now();
 document.querySelector('link[rel="manifest"]').href = `/manifest.json?v=${APP_VERSION}`;
@@ -3934,6 +3541,8 @@ function displayExistingGallery(images) {
         wrapper.appendChild(deleteBtn);
         container.appendChild(wrapper);
     });
+    // ❌ تم إزالة السطر المسبب للخطأ:
+    // document.getElementById('setGallery').value = images.join('\n');
 }
         
 // ✅ عرض تفاصيل طلب عرض سعر
@@ -5066,382 +4675,30 @@ const translations = {
         deleteAccount: 'حذف الحساب', exportExcel: 'تحميل التفاصيل إلى Excel',
         recentAppointments: 'أحدث المواعيد', price: 'السعر', status: 'الحالة', action: 'إجراء',
         totalAppointments: 'إجمالي المواعيد', pending: 'قيد الانتظار', completed: 'مكتملة',
-        revenue: 'الإيرادات (دج)', addService: 'إضافة خدمة', addStaff: 'إضافة موظف', save: 'حفظ',
-        about: 'من نحن', contact: 'اتصل بنا', bookNow: 'احجز الآن', quickBook: 'حجز سريع',
-        welcomeMsg: 'مرحباً بك في حلاقتي ✂️', bestSalons: 'أفضل صالونات الحلاقة والتجميل في الجزائر'
-    },
-    en: {
-        home: 'Home', salons: 'Salons', dashboard: 'Dashboard', admin: 'Admin Panel',
-        myAccount: 'My Account', myBookings: 'My Bookings', customerLogin: 'Customer Login', customerRegister: 'Create Account',
-        logout: 'Logout', login: 'Login', registerSalon: 'Register Salon', loginSalon: 'Salon Login',
-        adminLogin: 'Admin Login', booking: 'Book Appointment', review: 'Review Salon',
-        homeSub: 'Book your appointment easily with the best barbers and beauty experts in your city',
-        findSalon: 'Find a Salon', totalSalons: 'Registered Salons', todayBookings: "Today's Bookings",
-        avgRating: 'Average Rating', algerianService: '100% Algerian Service', featuredSalons: '🔥 Featured Salons',
-        salonName: 'Salon Name', city: 'City', address: 'Address', email: 'Email',
-        phone: 'Phone', password: 'Password', desc: 'Description', logo: 'Salon Logo', gps: 'GPS Location',
-        services: 'Services', totalPrice: 'Total Price', staff: 'Staff', date: 'Date', time: 'Time',
-        clientName: 'Full Name', clientPhone: 'Phone Number', clientEmail: 'Email',
-        payment: 'Payment Method', notes: 'Notes', rating: 'Your Rating (1-5)', comment: 'Your Comment',
-        overview: 'Overview', appointments: 'Appointments', hours: 'Working Hours', reviews: 'Reviews',
-        notifications: 'Notifications', settings: 'Settings', changePassword: 'Change Password',
-        deleteAccount: 'Delete Account', exportExcel: 'Download to Excel',
-        recentAppointments: 'Recent Appointments', price: 'Price', status: 'Status', action: 'Action',
-        totalAppointments: 'Total Appointments', pending: 'Pending', completed: 'Completed',
-        revenue: 'Revenue (DZD)', addService: 'Add Service', addStaff: 'Add Staff', save: 'Save',
-        about: 'About Us', contact: 'Contact Us', bookNow: 'Book Now', quickBook: 'Quick Book',
-        welcomeMsg: 'Welcome to Halakati ✂️', bestSalons: 'Best Hair & Beauty Salons in Algeria'
+        revenue: 'الإيرادات (دج)', addService: 'إضافة خدمة', addStaff: 'إضافة موظف', save: 'حفظ'
     },
     fr: {
-        home: 'Accueil', salons: 'Salons', dashboard: 'Tableau de bord', admin: 'Panel Admin',
-        myAccount: 'Mon compte', myBookings: 'Mes réservations', customerLogin: 'Connexion client', customerRegister: 'Créer un compte',
-        logout: 'Déconnexion', login: 'Connexion', registerSalon: 'Ajouter un salon', loginSalon: 'Connexion salon',
-        adminLogin: 'Connexion Admin', booking: 'Réserver', review: 'Évaluer le salon',
-        homeSub: 'Réservez facilement avec les meilleurs coiffeurs et experts en beauté de votre ville',
-        findSalon: 'Trouver un salon', totalSalons: 'Salons enregistrés', todayBookings: 'Rendez-vous aujourd\'hui',
-        avgRating: 'Note moyenne', algerianService: 'Service algérien 100%', featuredSalons: '🔥 Salons populaires',
-        salonName: 'Nom du salon', city: 'Ville', address: 'Adresse', email: 'Email',
-        phone: 'Téléphone', password: 'Mot de passe', desc: 'Description', logo: 'Logo du salon', gps: 'Position GPS',
+        home: 'Accueil', salons: 'Salons', dashboard: 'Tableau de bord', admin: 'Tableau admin',
+        myAccount: 'Mon compte', myBookings: 'Mes réservations', customerLogin: 'Client',
+        customerRegister: 'Créer un compte', logout: 'Déconnexion', login: 'Connexion',
+        registerSalon: 'Ajouter un salon', loginSalon: 'Connexion salon', adminLogin: 'Connexion admin',
+        booking: 'Réserver', review: 'Évaluer le salon',
+        homeSub: 'Réservez facilement avec les meilleurs coiffeurs et experts en beauté',
+        findSalon: 'Trouver un salon', totalSalons: 'Salons enregistrés',
+        todayBookings: 'Rendez-vous aujourd\'hui', avgRating: 'Note moyenne',
+        algerianService: 'Service algérien 100%', featuredSalons: '🔥 Salons populaires',
+        salonName: 'Nom du salon', city: 'Ville', address: 'Adresse', email: 'Email', phone: 'Téléphone',
+        password: 'Mot de passe', desc: 'Description', logo: 'Logo du salon', gps: 'Position GPS',
         services: 'Services', totalPrice: 'Prix total', staff: 'Employé', date: 'Date', time: 'Heure',
         clientName: 'Nom complet', clientPhone: 'Téléphone', clientEmail: 'Email',
-        payment: 'Moyen de paiement', notes: 'Remarques', rating: 'Votre note (1-5)', comment: 'Votre commentaire',
-        overview: 'Aperçu', appointments: 'Rendez-vous', hours: 'Horaires', reviews: 'Avis',
-        notifications: 'Notifications', settings: 'Paramètres', changePassword: 'Changer le mot de passe',
-        deleteAccount: 'Supprimer le compte', exportExcel: 'Télécharger en Excel',
-        recentAppointments: 'Derniers rendez-vous', price: 'Prix', status: 'Statut', action: 'Action',
-        totalAppointments: 'Total rendez-vous', pending: 'En attente', completed: 'Terminé',
-        revenue: 'Revenus (DZD)', addService: 'Ajouter un service', addStaff: 'Ajouter un employé', save: 'Enregistrer',
-        about: 'À propos', contact: 'Contactez-nous', bookNow: 'Réservez', quickBook: 'Réservation rapide',
-        welcomeMsg: 'Bienvenue sur Halakati ✂️', bestSalons: 'Meilleurs salons de coiffure et beauté en Algérie'
-    },
-    es: {
-        home: 'Inicio', salons: 'Salones', dashboard: 'Panel', admin: 'Panel Admin',
-        myAccount: 'Mi Cuenta', myBookings: 'Mis Reservas', customerLogin: 'Inicio Cliente', customerRegister: 'Crear Cuenta',
-        logout: 'Cerrar Sesión', login: 'Iniciar Sesión', registerSalon: 'Registrar Salón', loginSalon: 'Inicio Salón',
-        adminLogin: 'Inicio Admin', booking: 'Reservar', review: 'Valorar',
-        homeSub: 'Reserva fácilmente con los mejores barberos y expertos en belleza de tu ciudad',
-        findSalon: 'Buscar Salón', totalSalons: 'Salones Registrados', todayBookings: 'Reservas Hoy',
-        avgRating: 'Calificación Media', algerianService: '100% Servicio Argelino', featuredSalons: '🔥 Salones Destacados',
-        salonName: 'Nombre del Salón', city: 'Ciudad', address: 'Dirección', email: 'Correo',
-        phone: 'Teléfono', password: 'Contraseña', desc: 'Descripción', logo: 'Logo', gps: 'Ubicación GPS',
-        services: 'Servicios', totalPrice: 'Precio Total', staff: 'Empleado', date: 'Fecha', time: 'Hora',
-        clientName: 'Nombre Completo', clientPhone: 'Teléfono', clientEmail: 'Correo',
-        payment: 'Método de Pago', notes: 'Notas', rating: 'Calificación (1-5)', comment: 'Comentario',
-        overview: 'Resumen', appointments: 'Citas', hours: 'Horario', reviews: 'Opiniones',
-        notifications: 'Notificaciones', settings: 'Configuración', changePassword: 'Cambiar Contraseña',
-        deleteAccount: 'Eliminar Cuenta', exportExcel: 'Descargar a Excel',
-        recentAppointments: 'Citas Recientes', price: 'Precio', status: 'Estado', action: 'Acción',
-        totalAppointments: 'Total Citas', pending: 'Pendiente', completed: 'Completado',
-        revenue: 'Ingresos (DZD)', addService: 'Añadir Servicio', addStaff: 'Añadir Empleado', save: 'Guardar',
-        about: 'Sobre Nosotros', contact: 'Contáctenos', bookNow: 'Reservar Ahora', quickBook: 'Reserva Rápida',
-        welcomeMsg: 'Bienvenido a Halakati ✂️', bestSalons: 'Mejores Salones de Belleza y Peluquería en Argelia'
-    },
-    tr: {
-        home: 'Ana Sayfa', salons: 'Salonlar', dashboard: 'Kontrol Paneli', admin: 'Admin Paneli',
-        myAccount: 'Hesabım', myBookings: 'Rezervasyonlarım', customerLogin: 'Müşteri Girişi', customerRegister: 'Hesap Oluştur',
-        logout: 'Çıkış Yap', login: 'Giriş Yap', registerSalon: 'Salon Kaydı', loginSalon: 'Salon Girişi',
-        adminLogin: 'Admin Girişi', booking: 'Randevu Al', review: 'Salonu Değerlendir',
-        homeSub: 'Şehrinizdeki en iyi berberler ve güzellik uzmanları ile kolayca randevu alın',
-        findSalon: 'Salon Bul', totalSalons: 'Kayıtlı Salonlar', todayBookings: 'Bugünkü Randevular',
-        avgRating: 'Ortalama Puan', algerianService: '%100 Cezayir Hizmeti', featuredSalons: '🔥 Öne Çıkan Salonlar',
-        salonName: 'Salon Adı', city: 'Şehir', address: 'Adres', email: 'E-posta',
-        phone: 'Telefon', password: 'Şifre', desc: 'Açıklama', logo: 'Logo', gps: 'GPS Konumu',
-        services: 'Hizmetler', totalPrice: 'Toplam Fiyat', staff: 'Personel', date: 'Tarih', time: 'Saat',
-        clientName: 'Ad Soyad', clientPhone: 'Telefon Numarası', clientEmail: 'E-posta',
-        payment: 'Ödeme Yöntemi', notes: 'Notlar', rating: 'Puanınız (1-5)', comment: 'Yorumunuz',
-        overview: 'Genel Bakış', appointments: 'Randevular', hours: 'Çalışma Saatleri', reviews: 'Yorumlar',
-        notifications: 'Bildirimler', settings: 'Ayarlar', changePassword: 'Şifre Değiştir',
-        deleteAccount: 'Hesabı Sil', exportExcel: 'Excel\'e İndir',
-        recentAppointments: 'Son Randevular', price: 'Fiyat', status: 'Durum', action: 'İşlem',
-        totalAppointments: 'Toplam Randevu', pending: 'Bekliyor', completed: 'Tamamlandı',
-        revenue: 'Gelir (DZD)', addService: 'Hizmet Ekle', addStaff: 'Personel Ekle', save: 'Kaydet',
-        about: 'Hakkımızda', contact: 'İletişim', bookNow: 'Hemen Randevu Al', quickBook: 'Hızlı Randevu',
-        welcomeMsg: 'Halakati\'ye Hoş Geldiniz ✂️', bestSalons: 'Cezayir\'deki En İyi Kuaför ve Güzellik Salonları'
-    },
-        ru: {  // ✅ إضافة اللغة الروسية
-        home: 'Главная',
-        salons: 'Салоны',
-        dashboard: 'Панель управления',
-        admin: 'Панель администратора',
-        myAccount: 'Мой аккаунт',
-        myBookings: 'Мои записи',
-        customerLogin: 'Вход для клиентов',
-        customerRegister: 'Создать аккаунт',
-        logout: 'Выйти',
-        login: 'Войти',
-        registerSalon: 'Зарегистрировать салон',
-        loginSalon: 'Вход в салон',
-        adminLogin: 'Вход администратора',
-        booking: 'Записаться',
-        review: 'Оценить салон',
-        homeSub: 'Записывайтесь легко с лучшими парикмахерами и специалистами по красоте в вашем городе',
-        findSalon: 'Найти салон',
-        totalSalons: 'Зарегистрированных салонов',
-        todayBookings: 'Записей сегодня',
-        avgRating: 'Средний рейтинг',
-        algerianService: '100% алжирский сервис',
-        featuredSalons: '🔥 Популярные салоны',
-        salonName: 'Название салона',
-        city: 'Город',
-        address: 'Адрес',
-        email: 'Эл. почта',
-        phone: 'Телефон',
-        password: 'Пароль',
-        desc: 'Описание',
-        logo: 'Логотип салона',
-        gps: 'GPS-координаты',
-        services: 'Услуги',
-        totalPrice: 'Общая стоимость',
-        staff: 'Сотрудник',
-        date: 'Дата',
-        time: 'Время',
-        clientName: 'Полное имя',
-        clientPhone: 'Номер телефона',
-        clientEmail: 'Эл. почта',
-        payment: 'Способ оплаты',
-        notes: 'Примечания',
-        rating: 'Ваша оценка (1-5)',
-        comment: 'Ваш комментарий',
-        overview: 'Обзор',
-        appointments: 'Записи',
-        hours: 'Часы работы',
-        reviews: 'Отзывы',
-        notifications: 'Уведомления',
-        settings: 'Настройки',
-        changePassword: 'Сменить пароль',
-        deleteAccount: 'Удалить аккаунт',
-        exportExcel: 'Скачать в Excel',
-        recentAppointments: 'Последние записи',
-        price: 'Цена',
-        status: 'Статус',
-        action: 'Действие',
-        totalAppointments: 'Всего записей',
-        pending: 'В ожидании',
-        completed: 'Завершено',
-        revenue: 'Доход (DZD)',
-        addService: 'Добавить услугу',
-        addStaff: 'Добавить сотрудника',
-        save: 'Сохранить',
-        about: 'О нас',
-        contact: 'Свяжитесь с нами',
-        bookNow: 'Записаться сейчас',
-        quickBook: 'Быстрая запись',
-        welcomeMsg: 'Добро пожаловать в Halakati ✂️',
-        bestSalons: 'Лучшие салоны красоты и парикмахерские в Алжире',
-        // نصوص إضافية للواجهات المختلفة
-        gallery: 'Галерея',
-        salonGallery: 'Галерея салона',
-        noImages: 'Нет изображений в галерее',
-        openGallery: 'Открыть галерею',
-        close: 'Закрыть',
-        confirm: 'Подтвердить',
-        cancel: 'Отмена',
-        delete: 'Удалить',
-        edit: 'Редактировать',
-        add: 'Добавить',
-        update: 'Обновить',
-        search: 'Поиск',
-        filter: 'Фильтр',
-        reset: 'Сбросить',
-        nearby: 'Поблизости',
-        loading: 'Загрузка...',
-        noResults: 'Нет результатов',
-        all: 'Все',
-        male: 'Мужской',
-        female: 'Женский',
-        children: 'Детский',
-        mixed: 'Смешанный',
-        mobileService: 'Мобильная услуга',
-        from: 'От',
-        dzd: 'DZD',
-        contactUs: 'Свяжитесь с нами',
-        send: 'Отправить',
-        message: 'Сообщение',
-        name: 'Имя',
-        phoneNumber: 'Номер телефона',
-        emailAddress: 'Эл. почта',
-        yourMessage: 'Ваше сообщение',
-        sendMessage: 'Отправить сообщение',
-        ourSocial: 'Мы в соцсетях',
-        facebook: 'Facebook',
-        instagram: 'Instagram',
-        whatsapp: 'WhatsApp',
-        bookAppointment: 'Записаться на приём',
-        quickBooking: 'Быстрая запись',
-        specialEvents: 'Специальные мероприятия',
-        weddingServices: 'Свадебные услуги',
-        budget: 'Бюджет',
-        guests: 'Гости',
-        serviceType: 'Тип услуги',
-        otherServices: 'Другие услуги',
-        notesOptional: 'Примечания (необязательно)',
-        submitRequest: 'Отправить запрос',
-        viewDetails: 'Посмотреть детали',
-        accept: 'Принять',
-        reject: 'Отклонить',
-        pendingStatus: 'В ожидании',
-        quoted: 'Предложено',
-        accepted: 'Принято',
-        rejected: 'Отклонено',
-        expired: 'Истекло',
-        salonManagement: 'Управление салоном',
-        inventoryManagement: 'Управление запасами',
-        couponManagement: 'Управление купонами',
-        quoteManagement: 'Управление предложениями',
-        staffManagement: 'Управление сотрудниками',
-        serviceManagement: 'Управление услугами',
-        hourManagement: 'Управление часами работы',
-        reviewManagement: 'Управление отзывами',
-        settingsManagement: 'Управление настройками',
-        couponCode: 'Код купона',
-        couponType: 'Тип купона',
-        couponValue: 'Значение',
-        minOrder: 'Минимальный заказ',
-        maxDiscount: 'Максимальная скидка',
-        validFrom: 'Действует с',
-        validUntil: 'Действует до',
-        usageLimit: 'Лимит использований',
-        description: 'Описание',
-        statusActive: 'Активен',
-        statusInactive: 'Неактивен',
-        createCoupon: 'Создать купон',
-        editCoupon: 'Редактировать купон',
-        deleteCoupon: 'Удалить купон',
-        inventoryItem: 'Товар',
-        category: 'Категория',
-        quantity: 'Количество',
-        minQuantity: 'Мин. количество',
-        unit: 'Единица',
-        supplier: 'Поставщик',
-        pricePerUnit: 'Цена за единицу',
-        addItem: 'Добавить товар',
-        editItem: 'Редактировать товар',
-        deleteItem: 'Удалить товар',
-        lowStock: 'Низкий запас',
-        restock: 'Пополнить',
-        inventoryReport: 'Отчёт по запасам',
-        totalValue: 'Общая стоимость',
-        lowStockItems: 'Товары с низким запасом',
-        mostConsumed: 'Наиболее расходуемые',
-        serviceLink: 'Связать с услугой',
-        consumptionPerBooking: 'Расход на запись',
-        linkService: 'Связать услугу',
-        noServices: 'Нет услуг',
-        noInventory: 'Нет товаров',
-        selectService: 'Выберите услугу',
-        saveChanges: 'Сохранить изменения',
-        deleteSalon: 'Удалить салон',
-        changePasswordSalon: 'Сменить пароль салона',
-        deleteAccountSalon: 'Удалить аккаунт салона',
-        confirmDelete: 'Подтвердить удаление',
-        areYouSure: 'Вы уверены? Это действие нельзя отменить.',
-        yesDelete: 'Да, удалить',
-        noCancel: 'Нет, отменить',
-        welcomeBack: 'С возвращением',
-        loginSuccess: 'Вход выполнен успешно',
-        registerSuccess: 'Регистрация прошла успешно',
-        logoutSuccess: 'Вы вышли из системы',
-        errorOccurred: 'Произошла ошибка',
-        tryAgain: 'Попробуйте снова',
-        loadingData: 'Загрузка данных...',
-        noData: 'Нет данных',
-        viewAll: 'Посмотреть все',
-        showMore: 'Показать больше',
-        showLess: 'Показать меньше',
-        backToTop: 'Наверх',
-        notificationsEmpty: 'Нет уведомлений',
-        markAllRead: 'Отметить все как прочитанные',
-        clearAll: 'Очистить все',
-        newNotification: 'Новое уведомление',
-        appointmentConfirmed: 'Запись подтверждена',
-        appointmentCancelled: 'Запись отменена',
-        appointmentCompleted: 'Запись завершена',
-        newBooking: 'Новая запись',
-        bookingRequest: 'Запрос на запись',
-        bookingStatus: 'Статус записи',
-        client: 'Клиент',
-        staffMember: 'Сотрудник',
-        paymentMethod: 'Способ оплаты',
-        cash: 'Наличные',
-        notesLabel: 'Примечания',
-        recurringBooking: 'Повторяющаяся запись',
-        oneTime: 'Однократная',
-        weekly: 'Еженедельная',
-        monthly: 'Ежемесячная',
-        selectStaff: 'Выберите сотрудника',
-        selectService: 'Выберите услугу',
-        selectDate: 'Выберите дату',
-        selectTime: 'Выберите время',
-        availableTimes: 'Доступное время',
-        noAvailableTimes: 'Нет доступного времени',
-        bookingSuccess: 'Запись успешно создана',
-        bookingFailed: 'Не удалось создать запись',
-        reviewSubmitted: 'Отзыв отправлен',
-        reviewFailed: 'Не удалось отправить отзыв',
-        ratingRequired: 'Пожалуйста, поставьте оценку',
-        commentRequired: 'Пожалуйста, напишите комментарий',
-        salonClosed: 'Салон закрыт',
-        openNow: 'Открыто сейчас',
-        closedNow: 'Закрыто сейчас',
-        opensAt: 'Открывается в',
-        closesAt: 'Закрывается в',
-        workingHours: 'Часы работы',
-        contactInfo: 'Контактная информация',
-        location: 'Местоположение',
-        mapView: 'Посмотреть на карте',
-        phoneCall: 'Позвонить',
-        emailUs: 'Написать нам',
-        followUs: 'Подписывайтесь на нас',
-        share: 'Поделиться',
-        copyLink: 'Скопировать ссылку',
-        linkCopied: 'Ссылка скопирована!',
-        viewProfile: 'Просмотр профиля',
-        editProfile: 'Редактировать профиль',
-        profileUpdated: 'Профиль обновлён',
-        profileUpdateFailed: 'Не удалось обновить профиль',
-        welcome: 'Добро пожаловать',
-        guest: 'Гость',
-        user: 'Пользователь',
-        adminPanel: 'Панель администратора',
-        manageSalons: 'Управление салонами',
-        manageCustomers: 'Управление клиентами',
-        manageAppointments: 'Управление записями',
-        manageReviews: 'Управление отзывами',
-        manageCoupons: 'Управление купонами',
-        manageQuotes: 'Управление предложениями',
-        approveSalon: 'Одобрить салон',
-        rejectSalon: 'Отклонить салон',
-        blockCustomer: 'Заблокировать клиента',
-        unblockCustomer: 'Разблокировать клиента',
-        salonApproved: 'Салон одобрен',
-        salonRejected: 'Салон отклонён',
-        customerBlocked: 'Клиент заблокирован',
-        customerUnblocked: 'Клиент разблокирован',
-        broadcastMessage: 'Массовое уведомление',
-        sendToAll: 'Отправить всем',
-        sendToSalons: 'Отправить салонам',
-        sendToCustomers: 'Отправить клиентам',
-        broadcastSent: 'Уведомление отправлено',
-        broadcastFailed: 'Не удалось отправить уведомление',
-        selectUserType: 'Выберите тип пользователя',
-        enterTitle: 'Введите заголовок',
-        enterMessage: 'Введите сообщение',
-        sendBroadcast: 'Отправить массовое уведомление',
-        allRightsReserved: 'Все права защищены',
-        poweredBy: 'Создано с помощью',
-        version: 'Версия',
-        language: 'Язык',
-        theme: 'Тема',
-        darkMode: 'Тёмная тема',
-        lightMode: 'Светлая тема',
-        systemDefault: 'Системная',
-        chooseLanguage: 'Выберите язык',
-        arabic: 'العربية',
-        english: 'English',
-        french: 'Français',
-        spanish: 'Español',
-        turkish: 'Türkçe',
-        russian: 'Русский'
+        payment: 'Moyen de paiement', notes: 'Remarques', rating: 'Votre note (1-5)',
+        comment: 'Votre commentaire', overview: 'Aperçu', appointments: 'Rendez-vous',
+        hours: 'Horaires', reviews: 'Avis', notifications: 'Notifications', settings: 'Paramètres',
+        changePassword: 'Changer le mot de passe', deleteAccount: 'Supprimer le compte',
+        exportExcel: 'Télécharger en Excel', recentAppointments: 'Derniers rendez-vous',
+        price: 'Prix', status: 'Statut', action: 'Action', totalAppointments: 'Total rendez-vous',
+        pending: 'En attente', completed: 'Terminé', revenue: 'Revenus (DZD)',
+        addService: 'Ajouter un service', addStaff: 'Ajouter un employé', save: 'Enregistrer'
     }
 };
 
@@ -5453,25 +4710,11 @@ function updateLang() {
         const translation = translations[currentLang]?.[key];
         if (translation) el.textContent = translation;
     });
-    // تحديث زر اللغة
-    updateLangButton();
-}
-
-function updateLangButton() {
-    const lang = currentLang;
-    const flagMap = { ar: '🇸🇦', en: '🇬🇧', fr: '🇫🇷', es: '🇪🇸', tr: '🇹🇷', ru: '🇷🇺' };
-    const nameMap = { ar: 'العربية', en: 'English', fr: 'Français', es: 'Español', tr: 'Türkçe', ru: 'Русский' };
-    
-    const flagEl = document.getElementById('langFlag');
-    const nameEl = document.getElementById('langName');
-    if (flagEl) flagEl.textContent = flagMap[lang] || '🌍';
-    if (nameEl) nameEl.textContent = nameMap[lang] || lang;
+    document.getElementById('langToggle').textContent = currentLang === 'ar' ? '🇫🇷 FR' : '🇸🇦 AR';
 }
 
 function toggleLang() {
-    const langs = ['ar', 'en', 'fr', 'es', 'tr', 'ru'];
-    const currentIndex = langs.indexOf(currentLang);
-    currentLang = langs[(currentIndex + 1) % langs.length];
+    currentLang = currentLang === 'ar' ? 'fr' : 'ar';
     localStorage.setItem('lang', currentLang);
     updateLang();
 }
@@ -5910,24 +5153,12 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
         const res = await fetch(`${API_BASE}/auth/login`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email, password}) });
         const data = await res.json();
         if (res.ok) {
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('salonId', data.salonId);
-            showToast(`✅ مرحباً ${data.name}`);
-            closeModal('loginModal');
-            updateUI();
-            navigateTo('dashboard');
-            loadDashboard();
-            refreshNotifications();
+            localStorage.setItem('token', data.token); localStorage.setItem('salonId', data.salonId);
+            showToast(`✅ مرحباً ${data.name}`); closeModal('loginModal');
+            updateUI(); navigateTo('dashboard'); loadDashboard(); refreshNotifications();
             if (socket) socket.emit('join-salon', data.salonId);
-            // ✅ تسجيل الإشعارات
-            await autoRegisterNotifications();
-        } else {
-            showToast(`❌ ${data.message}`);
-        }
-    } catch (error) {
-        console.error('❌ خطأ في تسجيل الدخول:', error);
-        showToast('❌ فشل الاتصال');
-    }
+        } else showToast(`❌ ${data.message}`);
+    } catch { showToast('❌ فشل الاتصال'); }
 });
 
 document.getElementById('registerForm').addEventListener('submit', async (e) => {
@@ -5945,48 +5176,20 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
     const lng = parseFloat(document.getElementById('regLngManual').value) || parseFloat(document.getElementById('regLng').value) || null;
     const logoFile = document.getElementById('regLogo').files[0];
     let logo = '';
-    if (logoFile) {
-        const reader = new FileReader();
-        logo = await new Promise(resolve => {
-            reader.onload = e => resolve(e.target.result);
-            reader.readAsDataURL(logoFile);
-        });
-    }
-    if (!name || !city || !address || !email || !phone || password.length < 6) {
-        showToast('❌ الرجاء ملء جميع الحقول وكلمة مرور لا تقل عن 6 أحرف');
-        return;
-    }
+    if (logoFile) { const reader = new FileReader(); logo = await new Promise(resolve => { reader.onload = e => resolve(e.target.result); reader.readAsDataURL(logoFile); }); }
+    if (!name || !city || !address || !email || !phone || password.length < 6) { showToast('❌ الرجاء ملء جميع الحقول وكلمة مرور لا تقل عن 6 أحرف'); return; }
     try {
         const res = await fetch(`${API_BASE}/auth/register`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ name, city, address, email, phone, password, desc, logo, salonType, isMobile, lat, lng }) });
         const data = await res.json();
         if (res.ok) {
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('salonId', data.salonId);
-            showToast(`✅ تم تسجيل ${data.name} بنجاح!`);
-            closeModal('registerModal');
-            updateUI();
-            navigateTo('dashboard');
-            loadDashboard();
-            // ✅ تسجيل الإشعارات
-            await autoRegisterNotifications();
-        } else {
-            showToast(`❌ ${data.message}`);
-        }
-    } catch (error) {
-        console.error('❌ خطأ في التسجيل:', error);
-        showToast('❌ فشل الاتصال');
-    }
+            localStorage.setItem('token', data.token); localStorage.setItem('salonId', data.salonId);
+            showToast(`✅ تم تسجيل ${data.name} بنجاح!`); closeModal('registerModal');
+            updateUI(); navigateTo('dashboard'); loadDashboard();
+        } else showToast(`❌ ${data.message}`);
+    } catch { showToast('❌ فشل الاتصال'); }
 });
 
-function logout() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('salonId');
-    showToast('👋 تم تسجيل الخروج');
-    updateUI();
-    navigateTo('home');
-    loadSalons();
-    refreshNotifications();
-}
+function logout() { localStorage.removeItem('token'); localStorage.removeItem('salonId'); showToast('👋 تم تسجيل الخروج'); updateUI(); navigateTo('home'); loadSalons(); refreshNotifications(); }
 
 // Customer Auth
 document.getElementById('customerRegisterForm').addEventListener('submit', async (e) => {
@@ -5999,23 +5202,12 @@ document.getElementById('customerRegisterForm').addEventListener('submit', async
         const res = await fetch(`${API_BASE}/customer/auth/register`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ name, email, phone, password }) });
         const data = await res.json();
         if (res.ok) {
-            localStorage.setItem('customerToken', data.token);
-            localStorage.setItem('customerId', data.customerId);
-            localStorage.setItem('customerName', data.name);
-            showToast('✅ تم تسجيل حسابك');
-            closeModal('customerRegisterModal');
-            updateCustomerUI();
-            refreshNotifications();
+            localStorage.setItem('customerToken', data.token); localStorage.setItem('customerId', data.customerId); localStorage.setItem('customerName', data.name);
+            showToast('✅ تم تسجيل حسابك'); closeModal('customerRegisterModal');
+            updateCustomerUI(); refreshNotifications();
             if (socket) socket.emit('join-customer', data.customerId);
-            // ✅ تسجيل الإشعارات
-            await autoRegisterNotifications();
-        } else {
-            showToast(`❌ ${data.message}`);
-        }
-    } catch (error) {
-        console.error('❌ خطأ في تسجيل العميل:', error);
-        showToast('❌ فشل الاتصال');
-    }
+        } else showToast(`❌ ${data.message}`);
+    } catch { showToast('❌ فشل الاتصال'); }
 });
 
 document.getElementById('customerLoginForm').addEventListener('submit', async (e) => {
@@ -6026,34 +5218,16 @@ document.getElementById('customerLoginForm').addEventListener('submit', async (e
         const res = await fetch(`${API_BASE}/customer/auth/login`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ email, password }) });
         const data = await res.json();
         if (res.ok) {
-            localStorage.setItem('customerToken', data.token);
-            localStorage.setItem('customerId', data.customerId);
-            localStorage.setItem('customerName', data.name);
-            showToast(`✅ مرحباً ${data.name}`);
-            closeModal('customerLoginModal');
-            updateCustomerUI();
-            refreshNotifications();
+            localStorage.setItem('customerToken', data.token); localStorage.setItem('customerId', data.customerId); localStorage.setItem('customerName', data.name);
+            showToast(`✅ مرحباً ${data.name}`); closeModal('customerLoginModal');
+            updateCustomerUI(); refreshNotifications();
             if (socket) socket.emit('join-customer', data.customerId);
-            // ✅ تسجيل الإشعارات
-            await autoRegisterNotifications();
-        } else {
-            showToast(`❌ ${data.message}`);
-        }
-    } catch (error) {
-        console.error('❌ خطأ في تسجيل دخول العميل:', error);
-        showToast('❌ فشل الاتصال');
-    }
+        } else showToast(`❌ ${data.message}`);
+    } catch { showToast('❌ فشل الاتصال'); }
 });
 
-function customerLogout() {
-    localStorage.removeItem('customerToken');
-    localStorage.removeItem('customerId');
-    localStorage.removeItem('customerName');
-    showToast('👋 تم تسجيل الخروج');
-    updateCustomerUI();
-    refreshNotifications();
-}
-    
+function customerLogout() { localStorage.removeItem('customerToken'); localStorage.removeItem('customerId'); localStorage.removeItem('customerName'); showToast('👋 تم تسجيل الخروج'); updateCustomerUI(); refreshNotifications(); }
+
 // Admin Auth
 document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -6071,7 +5245,7 @@ document.getElementById('adminLoginForm').addEventListener('submit', async (e) =
 });
 
 // ============================================================
-// ✅ حجز سريع محسّن - مع التحقق من الوقت وساعات العمل
+// حجز سريع مع اختيار الخدمة
 // ============================================================
 async function quickBooking(salonId) {
     console.log('🟢 quickBooking مع salonId:', salonId);
@@ -6115,57 +5289,21 @@ async function quickBooking(salonId) {
         }
         const salon = await salonRes.json();
 
-        // 3. التحقق من أن الصالون مفتوح الآن
-        const now = new Date();
-        const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-        const dayName = dayNames[now.getDay()];
-        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+        // 3. اختيار الموظف (أول موظف أو افتراضي)
+        const staff = salon.staff?.[0] || 'موظف رئيسي';
 
-        let dayHours = null;
-        if (salon.hours) {
-            if (typeof salon.hours.get === 'function') {
-                dayHours = salon.hours.get(dayName);
-            } else {
-                dayHours = salon.hours[dayName];
-            }
-        }
-
-        if (!dayHours || dayHours === 'مغلق' || dayHours === 'closed') {
-            showToast(`❌ الصالون مغلق اليوم (${dayName})`, 'error');
-            return;
-        }
-
-        const [openTime, closeTime] = dayHours.split('-').map(t => t.trim());
-        const [openHour, openMinute] = openTime.split(':').map(Number);
-        const [closeHour, closeMinute] = closeTime.split(':').map(Number);
-        const openMinutes = openHour * 60 + openMinute;
-        const closeMinutes = closeHour * 60 + closeMinute;
-
-        // 4. التحقق من أن الوقت الحالي ضمن ساعات العمل
-        if (currentMinutes < openMinutes) {
-            // الصالون لم يفتح بعد → نستخدم وقت الفتح
-            const waitMinutes = openMinutes - currentMinutes;
-            showToast(`⏳ الصالون يفتح بعد ${Math.floor(waitMinutes / 60)} ساعة و ${waitMinutes % 60} دقيقة`, 'info');
-            // استخدام وقت الفتح كوقت للحجز
-            const bookingDate = now.toISOString().split('T')[0];
-            const bookingTime = `${String(openHour).padStart(2, '0')}:${String(openMinute).padStart(2, '0')}`;
-            
-            // متابعة الحجز مع التاريخ والوقت المحسوبين
-            await completeQuickBooking(salon, salonId, profile, bookingDate, bookingTime);
-            return;
-        }
-
-        if (currentMinutes > closeMinutes - 60) {
-            showToast(`❌ الصالون سيغلق قريباً (آخر موعد للحجز هو ${closeTime} - قبل الإغلاق بساعة)`, 'error');
-            return;
-        }
-
-        // 5. اختيار الخدمة
+        // 4. ============================================================
+        // اختيار الخدمة (مع قائمة منبثقة)
+        // ============================================================
         let selectedService = null;
+
         if (salon.services && salon.services.length > 0) {
             if (salon.services.length === 1) {
+                // خدمة واحدة فقط → اختيارها تلقائياً
                 selectedService = salon.services[0];
+                console.log('🟢 خدمة واحدة فقط، تم اختيارها تلقائياً:', selectedService.name);
             } else {
+                // خدمات متعددة → عرض قائمة للاختيار
                 const serviceOptions = salon.services.map((s, index) => 
                     `${index + 1}. ${s.name} - ${s.price} دج`
                 ).join('\n');
@@ -6181,135 +5319,39 @@ async function quickBooking(salonId) {
 
                 const selectedIndex = parseInt(choice) - 1;
                 if (isNaN(selectedIndex) || selectedIndex < 0 || selectedIndex >= salon.services.length) {
-                    showToast('❌ اختيار غير صحيح', 'error');
+                    showToast('❌ اختيار غير صحيح، يرجى المحاولة مرة أخرى', 'error');
                     return;
                 }
+
                 selectedService = salon.services[selectedIndex];
+                console.log('🟢 تم اختيار الخدمة:', selectedService.name);
             }
         } else {
+            // لا توجد خدمات → خدمة افتراضية
             selectedService = { name: 'خدمة أساسية', price: 500 };
+            console.log('🟢 لا توجد خدمات، استخدام خدمة افتراضية');
         }
 
-        // 6. حساب أقرب وقت متاح (بعد الوقت الحالي بـ 30 دقيقة على الأقل)
-        const minBookingTime = new Date(now.getTime() + 30 * 60 * 1000);
-        let bookingHour = minBookingTime.getHours();
-        let bookingMinute = Math.ceil(minBookingTime.getMinutes() / 30) * 30;
-        if (bookingMinute === 60) {
-            bookingHour++;
-            bookingMinute = 0;
-        }
-        if (bookingHour > closeHour || (bookingHour === closeHour && bookingMinute >= closeMinute)) {
-            showToast('❌ لا توجد أوقات متاحة اليوم', 'error');
-            return;
-        }
+        // 5. تحديد التاريخ والوقت
+        const today = new Date().toISOString().split('T')[0];
+        const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+        const defaultTime = '10:00';
 
-        const bookingTime = `${String(bookingHour).padStart(2, '0')}:${String(bookingMinute).padStart(2, '0')}`;
-        const bookingDate = now.toISOString().split('T')[0];
-
-        // 7. التحقق من عدم وجود حجز مكرر في نفس الوقت
-        const existingRes = await fetch(`${API_BASE}/appointments/check`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                salonId,
-                date: bookingDate,
-                time: bookingTime
-            })
-        });
-        const existingData = await existingRes.json();
-        if (existingData.exists) {
-            showToast('❌ هذا الوقت محجوز مسبقاً، اختر وقتاً آخر', 'error');
-            // محاولة إيجاد وقت آخر
-            let found = false;
-            for (let i = 30; i <= 120; i += 30) {
-                const newTime = new Date(minBookingTime.getTime() + i * 60 * 1000);
-                let h = newTime.getHours();
-                let m = Math.ceil(newTime.getMinutes() / 30) * 30;
-                if (m === 60) { h++; m = 0; }
-                if (h > closeHour || (h === closeHour && m >= closeMinute)) break;
-                const checkTime = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-                const checkRes = await fetch(`${API_BASE}/appointments/check`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ salonId, date: bookingDate, time: checkTime })
-                });
-                const checkData = await checkRes.json();
-                if (!checkData.exists) {
-                    // عرض خيار للعميل
-                    const confirm = confirm(`⏰ الوقت ${checkTime} متاح. هل تريد الحجز فيه؟`);
-                    if (confirm) {
-                        await completeQuickBooking(salon, salonId, profile, bookingDate, checkTime);
-                        found = true;
-                    }
-                    break;
-                }
-            }
-            if (!found) {
-                showToast('❌ لا توجد أوقات متاحة اليوم، يرجى اختيار يوم آخر', 'error');
-            }
-            return;
-        }
-
-        // 8. إتمام الحجز
-        await completeQuickBooking(salon, salonId, profile, bookingDate, bookingTime);
-
-    } catch (error) {
-        console.error('❌ فشل الحجز السريع:', error);
-        showToast('❌ فشل الحجز السريع: ' + error.message, 'error');
-    }
-}
-
-// ============================================================
-// ✅ إتمام الحجز السريع (دالة مساعدة)
-// ============================================================
-async function completeQuickBooking(salon, salonId, profile, date, time) {
-    try {
-        // اختيار الموظف (أول موظف أو افتراضي)
-        const staff = salon.staff?.[0] || 'موظف رئيسي';
-
-        // اختيار الخدمة (أول خدمة أو افتراضية)
-        let selectedService = null;
-        if (salon.services && salon.services.length > 0) {
-            if (salon.services.length === 1) {
-                selectedService = salon.services[0];
-            } else {
-                // إذا كانت هناك خدمات متعددة، نأخذ الأولى ولكن نعطي خياراً للعميل
-                const serviceOptions = salon.services.map((s, index) => 
-                    `${index + 1}. ${s.name} - ${s.price} دج`
-                ).join('\n');
-                const choice = prompt(
-                    `🛠️ اختر الخدمة المطلوبة:\n\n${serviceOptions}\n\nأدخل رقم الخدمة (1-${salon.services.length}) أو اضغط Enter للخدمة الأولى:`
-                );
-                if (choice === null) {
-                    showToast('❌ تم إلغاء الحجز', 'info');
-                    return;
-                }
-                const selectedIndex = parseInt(choice) - 1;
-                if (isNaN(selectedIndex) || selectedIndex < 0 || selectedIndex >= salon.services.length) {
-                    selectedService = salon.services[0];
-                } else {
-                    selectedService = salon.services[selectedIndex];
-                }
-            }
-        } else {
-            selectedService = { name: 'خدمة أساسية', price: 500 };
-        }
-
-        // إرسال الحجز
+        // 6. إرسال الحجز
         const res = await fetch(`${API_BASE}/appointments/request`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                salonId: salonId,
+                salonId,
                 customerId: localStorage.getItem('customerId'),
                 clientName: profile.name,
                 clientPhone: profile.phone,
                 clientEmail: profile.email,
                 services: [selectedService],
                 totalPrice: selectedService.price,
-                staff: staff,
-                date: date,
-                time: time,
+                staff,
+                date: tomorrow,
+                time: defaultTime,
                 payment: 'cash',
                 notes: 'حجز سريع',
                 recurring: 'none'
@@ -6318,18 +5360,18 @@ async function completeQuickBooking(salon, salonId, profile, date, time) {
 
         const data = await res.json();
         if (res.ok) {
-            showToast(`✅ تم الحجز السريع لخدمة "${selectedService.name}" في ${date} الساعة ${time}!`, 'success');
+            showToast(`✅ تم الحجز السريع لخدمة "${selectedService.name}"!`, 'success');
             loadSalons();
             refreshNotifications();
         } else {
             showToast(`❌ ${data.message || 'فشل الحجز'}`, 'error');
         }
+
     } catch (error) {
-        console.error('❌ فشل إتمام الحجز السريع:', error);
-        showToast('❌ فشل إتمام الحجز السريع', 'error');
+        console.error('❌ فشل الحجز السريع:', error);
+        showToast('❌ فشل الحجز السريع', 'error');
     }
 }
-    
 // ============================================================
 // حذف جميع تقييمات صالون بواسطة Admin
 // ============================================================
@@ -6815,6 +5857,60 @@ document.getElementById('filterSort')?.addEventListener('change', applyFilters);
 document.getElementById('filterPrice')?.addEventListener('change', applyFilters);
 document.getElementById('filterRating')?.addEventListener('change', applyFilters);
 document.getElementById('filterOpen')?.addEventListener('change', applyFilters);
+
+// ===== بحث ذكي مع اقتراحات =====
+const searchInput = document.getElementById('searchSalon');
+const searchSuggestions = document.createElement('div');
+searchSuggestions.id = 'searchSuggestions';
+searchSuggestions.style.cssText = `
+    position: absolute;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    max-height: 200px;
+    overflow-y: auto;
+    width: 100%;
+    z-index: 1000;
+    display: none;
+    box-shadow: var(--shadow);
+`;
+searchInput.parentElement.style.position = 'relative';
+searchInput.parentElement.appendChild(searchSuggestions);
+
+searchInput.addEventListener('input', function() {
+    const query = this.value.trim().toLowerCase();
+    if (query.length < 1) {
+        searchSuggestions.style.display = 'none';
+        return;
+    }
+    
+    const suggestions = allSalons
+        .filter(s => s.name.toLowerCase().includes(query) || (s.city && s.city.toLowerCase().includes(query)))
+        .slice(0, 5);
+    
+    if (suggestions.length === 0) {
+        searchSuggestions.style.display = 'none';
+        return;
+    }
+    
+    searchSuggestions.innerHTML = suggestions.map(s => `
+        <div style="padding:0.5rem 0.8rem;cursor:pointer;border-bottom:1px solid var(--border-color);hover:background:var(--input-bg);"
+             onclick="document.getElementById('searchSalon').value='${s.name}';searchSuggestions.style.display='none';applyFilters();">
+            <strong>${s.name}</strong>
+            <span style="font-size:0.7rem;opacity:0.5;margin-right:0.5rem;">${s.city}</span>
+            <span style="font-size:0.7rem;color:var(--gold);">⭐ ${s.rating || 0}</span>
+        </div>
+    `).join('');
+    
+    searchSuggestions.style.display = 'block';
+});
+
+// إخفاء الاقتراحات عند النقر خارجها
+document.addEventListener('click', function(e) {
+    if (!searchSuggestions.contains(e.target) && e.target !== searchInput) {
+        searchSuggestions.style.display = 'none';
+    }
+});
     
 // ===== الحصول على الصالونات القريبة =====
 function getNearbySalons() {
@@ -7313,9 +6409,6 @@ document.addEventListener('click', function(e) {
     
 // ===== Booking =====
 let bookingSalonId = null;
-// ============================================================
-// ✅ فتح نافذة الحجز (محسّن لتخزين _id مع الخدمات)
-// ============================================================
 async function openBooking(salonId) {
     bookingSalonId = salonId;
     try {
@@ -7323,7 +6416,95 @@ async function openBooking(salonId) {
         const salon = await res.json();
 
         document.getElementById('bookSalonName').value = salon.name;
+// ============================================================
+// معالج نموذج الحجز
+// ============================================================
+document.getElementById('bookingForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    console.log('🟢 محاولة تأكيد الحجز...');
 
+    const salonId = bookingSalonId;
+    const select = document.getElementById('bookService');
+    const selectedOptions = Array.from(select.selectedOptions);
+    const services = selectedOptions.map(opt => ({ name: opt.value, price: parseInt(opt.dataset.price) || 0 }));
+    
+    // ✅ حساب السعر مع الخصم
+    let originalPrice = services.reduce((s, item) => s + item.price, 0);
+    let totalPrice = originalPrice;
+    let discountAmount = 0;
+    let couponId = null;
+    let couponCode = null;
+    
+    if (appliedCoupon) {
+        if (appliedCoupon.type === 'percentage') {
+            discountAmount = (originalPrice * appliedCoupon.value) / 100;
+            if (appliedCoupon.maxDiscount > 0) {
+                discountAmount = Math.min(discountAmount, appliedCoupon.maxDiscount);
+            }
+        } else {
+            discountAmount = appliedCoupon.value;
+        }
+        discountAmount = Math.round(discountAmount);
+        totalPrice = Math.max(0, originalPrice - discountAmount);
+        couponId = appliedCoupon._id;
+        couponCode = appliedCoupon.code;
+    }
+    
+    const staff = document.getElementById('bookStaff').value;
+    const date = document.getElementById('bookDate').value;
+    const time = document.getElementById('bookTime').value;
+    const clientName = document.getElementById('bookClientName').value.trim();
+    const clientPhone = document.getElementById('bookClientPhone').value.trim();
+    const clientEmail = document.getElementById('bookClientEmail').value.trim();
+    const payment = document.getElementById('bookPayment').value;
+    const notes = document.getElementById('bookNotes').value.trim();
+    const recurring = document.getElementById('bookRecurring').value;
+    const customerId = localStorage.getItem('customerId') || null;
+
+    if (!services.length || !staff || !date || !time || !clientName || !clientPhone) {
+        showToast('❌ الرجاء اختيار خدمة وملء جميع الحقول المطلوبة', 'error');
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/appointments/request`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                salonId, customerId, clientName, clientPhone, clientEmail,
+                services, 
+                totalPrice,        // ✅ السعر بعد الخصم
+                originalPrice,     // ✅ السعر الأصلي
+                discountAmount,    // ✅ قيمة الخصم
+                couponId,          // ✅ معرف الكوبون المطبق
+                couponCode,        // ✅ كود الكوبون
+                staff, date, time, payment, notes, recurring
+            })
+        });
+        const data = await res.json();
+        console.log('📨 رد الخادم:', data);
+
+        if (res.ok) {
+            showToast('✅ تم إرسال طلب الحجز بنجاح!', 'success');
+            closeModal('bookingModal');
+            document.getElementById('bookingForm').reset();
+            document.getElementById('bookTotalPrice').value = '';
+            document.getElementById('discountDisplay').style.display = 'none';
+            document.getElementById('finalPriceDisplay').style.display = 'none';
+            document.getElementById('removeCouponBtn').style.display = 'none';
+            document.getElementById('couponFeedback').innerHTML = '';
+            appliedCoupon = null;
+            refreshNotifications();
+            if (localStorage.getItem('token')) loadDashboard();
+        } else {
+            showToast(`❌ ${data.message || 'فشل الحجز'}`, 'error');
+        }
+    } catch (error) {
+        console.error('❌ خطأ في الحجز:', error);
+        showToast('❌ فشل الاتصال بالخادم', 'error');
+    }
+});
+   
         // ============================================================
         // جلب بيانات العميل إذا كان مسجلاً
         // ============================================================
@@ -7349,25 +6530,15 @@ async function openBooking(salonId) {
         if (!salon.staff?.length) staffSelect.innerHTML += '<option value="موظف رئيسي">موظف رئيسي</option>';
 
         // ============================================================
-        // تعبئة الخدمات (مع تخزين _id في data-id)
+        // تعبئة الخدمات (مع التأكد من تشغيل updateTotalPrice)
         // ============================================================
         const serviceSelect = document.getElementById('bookService');
         serviceSelect.innerHTML = '';
         (salon.services || []).forEach(s => {
-            // ✅ تخزين _id في data-id (مهم للربط بالمخزون)
-            const serviceId = s._id || s.id || '';
-            serviceSelect.innerHTML += `
-                <option value="${s.name}" data-id="${serviceId}" data-price="${s.price}">
-                    ${s.name} - ${s.price} دج
-                </option>
-            `;
+            serviceSelect.innerHTML += `<option value="${s.name}" data-price="${s.price}">${s.name} - ${s.price} دج</option>`;
         });
         if (!salon.services?.length) {
-            serviceSelect.innerHTML += `
-                <option value="حلاقة رجالي" data-id="" data-price="500">
-                    حلاقة رجالي - 500 دج
-                </option>
-            `;
+            serviceSelect.innerHTML += '<option value="حلاقة رجالي" data-price="500">حلاقة رجالي - 500 دج</option>';
         }
         // إعادة تعيين السعر الإجمالي
         document.getElementById('bookTotalPrice').value = '';
@@ -7378,36 +6549,47 @@ async function openBooking(salonId) {
         const timeSelect = document.getElementById('bookTime');
         timeSelect.innerHTML = '<option value="">اختر الوقت</option>';
 
+        // الحصول على اليوم الحالي واسم اليوم
         const today = new Date();
         const dayNames = ['الأحد', 'الإثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت'];
         const dayName = dayNames[today.getDay()];
+
+        // جلب ساعات العمل لهذا اليوم
         const dayHours = salon.hours ? salon.hours[dayName] : null;
 
         if (dayHours && dayHours !== 'مغلق' && dayHours !== 'closed') {
             const [openTime, closeTime] = dayHours.split('-').map(t => t.trim());
+            
+            // تحويل الأوقات إلى دقائق لتسهيل المقارنة
             const openMinutes = timeToMinutes(openTime);
             const closeMinutes = timeToMinutes(closeTime);
             const now = new Date();
             const todayStr = now.toISOString().split('T')[0];
             const selectedDateStr = document.getElementById('bookDate').value;
 
+            // توليد الأوقات بفواصل 30 دقيقة
             for (let minutes = openMinutes; minutes <= closeMinutes; minutes += 30) {
                 const hours = String(Math.floor(minutes / 60)).padStart(2, '0');
                 const mins = String(minutes % 60).padStart(2, '0');
                 const timeStr = `${hours}:${mins}`;
+                
+                // التحقق من أن الوقت ليس في الماضي (إذا كان اليوم هو اليوم)
                 let includeTime = true;
                 if (selectedDateStr === todayStr) {
                     const [h, m] = timeStr.split(':').map(Number);
                     const selectedDateTime = new Date();
                     selectedDateTime.setHours(h, m, 0, 0);
                     const minBookingTime = new Date(now.getTime() + 30 * 60 * 1000);
-                    if (selectedDateTime < minBookingTime) includeTime = false;
+                    if (selectedDateTime < minBookingTime) {
+                        includeTime = false;
+                    }
                 }
                 if (includeTime) {
                     timeSelect.innerHTML += `<option value="${timeStr}">${timeStr}</option>`;
                 }
             }
         } else {
+            // إذا لم توجد ساعات عمل، عرض الأوقات الافتراضية مع مراعاة الوقت الحالي
             const defaultTimes = ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00'];
             const now = new Date();
             const todayStr = now.toISOString().split('T')[0];
@@ -7419,13 +6601,16 @@ async function openBooking(salonId) {
                 const selectedDateTime = new Date();
                 selectedDateTime.setHours(hours, minutes, 0, 0);
                 let includeTime = true;
-                if (selectedDateStr === todayStr && selectedDateTime < minBookingTime) includeTime = false;
+                if (selectedDateStr === todayStr && selectedDateTime < minBookingTime) {
+                    includeTime = false;
+                }
                 if (includeTime) {
                     timeSelect.innerHTML += `<option value="${time}">${time}</option>`;
                 }
             });
         }
 
+        // إذا لم تظهر أي أوقات، أضف رسالة
         if (timeSelect.options.length <= 1) {
             timeSelect.innerHTML = '<option value="">لا توجد أوقات متاحة اليوم</option>';
         }
@@ -7436,11 +6621,6 @@ async function openBooking(salonId) {
         const todayDate = new Date().toISOString().split('T')[0];
         document.getElementById('bookDate').setAttribute('min', todayDate);
         document.getElementById('bookDate').value = todayDate;
-
-        // ✅ تحديث السعر عند تغيير الخدمات (ربط الدالة)
-        serviceSelect.onchange = function() {
-            updateTotalPrice();
-        };
 
         // فتح النافذة
         openModal('bookingModal');
@@ -7534,123 +6714,6 @@ async function loadDashboard() {
             document.getElementById('setGpsStatus').textContent = `✅ ${salon.lat.toFixed(4)}, ${salon.lng.toFixed(4)}`;
         }
 
-// ===== تحديث ربط المنتج بخدمة =====
-async function updateInventoryService(itemId, serviceId, serviceName) {
-    const token = localStorage.getItem('token');
-    try {
-        const res = await fetch(`${API_BASE}/inventory/${itemId}/service`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ 
-                serviceId: serviceId || null,
-                serviceName: serviceName || '' 
-            })
-        });
-        if (res.ok) {
-            showToast('✅ تم تحديث الربط', 'success');
-        }
-    } catch (error) {
-        console.error('❌ فشل التحديث:', error);
-    }
-}
-
-// ===== تحديث كمية الاستهلاك لكل حجز =====
-async function updateInventoryConsumption(itemId, value) {
-    const token = localStorage.getItem('token');
-    const consumption = parseFloat(value) || 0;
-    try {
-        const res = await fetch(`${API_BASE}/inventory/${itemId}/consumption`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ consumptionPerBooking: consumption })
-        });
-        if (res.ok) {
-            showToast('✅ تم تحديث الاستهلاك', 'success');
-        }
-    } catch (error) {
-        console.error('❌ فشل التحديث:', error);
-    }
-}
-
-// ============================================================
-// ✅ تسجيل المستخدم في OneSignal للإشعارات
-// ============================================================
-async function registerUserWithOneSignal(userId, userType) {
-    try {
-        if (typeof OneSignal === 'undefined' || !OneSignal) {
-            console.warn('⚠️ OneSignal غير متاح');
-            return;
-        }
-        
-        await OneSignal.login(userId);
-        console.log(`✅ تم تسجيل الدخول في OneSignal للمستخدم ${userId}`);
-        
-        await OneSignal.sendTags({
-            user_type: userType,
-            user_id: userId
-        });
-        console.log(`✅ تم إضافة علامات للمستخدم ${userId}: user_type=${userType}`);
-        
-        const permission = await OneSignal.Notifications.requestPermission({
-            modalOptions: {
-                title: "🔔 حلاقتي تريد إرسال الإشعارات",
-                message: "احصل على تحديثات فورية حول حجوزاتك وتأكيداتها",
-                acceptButton: "✅ موافق",
-                cancelButton: "❌ ليس الآن"
-            }
-        });
-        
-        if (permission === 'granted') {
-            console.log('✅ تم منح إذن الإشعارات');
-            showToast('✅ تم تفعيل الإشعارات!', 'success');
-        } else {
-            console.warn('⚠️ تم رفض إذن الإشعارات');
-        }
-        
-    } catch (error) {
-        console.error('❌ فشل تسجيل OneSignal:', error);
-    }
-}
-
-// ============================================================
-// ✅ تفعيل الإشعارات يدوياً (زر في الإعدادات)
-// ============================================================
-async function enableNotificationsManually() {
-    const userId = localStorage.getItem('customerId') || localStorage.getItem('salonId');
-    const userType = localStorage.getItem('customerId') ? 'customer' : 'salon';
-    
-    if (!userId) {
-        showToast('❌ يرجى تسجيل الدخول أولاً', 'error');
-        return;
-    }
-    
-    await registerUserWithOneSignal(userId, userType);
-}
-
-// ============================================================
-// ✅ طلب إذن الإشعارات عند تسجيل الدخول (تلقائي)
-// ============================================================
-async function autoRegisterNotifications() {
-    const userId = localStorage.getItem('customerId') || localStorage.getItem('salonId');
-    const userType = localStorage.getItem('customerId') ? 'customer' : 'salon';
-    
-    if (!userId) {
-        return;
-    }
-    
-    // التحقق مما إذا كان قد طلب الإذن مسبقاً
-    if (!localStorage.getItem('notificationPermissionAsked')) {
-        localStorage.setItem('notificationPermissionAsked', 'true');
-        await registerUserWithOneSignal(userId, userType);
-    }
-}
-        
         // ===== معالج نموذج الإعدادات =====
         const settingsForm = document.getElementById('settingsForm');
         const newForm = settingsForm.cloneNode(true);
@@ -8733,34 +7796,10 @@ document.querySelectorAll('.sidebar .menu a').forEach(link => {
         this.classList.add('active');
         const page = this.dataset.dash;
         document.querySelectorAll('#dashContent > div').forEach(div => div.classList.add('hidden'));
-        const map = {
-            'overview': 'dashOverview',
-            'appointments': 'dashAppointments',
-            'services': 'dashServices',
-            'staff': 'dashStaff',
-            'hours': 'dashHours',
-            'reviews': 'dashReviews',
-            'inventory': 'dashInventory',
-            'coupons': 'dashCoupons',
-            'quotes': 'dashQuotes',
-            'settings': 'dashSettings'
-        };
+        const map = { 'overview':'dashOverview', 'appointments':'dashAppointments', 'services':'dashServices', 'staff':'dashStaff', 'hours':'dashHours', 'reviews':'dashReviews', 'inventory':'dashInventory','coupons':'dashCoupons','quotes':'dashQuotes','settings':'dashSettings'};
         const target = document.getElementById(map[page]);
-        if (target) {
-            target.classList.remove('hidden');
-            if (page === 'settings') {
-                // ✅ تحميل ربط المخزون عند فتح الإعدادات
-                setTimeout(() => {
-                    loadInventoryServiceMapping();
-                }, 300);
-            }
-            if (['overview', 'appointments', 'reviews'].includes(page)) {
-                loadDashboard();
-            }
-            if (page === 'inventory') {
-                loadInventory();
-            }
-        }
+        if (target) { target.classList.remove('hidden'); if (['overview','appointments','reviews'].includes(page)) loadDashboard(); }
+        
     });
 });
 // ============================================================
@@ -9008,27 +8047,6 @@ async function deleteInventory(id) {
         }
     } catch (error) {
         showToast('❌ فشل الاتصال', 'error');
-    }
-}
-
-// ===== إعادة تعبئة المخزون =====
-async function restockInventory(itemId, quantity) {
-    const token = localStorage.getItem('token');
-    try {
-        const res = await fetch(`${API_BASE}/inventory/${itemId}/restock`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ quantity })
-        });
-        if (res.ok) {
-            showToast('✅ تم إعادة التعبئة', 'success');
-            loadInventory();
-        }
-    } catch (error) {
-        console.error('❌ فشل إعادة التعبئة:', error);
     }
 }
 
@@ -9545,7 +8563,7 @@ function sendContactMessage(e) {
     // قراءة القيم مع التحقق من وجود العناصر
     const nameInput = document.getElementById('contactName');
     const emailInput = document.getElementById('contactEmail');
-    const phoneInput = document.getElementById('contactPhone'); // ✅ جديد
+    const phoneInput = document.getElementById('contactPhone');
     const messageInput = document.getElementById('contactMessage');
 
     // ✅ التحقق من وجود العناصر
@@ -9557,7 +8575,7 @@ function sendContactMessage(e) {
 
     const name = nameInput.value.trim();
     const email = emailInput.value.trim();
-    const phone = phoneInput.value.trim(); // ✅ جديد
+    const phone = phoneInput.value.trim();
     const message = messageInput.value.trim();
 
     console.log('📝 القيم المقروءة:', { name, email, phone, message });
@@ -9572,15 +8590,15 @@ function sendContactMessage(e) {
 
     // ✅ إرسال عبر EmailJS مع تمرير المفتاح العمومي كمعامل رابع
     emailjs.send(
-        'service_206xiaz',                 // Service ID
-        'template_cac0ccs',                // Template ID
+        'service_206xiaz',
+        'template_cac0ccs',
         {
-            from_name: name,
-            from_email: email,
-            from_phone: phone,
-            message: message
+            from_name: name,      // ✅ يطابق {{from_name}}
+            from_email: email,    // ✅ يطابق {{from_email}}
+            from_phone: phone,    // ✅ يطابق {{from_phone}}
+            message: message      // ✅ يطابق {{message}}
         },
-        'zYIcaJnLsBBaPgfdi'                // ✅ Public Key (يُضاف كمعامل رابع)
+        'zYIcaJnLsBBaPgfdi'
     )
     .then(() => {
         showToast('✅ تم إرسال رسالتك! سنتواصل معك قريباً', 'success');
@@ -9593,32 +8611,8 @@ function sendContactMessage(e) {
         showToast('❌ فشل الإرسال، حاول مرة أخرى', 'error');
     });
 }
-
+    
 init();
-
-// ============================================================
-// ✅ تفعيل الإشعارات يدوياً (زر في الإعدادات)
-// ============================================================
-async function enableNotificationsManually() {
-    try {
-        const userId = localStorage.getItem('customerId') || localStorage.getItem('salonId');
-        const userType = localStorage.getItem('customerId') ? 'customer' : 'salon';
-        
-        if (!userId) {
-            showToast('❌ يرجى تسجيل الدخول أولاً', 'error');
-            return;
-        }
-        
-        showToast('⏳ جاري تفعيل الإشعارات...', 'info');
-        
-        // استدعاء دالة التسجيل
-        await registerUserWithOneSignal(userId, userType);
-        
-    } catch (error) {
-        console.error('❌ فشل تفعيل الإشعارات يدوياً:', error);
-        showToast('❌ حدث خطأ، حاول مرة أخرى', 'error');
-    }
-}
 
 // ✅ تعديل موظف
 async function editStaff(staffId) {
@@ -9869,244 +8863,51 @@ async function editQuote(quoteId) {
     }
 }
 
-// ============================================================
-// ✅ ربط المخزون بالخدمات (تحميل وعرض)
-// ============================================================
-
-async function loadInventoryServiceMapping() {
-    console.log('🔄 loadInventoryServiceMapping تم استدعاؤها');
-    const container = document.getElementById('inventoryServiceMapping');
-    if (!container) {
-        console.error('❌ العنصر inventoryServiceMapping غير موجود في DOM');
-        return;
-    }
-
-    const token = localStorage.getItem('token');
-    const salonId = localStorage.getItem('salonId');
-
-    if (!token || !salonId) {
-        container.innerHTML = `
-            <div style="text-align:center;padding:1rem;color:var(--text-color);opacity:0.5;">
-                <i class="fas fa-lock" style="font-size:1.5rem;display:block;margin-bottom:0.5rem;"></i>
-                يرجى تسجيل الدخول كصالون لعرض هذا القسم
-            </div>
-        `;
-        return;
-    }
-
-    try {
-        // 1. جلب المنتجات من المخزون
-        console.log('📡 جلب المنتجات من:', `${API_BASE}/inventory/${salonId}`);
-        const invRes = await fetch(`${API_BASE}/inventory/${salonId}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        if (!invRes.ok) {
-            const errorData = await invRes.json().catch(() => ({}));
-            throw new Error(errorData.message || 'فشل جلب المنتجات');
-        }
-        const inventory = await invRes.json();
-        console.log('📦 المنتجات:', inventory.length);
-
-        // 2. جلب الخدمات من الصالون
-        const salonRes = await fetch(`${API_BASE}/salons/${salonId}`);
-        if (!salonRes.ok) throw new Error('فشل جلب الخدمات');
-        const salon = await salonRes.json();
-        const services = salon.services || [];
-        console.log('✂️ الخدمات:', services.length);
-
-        // 3. عرض النتائج
-        if (inventory.length === 0) {
-            container.innerHTML = `
-                <div style="text-align:center;padding:1rem;color:var(--text-color);opacity:0.5;">
-                    <i class="fas fa-box" style="font-size:1.5rem;display:block;margin-bottom:0.5rem;"></i>
-                    لا توجد منتجات في المخزون. أضف منتجات أولاً!
-                </div>
-            `;
-            return;
-        }
-
-        if (services.length === 0) {
-            container.innerHTML = `
-                <div style="text-align:center;padding:1rem;color:var(--text-color);opacity:0.5;">
-                    <i class="fas fa-scissors" style="font-size:1.5rem;display:block;margin-bottom:0.5rem;"></i>
-                    لا توجد خدمات. أضف خدمات أولاً!
-                </div>
-            `;
-            return;
-        }
-
-        // 4. بناء الجدول
-        let html = `
-            <div style="display:grid;grid-template-columns:1fr 1.5fr 1fr 0.8fr;gap:0.5rem;font-weight:600;padding:0.3rem 0;border-bottom:2px solid var(--border-color);color:var(--gold);font-size:0.8rem;">
-                <span>المنتج</span>
-                <span>الخدمة المرتبطة</span>
-                <span>الاستهلاك لكل حجز</span>
-                <span>المتبقي</span>
-            </div>
-        `;
-
-        inventory.forEach(item => {
-            const currentServiceId = item.serviceId || '';
-            const serviceIdForSelect = typeof currentServiceId === 'object' ? currentServiceId._id || currentServiceId : currentServiceId;
-            
-            html += `
-                <div style="display:grid;grid-template-columns:1fr 1.5fr 1fr 0.8fr;gap:0.5rem;padding:0.3rem 0;border-bottom:1px solid var(--border-color);align-items:center;font-size:0.85rem;">
-                    <span style="font-weight:500;">${item.name}</span>
-                    
-                    <select onchange="updateInventoryService('${item._id}', this.value)" 
-                            style="padding:0.3rem 0.5rem;border-radius:6px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--text-color);font-size:0.8rem;width:100%;">
-                        <option value="">-- لا توجد خدمة --</option>
-                        ${services.map(s => {
-                            const serviceId = s._id || s.name;
-                            const selected = (serviceIdForSelect === serviceId || serviceIdForSelect === s.name) ? 'selected' : '';
-                            return `<option value="${serviceId}" ${selected}>${s.name}</option>`;
-                        }).join('')}
-                    </select>
-                    
-                    <input type="number" 
-                           id="consumption_${item._id}" 
-                           value="${item.consumptionPerBooking || 0}" 
-                           min="0" 
-                           step="0.5"
-                           placeholder="0"
-                           style="width:100%;padding:0.3rem 0.5rem;border-radius:6px;border:1px solid var(--border-color);background:var(--input-bg);color:var(--text-color);font-size:0.8rem;"
-                           onchange="updateInventoryConsumption('${item._id}', this.value)">
-                    
-                    <span style="font-size:0.8rem;opacity:0.7;">
-                        ${item.quantity} ${item.unit || ''}
-                        ${item.quantity <= item.minQuantity ? ' ⚠️' : ''}
-                    </span>
-                </div>
-            `;
-        });
-
-        container.innerHTML = html;
-        console.log('✅ تم عرض ربط المخزون بنجاح');
-
-    } catch (error) {
-        console.error('❌ فشل تحميل ربط المخزون:', error);
-        container.innerHTML = `
-            <div style="text-align:center;padding:1rem;color:var(--danger);">
-                <i class="fas fa-exclamation-triangle" style="font-size:1.5rem;display:block;margin-bottom:0.5rem;"></i>
-                ${error.message || 'فشل تحميل البيانات'}
-                <br>
-                <small style="opacity:0.5;">تأكد من اتصالك بالإنترنت ومن صحة بيانات الدخول</small>
-            </div>
-        `;
+// ===== الوضع المظلم التلقائي =====
+function setThemeBasedOnSystem() {
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const savedTheme = localStorage.getItem('theme');
+    
+    if (savedTheme) {
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        updateThemeIcon(savedTheme);
+    } else {
+        const theme = prefersDark ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('theme', theme);
+        updateThemeIcon(theme);
     }
 }
 
-// ============================================================
-// ✅ تحديث ربط المنتج بخدمة
-// ============================================================
-async function updateInventoryService(itemId, serviceId) {
-    console.log(`🔄 تحديث ربط المنتج ${itemId} بخدمة ${serviceId}`);
-    const token = localStorage.getItem('token');
-    if (!token) {
-        showToast('❌ يرجى تسجيل الدخول', 'error');
-        return;
-    }
-
-    try {
-        const res = await fetch(`${API_BASE}/inventory/${itemId}/service`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ serviceId: serviceId || null })
-        });
-        if (res.ok) {
-            showToast('✅ تم تحديث الربط', 'success');
-        } else {
-            const data = await res.json();
-            showToast(`❌ ${data.message || 'فشل التحديث'}`, 'error');
-        }
-    } catch (error) {
-        console.error('❌ فشل التحديث:', error);
-        showToast('❌ فشل الاتصال بالخادم', 'error');
+function updateThemeIcon(theme) {
+    const toggle = document.getElementById('themeToggle');
+    if (toggle) {
+        toggle.innerHTML = theme === 'dark' ? '<i class="fas fa-moon"></i>' : '<i class="fas fa-sun"></i>';
     }
 }
 
-// ============================================================
-// ✅ تحديث كمية الاستهلاك لكل حجز
-// ============================================================
-async function updateInventoryConsumption(itemId, value) {
-    console.log(`🔄 تحديث استهلاك المنتج ${itemId} إلى ${value}`);
-    const token = localStorage.getItem('token');
-    const consumption = parseFloat(value) || 0;
-    if (!token) {
-        showToast('❌ يرجى تسجيل الدخول', 'error');
-        return;
+// استمع لتغييرات النظام
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+    if (!localStorage.getItem('theme')) {
+        const theme = e.matches ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+        updateThemeIcon(theme);
     }
+});
 
-    try {
-        const res = await fetch(`${API_BASE}/inventory/${itemId}/consumption`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ consumptionPerBooking: consumption })
-        });
-        if (res.ok) {
-            showToast('✅ تم تحديث الاستهلاك', 'success');
-        } else {
-            const data = await res.json();
-            showToast(`❌ ${data.message || 'فشل التحديث'}`, 'error');
-        }
-    } catch (error) {
-        console.error('❌ فشل التحديث:', error);
-        showToast('❌ فشل الاتصال بالخادم', 'error');
-    }
-}
+// استدعاء عند التحميل
+setThemeBasedOnSystem();
 
-// ============================================================
-// ✅ تسجيل المستخدم في OneSignal للحصول على إشعارات Push
-// ============================================================
-async function registerUserWithOneSignal(userId, userType) {
-    try {
-        // التحقق من وجود OneSignal
-        if (typeof OneSignal === 'undefined' || !OneSignal) {
-            console.warn('⚠️ OneSignal غير متاح، قد يكون SDK لم يتم تحميله بعد');
-            return;
-        }
-        
-        // تسجيل المستخدم باستخدام external_id
-        await OneSignal.login(userId);
-        console.log(`✅ تم تسجيل الدخول في OneSignal للمستخدم ${userId}`);
-        
-        // إضافة علامات (Tags) لتصنيف المستخدمين (مهم لإرسال إشعارات لمجموعات محددة)
-        await OneSignal.sendTags({
-            user_type: userType, // 'customer' أو 'salon'
-            user_id: userId
-        });
-        console.log(`✅ تم إضافة علامات للمستخدم ${userId}: user_type=${userType}`);
-        
-        // طلب إذن الإشعارات (إذا لم يمنح بعد)
-        const permission = await OneSignal.Notifications.requestPermission({
-            modalOptions: {
-                title: "🔔 حلاقتي تريد إرسال الإشعارات",
-                message: "احصل على تحديثات فورية حول حجوزاتك وتأكيداتها وتذكيراتها",
-                acceptButton: "✅ موافق",
-                cancelButton: "❌ ليس الآن"
-            }
-        });
-        
-        if (permission === 'granted') {
-            console.log('✅ تم منح إذن الإشعارات');
-            showToast('✅ تم تفعيل الإشعارات! ستتلقى تحديثات فورية', 'success');
-        } else {
-            console.warn('⚠️ تم رفض إذن الإشعارات');
-        }
-        
-    } catch (error) {
-        console.error('❌ فشل تسجيل OneSignal:', error);
-        // لا نعرض رسالة خطأ للمستخدم هنا حتى لا يزعجه
-    }
-}
-          
+// دالة تبديل الوضع يدوياً (تعديل الدالة الموجودة)
+const originalToggleTheme = toggleTheme;
+toggleTheme = function() {
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    updateThemeIcon(newTheme);
+};
+
 </script>
 </body>
 </html>
