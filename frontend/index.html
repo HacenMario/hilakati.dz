@@ -265,44 +265,43 @@ input, select, textarea {
 ::-webkit-scrollbar-track { background: var(--bg-body); }
 ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 10px; }
 
-/* ========== Skeleton Loading ========== */
+/* ===== Skeleton Loading محسّن ===== */
 .skeleton {
-    background: var(--skeleton);
+    background: linear-gradient(90deg, var(--skeleton) 25%, rgba(255,255,255,0.1) 50%, var(--skeleton) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.8s infinite;
     border-radius: var(--radius);
-    animation: shimmer 1.5s infinite;
-    overflow: hidden;
-    position: relative;
 }
-.skeleton::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 200%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
-    animation: shimmer-wave 1.5s infinite;
+
+@keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
 }
-@keyframes shimmer { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
-@keyframes shimmer-wave { 0% { transform: translateX(0); } 100% { transform: translateX(50%); } }
 
 .skeleton-card {
     height: 280px;
     border-radius: var(--radius);
+    transition: all 0.3s ease;
 }
+
+.skeleton-card:hover {
+    transform: scale(1.02);
+}
+
 .skeleton-cover {
     height: 130px;
-    background: var(--skeleton);
     border-radius: var(--radius) var(--radius) 0 0;
 }
+
 .skeleton-line {
     height: 14px;
     margin: 10px 16px;
     border-radius: 6px;
-    background: var(--skeleton);
 }
+
 .skeleton-line.short { width: 60%; }
 .skeleton-line.medium { width: 80%; }
+.skeleton-line.long { width: 95%; }
 
 /* ========== Header ========== */
 .header {
@@ -5858,6 +5857,60 @@ document.getElementById('filterSort')?.addEventListener('change', applyFilters);
 document.getElementById('filterPrice')?.addEventListener('change', applyFilters);
 document.getElementById('filterRating')?.addEventListener('change', applyFilters);
 document.getElementById('filterOpen')?.addEventListener('change', applyFilters);
+
+// ===== بحث ذكي مع اقتراحات =====
+const searchInput = document.getElementById('searchSalon');
+const searchSuggestions = document.createElement('div');
+searchSuggestions.id = 'searchSuggestions';
+searchSuggestions.style.cssText = `
+    position: absolute;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    max-height: 200px;
+    overflow-y: auto;
+    width: 100%;
+    z-index: 1000;
+    display: none;
+    box-shadow: var(--shadow);
+`;
+searchInput.parentElement.style.position = 'relative';
+searchInput.parentElement.appendChild(searchSuggestions);
+
+searchInput.addEventListener('input', function() {
+    const query = this.value.trim().toLowerCase();
+    if (query.length < 1) {
+        searchSuggestions.style.display = 'none';
+        return;
+    }
+    
+    const suggestions = allSalons
+        .filter(s => s.name.toLowerCase().includes(query) || (s.city && s.city.toLowerCase().includes(query)))
+        .slice(0, 5);
+    
+    if (suggestions.length === 0) {
+        searchSuggestions.style.display = 'none';
+        return;
+    }
+    
+    searchSuggestions.innerHTML = suggestions.map(s => `
+        <div style="padding:0.5rem 0.8rem;cursor:pointer;border-bottom:1px solid var(--border-color);hover:background:var(--input-bg);"
+             onclick="document.getElementById('searchSalon').value='${s.name}';searchSuggestions.style.display='none';applyFilters();">
+            <strong>${s.name}</strong>
+            <span style="font-size:0.7rem;opacity:0.5;margin-right:0.5rem;">${s.city}</span>
+            <span style="font-size:0.7rem;color:var(--gold);">⭐ ${s.rating || 0}</span>
+        </div>
+    `).join('');
+    
+    searchSuggestions.style.display = 'block';
+});
+
+// إخفاء الاقتراحات عند النقر خارجها
+document.addEventListener('click', function(e) {
+    if (!searchSuggestions.contains(e.target) && e.target !== searchInput) {
+        searchSuggestions.style.display = 'none';
+    }
+});
     
 // ===== الحصول على الصالونات القريبة =====
 function getNearbySalons() {
@@ -8808,6 +8861,52 @@ async function editQuote(quoteId) {
         showToast('❌ فشل الاتصال', 'error');
     }
 }
+
+// ===== الوضع المظلم التلقائي =====
+function setThemeBasedOnSystem() {
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const savedTheme = localStorage.getItem('theme');
+    
+    if (savedTheme) {
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        updateThemeIcon(savedTheme);
+    } else {
+        const theme = prefersDark ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('theme', theme);
+        updateThemeIcon(theme);
+    }
+}
+
+function updateThemeIcon(theme) {
+    const toggle = document.getElementById('themeToggle');
+    if (toggle) {
+        toggle.innerHTML = theme === 'dark' ? '<i class="fas fa-moon"></i>' : '<i class="fas fa-sun"></i>';
+    }
+}
+
+// استمع لتغييرات النظام
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+    if (!localStorage.getItem('theme')) {
+        const theme = e.matches ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+        updateThemeIcon(theme);
+    }
+});
+
+// استدعاء عند التحميل
+setThemeBasedOnSystem();
+
+// دالة تبديل الوضع يدوياً (تعديل الدالة الموجودة)
+const originalToggleTheme = toggleTheme;
+toggleTheme = function() {
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    updateThemeIcon(newTheme);
+};
+
 </script>
 </body>
 </html>
