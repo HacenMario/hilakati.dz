@@ -154,20 +154,6 @@ const Review = require('./models/Review');
 const Admin = require('./models/Admin');
 const Notification = require('./models/Notification');
 
-
-        for (const notif of notifications) {
-            await createNotification(salonId, 'salon', notif.title, notif.message);
-        }
-
-        console.log(`✅ تم خصم ${deductions.length} منتج`);
-        return deductions;
-
-    } catch (error) {
-        console.error('❌ فشل خصم المخزون:', error);
-        return [];
-    }
-}
-
 // ============================================================
 // ✅ دالة مساعدة لمعالجة المنتجات وخصم الكميات
 // ============================================================
