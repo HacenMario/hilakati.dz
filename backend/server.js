@@ -227,12 +227,13 @@ async function processInventoryItems(inventoryItems, salonId) {
 }
 
 // ============================================================
-// ✅ خصم المخزون عند إكمال الحجز (يدعم الخدمات المتعددة)
+// ✅ خصم المخزون عند إكمال الحجز (باستخدام serviceId فقط)
 // ============================================================
 async function deductInventoryForBooking(appointmentId) {
     try {
         const Inventory = require('./models/Inventory');
         const Appointment = require('./models/Appointment');
+        const mongoose = require('mongoose');
         
         const appointment = await Appointment.findById(appointmentId);
         if (!appointment) {
@@ -248,40 +249,55 @@ async function deductInventoryForBooking(appointmentId) {
             return [];
         }
 
-        // ✅ استخراج أسماء الخدمات ومعرفاتها
-        const serviceNames = services
-            .map(s => s.name || s.serviceName)
-            .filter(Boolean)
-            .map(name => name.trim());
-
-        const serviceIds = services
-            .map(s => s._id || s.id || s.serviceId)
-            .filter(Boolean)
-            .map(id => id.toString());
-
-        console.log(`📋 أسماء الخدمات في الحجز: ${serviceNames.join(', ')}`);
-        console.log(`📋 معرفات الخدمات في الحجز: ${serviceIds.join(', ')}`);
-
-        let inventoryItems = [];
-
-        // ✅ البحث الأول: باستخدام serviceName
-        if (serviceNames.length > 0) {
-            inventoryItems = await Inventory.find({
-                salonId: salonId,
-                isActive: true,
-                consumptionPerBooking: { $gt: 0 },
-                serviceName: { $in: serviceNames }
-            });
+        // ✅ استخراج معرفات الخدمات بطرق متعددة
+        const serviceIds = [];
+        for (const service of services) {
+            let id = null;
+            
+            // محاولة استخراج المعرف بكل الطرق الممكنة
+            if (service._id) id = service._id;
+            else if (service.id) id = service.id;
+            else if (service.serviceId) id = service.serviceId;
+            
+            if (id) {
+                // تحويل إلى String لتوحيد المقارنة
+                serviceIds.push(id.toString());
+            }
         }
 
-        // ✅ البحث الثاني: باستخدام serviceId (إذا لم نجد نتائج)
-        if (inventoryItems.length === 0 && serviceIds.length > 0) {
-            inventoryItems = await Inventory.find({
-                salonId: salonId,
-                isActive: true,
-                consumptionPerBooking: { $gt: 0 },
-                serviceId: { $in: serviceIds }
-            });
+        console.log(`📋 معرفات الخدمات في الحجز: ${serviceIds.join(', ')}`);
+
+        if (serviceIds.length === 0) {
+            console.log('ℹ️ لا توجد معرفات خدمات صالحة');
+            return [];
+        }
+
+        // ✅ البحث عن المنتجات المرتبطة بهذه الخدمات
+        // نبحث بـ serviceId كـ String أو ObjectId
+        let inventoryItems = await Inventory.find({
+            salonId: salonId,
+            isActive: true,
+            consumptionPerBooking: { $gt: 0 },
+            serviceId: { $in: serviceIds }
+        });
+
+        // ✅ إذا لم نجد نتائج، نحاول التحويل إلى ObjectId
+        if (inventoryItems.length === 0) {
+            const objectIds = serviceIds
+                .map(id => {
+                    try { return new mongoose.Types.ObjectId(id); } 
+                    catch { return null; }
+                })
+                .filter(id => id !== null);
+
+            if (objectIds.length > 0) {
+                inventoryItems = await Inventory.find({
+                    salonId: salonId,
+                    isActive: true,
+                    consumptionPerBooking: { $gt: 0 },
+                    serviceId: { $in: objectIds }
+                });
+            }
         }
 
         console.log(`📦 عدد المنتجات المرتبطة: ${inventoryItems.length}`);
@@ -292,7 +308,53 @@ async function deductInventoryForBooking(appointmentId) {
         }
 
         // ✅ معالجة المنتجات وخصم الكميات
-        return await processInventoryItems(inventoryItems, salonId);
+        const deductions = [];
+        const notifications = [];
+
+        for (const item of inventoryItems) {
+            const quantityNeeded = item.consumptionPerBooking;
+            
+            console.log(`🔍 المنتج: ${item.name}, الخدمة المرتبطة: ${item.serviceId}, المطلوب: ${quantityNeeded}, الموجود: ${item.quantity}`);
+            
+            // التحقق من كفاية المخزون
+            if (item.quantity < quantityNeeded) {
+                console.warn(`⚠️ المخزون غير كافٍ للمنتج "${item.name}"`);
+                notifications.push({
+                    title: '⚠️ مخزون غير كافٍ',
+                    message: `المنتج "${item.name}" غير كافٍ (المتبقي ${item.quantity})`
+                });
+                continue;
+            }
+
+            // خصم الكمية
+            item.quantity -= quantityNeeded;
+            item.totalConsumed = (item.totalConsumed || 0) + quantityNeeded;
+            await item.save();
+
+            deductions.push({
+                productId: item._id,
+                productName: item.name,
+                quantityDeducted: quantityNeeded,
+                remaining: item.quantity,
+                unit: item.unit
+            });
+
+            // ✅ تنبيه إذا أصبح المخزون منخفضاً
+            if (item.quantity <= item.minQuantity) {
+                notifications.push({
+                    title: '⚠️ مخزون منخفض',
+                    message: `المنتج "${item.name}" أصبح منخفضاً (${item.quantity} ${item.unit})`
+                });
+            }
+        }
+
+        // إرسال الإشعارات
+        for (const notif of notifications) {
+            await createNotification(salonId, 'salon', notif.title, notif.message);
+        }
+
+        console.log(`✅ تم خصم ${deductions.length} منتج من المخزون`);
+        return deductions;
 
     } catch (error) {
         console.error('❌ فشل خصم المخزون:', error);
@@ -301,12 +363,13 @@ async function deductInventoryForBooking(appointmentId) {
 }
 
 // ============================================================
-// ✅ استعادة المخزون عند إلغاء الحجز (يدعم الخدمات المتعددة)
+// ✅ استعادة المخزون عند إلغاء الحجز (باستخدام serviceId فقط)
 // ============================================================
 async function restoreInventoryForBooking(appointmentId) {
     try {
         const Inventory = require('./models/Inventory');
         const Appointment = require('./models/Appointment');
+        const mongoose = require('mongoose');
         
         const appointment = await Appointment.findById(appointmentId);
         if (!appointment) return;
@@ -314,37 +377,44 @@ async function restoreInventoryForBooking(appointmentId) {
         const services = appointment.services || [];
         if (services.length === 0) return;
 
-        // ✅ استخراج أسماء الخدمات ومعرفاتها
-        const serviceNames = services
-            .map(s => s.name || s.serviceName)
-            .filter(Boolean)
-            .map(name => name.trim());
-
-        const serviceIds = services
-            .map(s => s._id || s.id || s.serviceId)
-            .filter(Boolean)
-            .map(id => id.toString());
-
-        let inventoryItems = [];
-
-        // ✅ البحث الأول: باستخدام serviceName
-        if (serviceNames.length > 0) {
-            inventoryItems = await Inventory.find({
-                salonId: appointment.salonId,
-                isActive: true,
-                consumptionPerBooking: { $gt: 0 },
-                serviceName: { $in: serviceNames }
-            });
+        // ✅ استخراج معرفات الخدمات
+        const serviceIds = [];
+        for (const service of services) {
+            let id = null;
+            if (service._id) id = service._id;
+            else if (service.id) id = service.id;
+            else if (service.serviceId) id = service.serviceId;
+            
+            if (id) serviceIds.push(id.toString());
         }
 
-        // ✅ البحث الثاني: باستخدام serviceId
-        if (inventoryItems.length === 0 && serviceIds.length > 0) {
-            inventoryItems = await Inventory.find({
-                salonId: appointment.salonId,
-                isActive: true,
-                consumptionPerBooking: { $gt: 0 },
-                serviceId: { $in: serviceIds }
-            });
+        if (serviceIds.length === 0) return;
+
+        // ✅ البحث عن المنتجات المرتبطة
+        let inventoryItems = await Inventory.find({
+            salonId: appointment.salonId,
+            isActive: true,
+            consumptionPerBooking: { $gt: 0 },
+            serviceId: { $in: serviceIds }
+        });
+
+        // ✅ البحث الاحتياطي بـ ObjectId
+        if (inventoryItems.length === 0) {
+            const objectIds = serviceIds
+                .map(id => {
+                    try { return new mongoose.Types.ObjectId(id); } 
+                    catch { return null; }
+                })
+                .filter(id => id !== null);
+
+            if (objectIds.length > 0) {
+                inventoryItems = await Inventory.find({
+                    salonId: appointment.salonId,
+                    isActive: true,
+                    consumptionPerBooking: { $gt: 0 },
+                    serviceId: { $in: objectIds }
+                });
+            }
         }
 
         if (inventoryItems.length === 0) {
