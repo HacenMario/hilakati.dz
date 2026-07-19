@@ -5365,7 +5365,7 @@ document.getElementById('adminLoginForm').addEventListener('submit', async (e) =
 });
 
 // ============================================================
-// حجز سريع مع اختيار الخدمة
+// ✅ حجز سريع محسّن - مع التحقق من الوقت وساعات العمل
 // ============================================================
 async function quickBooking(salonId) {
     console.log('🟢 quickBooking مع salonId:', salonId);
@@ -5409,21 +5409,57 @@ async function quickBooking(salonId) {
         }
         const salon = await salonRes.json();
 
-        // 3. اختيار الموظف (أول موظف أو افتراضي)
-        const staff = salon.staff?.[0] || 'موظف رئيسي';
+        // 3. التحقق من أن الصالون مفتوح الآن
+        const now = new Date();
+        const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+        const dayName = dayNames[now.getDay()];
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
-        // 4. ============================================================
-        // اختيار الخدمة (مع قائمة منبثقة)
-        // ============================================================
+        let dayHours = null;
+        if (salon.hours) {
+            if (typeof salon.hours.get === 'function') {
+                dayHours = salon.hours.get(dayName);
+            } else {
+                dayHours = salon.hours[dayName];
+            }
+        }
+
+        if (!dayHours || dayHours === 'مغلق' || dayHours === 'closed') {
+            showToast(`❌ الصالون مغلق اليوم (${dayName})`, 'error');
+            return;
+        }
+
+        const [openTime, closeTime] = dayHours.split('-').map(t => t.trim());
+        const [openHour, openMinute] = openTime.split(':').map(Number);
+        const [closeHour, closeMinute] = closeTime.split(':').map(Number);
+        const openMinutes = openHour * 60 + openMinute;
+        const closeMinutes = closeHour * 60 + closeMinute;
+
+        // 4. التحقق من أن الوقت الحالي ضمن ساعات العمل
+        if (currentMinutes < openMinutes) {
+            // الصالون لم يفتح بعد → نستخدم وقت الفتح
+            const waitMinutes = openMinutes - currentMinutes;
+            showToast(`⏳ الصالون يفتح بعد ${Math.floor(waitMinutes / 60)} ساعة و ${waitMinutes % 60} دقيقة`, 'info');
+            // استخدام وقت الفتح كوقت للحجز
+            const bookingDate = now.toISOString().split('T')[0];
+            const bookingTime = `${String(openHour).padStart(2, '0')}:${String(openMinute).padStart(2, '0')}`;
+            
+            // متابعة الحجز مع التاريخ والوقت المحسوبين
+            await completeQuickBooking(salon, salonId, profile, bookingDate, bookingTime);
+            return;
+        }
+
+        if (currentMinutes > closeMinutes - 60) {
+            showToast(`❌ الصالون سيغلق قريباً (آخر موعد للحجز هو ${closeTime} - قبل الإغلاق بساعة)`, 'error');
+            return;
+        }
+
+        // 5. اختيار الخدمة
         let selectedService = null;
-
         if (salon.services && salon.services.length > 0) {
             if (salon.services.length === 1) {
-                // خدمة واحدة فقط → اختيارها تلقائياً
                 selectedService = salon.services[0];
-                console.log('🟢 خدمة واحدة فقط، تم اختيارها تلقائياً:', selectedService.name);
             } else {
-                // خدمات متعددة → عرض قائمة للاختيار
                 const serviceOptions = salon.services.map((s, index) => 
                     `${index + 1}. ${s.name} - ${s.price} دج`
                 ).join('\n');
@@ -5439,39 +5475,135 @@ async function quickBooking(salonId) {
 
                 const selectedIndex = parseInt(choice) - 1;
                 if (isNaN(selectedIndex) || selectedIndex < 0 || selectedIndex >= salon.services.length) {
-                    showToast('❌ اختيار غير صحيح، يرجى المحاولة مرة أخرى', 'error');
+                    showToast('❌ اختيار غير صحيح', 'error');
                     return;
                 }
-
                 selectedService = salon.services[selectedIndex];
-                console.log('🟢 تم اختيار الخدمة:', selectedService.name);
             }
         } else {
-            // لا توجد خدمات → خدمة افتراضية
             selectedService = { name: 'خدمة أساسية', price: 500 };
-            console.log('🟢 لا توجد خدمات، استخدام خدمة افتراضية');
         }
 
-        // 5. تحديد التاريخ والوقت
-        const today = new Date().toISOString().split('T')[0];
-        const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
-        const defaultTime = '10:00';
+        // 6. حساب أقرب وقت متاح (بعد الوقت الحالي بـ 30 دقيقة على الأقل)
+        const minBookingTime = new Date(now.getTime() + 30 * 60 * 1000);
+        let bookingHour = minBookingTime.getHours();
+        let bookingMinute = Math.ceil(minBookingTime.getMinutes() / 30) * 30;
+        if (bookingMinute === 60) {
+            bookingHour++;
+            bookingMinute = 0;
+        }
+        if (bookingHour > closeHour || (bookingHour === closeHour && bookingMinute >= closeMinute)) {
+            showToast('❌ لا توجد أوقات متاحة اليوم', 'error');
+            return;
+        }
 
-        // 6. إرسال الحجز
-        const res = await fetch(`${API_BASE}/appointments/request`, {
+        const bookingTime = `${String(bookingHour).padStart(2, '0')}:${String(bookingMinute).padStart(2, '0')}`;
+        const bookingDate = now.toISOString().split('T')[0];
+
+        // 7. التحقق من عدم وجود حجز مكرر في نفس الوقت
+        const existingRes = await fetch(`${API_BASE}/appointments/check`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 salonId,
+                date: bookingDate,
+                time: bookingTime
+            })
+        });
+        const existingData = await existingRes.json();
+        if (existingData.exists) {
+            showToast('❌ هذا الوقت محجوز مسبقاً، اختر وقتاً آخر', 'error');
+            // محاولة إيجاد وقت آخر
+            let found = false;
+            for (let i = 30; i <= 120; i += 30) {
+                const newTime = new Date(minBookingTime.getTime() + i * 60 * 1000);
+                let h = newTime.getHours();
+                let m = Math.ceil(newTime.getMinutes() / 30) * 30;
+                if (m === 60) { h++; m = 0; }
+                if (h > closeHour || (h === closeHour && m >= closeMinute)) break;
+                const checkTime = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                const checkRes = await fetch(`${API_BASE}/appointments/check`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ salonId, date: bookingDate, time: checkTime })
+                });
+                const checkData = await checkRes.json();
+                if (!checkData.exists) {
+                    // عرض خيار للعميل
+                    const confirm = confirm(`⏰ الوقت ${checkTime} متاح. هل تريد الحجز فيه؟`);
+                    if (confirm) {
+                        await completeQuickBooking(salon, salonId, profile, bookingDate, checkTime);
+                        found = true;
+                    }
+                    break;
+                }
+            }
+            if (!found) {
+                showToast('❌ لا توجد أوقات متاحة اليوم، يرجى اختيار يوم آخر', 'error');
+            }
+            return;
+        }
+
+        // 8. إتمام الحجز
+        await completeQuickBooking(salon, salonId, profile, bookingDate, bookingTime);
+
+    } catch (error) {
+        console.error('❌ فشل الحجز السريع:', error);
+        showToast('❌ فشل الحجز السريع: ' + error.message, 'error');
+    }
+}
+
+// ============================================================
+// ✅ إتمام الحجز السريع (دالة مساعدة)
+// ============================================================
+async function completeQuickBooking(salon, salonId, profile, date, time) {
+    try {
+        // اختيار الموظف (أول موظف أو افتراضي)
+        const staff = salon.staff?.[0] || 'موظف رئيسي';
+
+        // اختيار الخدمة (أول خدمة أو افتراضية)
+        let selectedService = null;
+        if (salon.services && salon.services.length > 0) {
+            if (salon.services.length === 1) {
+                selectedService = salon.services[0];
+            } else {
+                // إذا كانت هناك خدمات متعددة، نأخذ الأولى ولكن نعطي خياراً للعميل
+                const serviceOptions = salon.services.map((s, index) => 
+                    `${index + 1}. ${s.name} - ${s.price} دج`
+                ).join('\n');
+                const choice = prompt(
+                    `🛠️ اختر الخدمة المطلوبة:\n\n${serviceOptions}\n\nأدخل رقم الخدمة (1-${salon.services.length}) أو اضغط Enter للخدمة الأولى:`
+                );
+                if (choice === null) {
+                    showToast('❌ تم إلغاء الحجز', 'info');
+                    return;
+                }
+                const selectedIndex = parseInt(choice) - 1;
+                if (isNaN(selectedIndex) || selectedIndex < 0 || selectedIndex >= salon.services.length) {
+                    selectedService = salon.services[0];
+                } else {
+                    selectedService = salon.services[selectedIndex];
+                }
+            }
+        } else {
+            selectedService = { name: 'خدمة أساسية', price: 500 };
+        }
+
+        // إرسال الحجز
+        const res = await fetch(`${API_BASE}/appointments/request`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                salonId: salonId,
                 customerId: localStorage.getItem('customerId'),
                 clientName: profile.name,
                 clientPhone: profile.phone,
                 clientEmail: profile.email,
                 services: [selectedService],
                 totalPrice: selectedService.price,
-                staff,
-                date: tomorrow,
-                time: defaultTime,
+                staff: staff,
+                date: date,
+                time: time,
                 payment: 'cash',
                 notes: 'حجز سريع',
                 recurring: 'none'
@@ -5480,18 +5612,18 @@ async function quickBooking(salonId) {
 
         const data = await res.json();
         if (res.ok) {
-            showToast(`✅ تم الحجز السريع لخدمة "${selectedService.name}"!`, 'success');
+            showToast(`✅ تم الحجز السريع لخدمة "${selectedService.name}" في ${date} الساعة ${time}!`, 'success');
             loadSalons();
             refreshNotifications();
         } else {
             showToast(`❌ ${data.message || 'فشل الحجز'}`, 'error');
         }
-
     } catch (error) {
-        console.error('❌ فشل الحجز السريع:', error);
-        showToast('❌ فشل الحجز السريع', 'error');
+        console.error('❌ فشل إتمام الحجز السريع:', error);
+        showToast('❌ فشل إتمام الحجز السريع', 'error');
     }
 }
+    
 // ============================================================
 // حذف جميع تقييمات صالون بواسطة Admin
 // ============================================================
