@@ -114,21 +114,27 @@ router.delete('/:id', auth, async (req, res) => {
     }
 });
 
-// ============================================================
-// ✅ تحديث ربط المنتج بخدمة (جديد)
-// ============================================================
+// ===== تحديث ربط المنتج بخدمة =====
 router.put('/:id/service', auth, async (req, res) => {
     try {
-        const { serviceId } = req.body;
+        const { serviceId, serviceName } = req.body;
+        const updateData = {};
+        
+        if (serviceId !== undefined) {
+            updateData.serviceId = serviceId || null;
+        }
+        if (serviceName !== undefined) {
+            updateData.serviceName = serviceName || '';
+        }
+        
         const item = await Inventory.findOneAndUpdate(
             { _id: req.params.id, salonId: req.userId },
-            { serviceId },
+            updateData,
             { new: true }
         );
         if (!item) return res.status(404).json({ message: 'المنتج غير موجود' });
-        res.json({ message: '✅ تم تحديث الربط', item });
+        res.json(item);
     } catch (error) {
-        console.error('❌ فشل تحديث الربط:', error);
         res.status(500).json({ message: error.message });
     }
 });
