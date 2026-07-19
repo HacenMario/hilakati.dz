@@ -58,6 +58,21 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="/icons/icon-192.png?v=1">
 
+    <!-- OneSignal SDK -->
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+      appId: "28130865-8d08-4f19-b8ef-24af170d41af", // استبدل بـ App ID
+      serviceWorkerOverrideForTypical: true,
+      path: "https://hilakatidz.vercel.app/onesignal/",
+      serviceWorkerParam: { scope: "/" },
+      serviceWorkerPath: "OneSignalSDKWorker.js",
+    });
+  });
+</script>
+
     <!-- ============================================================
     ✅ Google Translate Widget (يجب أن يكون هنا)
     ============================================================ -->
@@ -3319,6 +3334,17 @@ body {
             </div>
             <div id="dashSettings" class="hidden">
                 <h3 style="color:var(--gold);margin-bottom:0.6rem;font-size:1rem;"><i class="fas fa-cog"></i> <span data-i18n="settings">الإعدادات</span></h3>
+                <div class="form-group" style="margin-top: 1rem; border-top: 2px solid var(--border-color); padding-top: 1rem;">
+    <h4 style="color: var(--gold); margin-bottom: 0.5rem;">
+        <i class="fas fa-bell"></i> إشعارات الجهاز
+    </h4>
+    <p style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 0.8rem;">
+        فعّل الإشعارات لتلقي تحديثات فورية حول الحجوزات والتأكيدات
+    </p>
+    <button class="btn-gold btn-sm" onclick="enableNotificationsManually()" id="enableNotificationsBtn">
+        <i class="fas fa-bell"></i> 🔔 تفعيل الإشعارات
+    </button>
+</div>
                 <!-- ===== 🔗 ربط المخزون بالخدمات ===== -->
 <div class="form-group" style="margin-top: 1.5rem; border-top: 2px solid var(--border-color); padding-top: 1rem;">
     <h4 style="color: var(--gold); margin-bottom: 0.5rem;">
@@ -5891,6 +5917,13 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
             showToast(`✅ مرحباً ${data.name}`); closeModal('loginModal');
             updateUI(); navigateTo('dashboard'); loadDashboard(); refreshNotifications();
             if (socket) socket.emit('join-salon', data.salonId);
+            await autoRegisterNotifications();
+            await registerUserWithOneSignal(data.salonId, 'salon');
+            if (!localStorage.getItem('notificationPermissionAsked')) {
+            localStorage.setItem('notificationPermissionAsked', 'true');
+        }
+    }
+
         } else showToast(`❌ ${data.message}`);
     } catch { showToast('❌ فشل الاتصال'); }
 });
@@ -5919,6 +5952,8 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
             localStorage.setItem('token', data.token); localStorage.setItem('salonId', data.salonId);
             showToast(`✅ تم تسجيل ${data.name} بنجاح!`); closeModal('registerModal');
             updateUI(); navigateTo('dashboard'); loadDashboard();
+            await autoRegisterNotifications();
+    }
         } else showToast(`❌ ${data.message}`);
     } catch { showToast('❌ فشل الاتصال'); }
 });
@@ -5940,6 +5975,13 @@ document.getElementById('customerRegisterForm').addEventListener('submit', async
             showToast('✅ تم تسجيل حسابك'); closeModal('customerRegisterModal');
             updateCustomerUI(); refreshNotifications();
             if (socket) socket.emit('join-customer', data.customerId);
+            await autoRegisterNotifications();
+            await registerUserWithOneSignal(data.salonId, 'salon');
+            if (!localStorage.getItem('notificationPermissionAsked')) {
+            localStorage.setItem('notificationPermissionAsked', 'true');
+        }
+    }
+
         } else showToast(`❌ ${data.message}`);
     } catch { showToast('❌ فشل الاتصال'); }
 });
@@ -5956,6 +5998,12 @@ document.getElementById('customerLoginForm').addEventListener('submit', async (e
             showToast(`✅ مرحباً ${data.name}`); closeModal('customerLoginModal');
             updateCustomerUI(); refreshNotifications();
             if (socket) socket.emit('join-customer', data.customerId);
+            await autoRegisterNotifications();
+            await registerUserWithOneSignal(data.customerId, 'customer');
+            if (!localStorage.getItem('notificationPermissionAsked')) {
+            localStorage.setItem('notificationPermissionAsked', 'true');
+        }
+    }  
         } else showToast(`❌ ${data.message}`);
     } catch { showToast('❌ فشل الاتصال'); }
 });
@@ -7486,6 +7534,79 @@ async function updateInventoryConsumption(itemId, value) {
     }
 }
 
+// ============================================================
+// ✅ تسجيل المستخدم في OneSignal للإشعارات
+// ============================================================
+async function registerUserWithOneSignal(userId, userType) {
+    try {
+        if (typeof OneSignal === 'undefined' || !OneSignal) {
+            console.warn('⚠️ OneSignal غير متاح');
+            return;
+        }
+        
+        await OneSignal.login(userId);
+        console.log(`✅ تم تسجيل الدخول في OneSignal للمستخدم ${userId}`);
+        
+        await OneSignal.sendTags({
+            user_type: userType,
+            user_id: userId
+        });
+        console.log(`✅ تم إضافة علامات للمستخدم ${userId}: user_type=${userType}`);
+        
+        const permission = await OneSignal.Notifications.requestPermission({
+            modalOptions: {
+                title: "🔔 حلاقتي تريد إرسال الإشعارات",
+                message: "احصل على تحديثات فورية حول حجوزاتك وتأكيداتها",
+                acceptButton: "✅ موافق",
+                cancelButton: "❌ ليس الآن"
+            }
+        });
+        
+        if (permission === 'granted') {
+            console.log('✅ تم منح إذن الإشعارات');
+            showToast('✅ تم تفعيل الإشعارات!', 'success');
+        } else {
+            console.warn('⚠️ تم رفض إذن الإشعارات');
+        }
+        
+    } catch (error) {
+        console.error('❌ فشل تسجيل OneSignal:', error);
+    }
+}
+
+// ============================================================
+// ✅ تفعيل الإشعارات يدوياً (زر في الإعدادات)
+// ============================================================
+async function enableNotificationsManually() {
+    const userId = localStorage.getItem('customerId') || localStorage.getItem('salonId');
+    const userType = localStorage.getItem('customerId') ? 'customer' : 'salon';
+    
+    if (!userId) {
+        showToast('❌ يرجى تسجيل الدخول أولاً', 'error');
+        return;
+    }
+    
+    await registerUserWithOneSignal(userId, userType);
+}
+
+// ============================================================
+// ✅ طلب إذن الإشعارات عند تسجيل الدخول (تلقائي)
+// ============================================================
+async function autoRegisterNotifications() {
+    const userId = localStorage.getItem('customerId') || localStorage.getItem('salonId');
+    const userType = localStorage.getItem('customerId') ? 'customer' : 'salon';
+    
+    if (!userId) {
+        return;
+    }
+    
+    // التحقق مما إذا كان قد طلب الإذن مسبقاً
+    if (!localStorage.getItem('notificationPermissionAsked')) {
+        localStorage.setItem('notificationPermissionAsked', 'true');
+        await registerUserWithOneSignal(userId, userType);
+    }
+}
+        
         // ===== معالج نموذج الإعدادات =====
         const settingsForm = document.getElementById('settingsForm');
         const newForm = settingsForm.cloneNode(true);
@@ -9431,6 +9552,30 @@ function sendContactMessage(e) {
 
 init();
 
+// ============================================================
+// ✅ تفعيل الإشعارات يدوياً (زر في الإعدادات)
+// ============================================================
+async function enableNotificationsManually() {
+    try {
+        const userId = localStorage.getItem('customerId') || localStorage.getItem('salonId');
+        const userType = localStorage.getItem('customerId') ? 'customer' : 'salon';
+        
+        if (!userId) {
+            showToast('❌ يرجى تسجيل الدخول أولاً', 'error');
+            return;
+        }
+        
+        showToast('⏳ جاري تفعيل الإشعارات...', 'info');
+        
+        // استدعاء دالة التسجيل
+        await registerUserWithOneSignal(userId, userType);
+        
+    } catch (error) {
+        console.error('❌ فشل تفعيل الإشعارات يدوياً:', error);
+        showToast('❌ حدث خطأ، حاول مرة أخرى', 'error');
+    }
+}
+
 // ✅ تعديل موظف
 async function editStaff(staffId) {
     const token = localStorage.getItem('token');
@@ -9870,6 +10015,51 @@ async function updateInventoryConsumption(itemId, value) {
     } catch (error) {
         console.error('❌ فشل التحديث:', error);
         showToast('❌ فشل الاتصال بالخادم', 'error');
+    }
+}
+
+// ============================================================
+// ✅ تسجيل المستخدم في OneSignal للحصول على إشعارات Push
+// ============================================================
+async function registerUserWithOneSignal(userId, userType) {
+    try {
+        // التحقق من وجود OneSignal
+        if (typeof OneSignal === 'undefined' || !OneSignal) {
+            console.warn('⚠️ OneSignal غير متاح، قد يكون SDK لم يتم تحميله بعد');
+            return;
+        }
+        
+        // تسجيل المستخدم باستخدام external_id
+        await OneSignal.login(userId);
+        console.log(`✅ تم تسجيل الدخول في OneSignal للمستخدم ${userId}`);
+        
+        // إضافة علامات (Tags) لتصنيف المستخدمين (مهم لإرسال إشعارات لمجموعات محددة)
+        await OneSignal.sendTags({
+            user_type: userType, // 'customer' أو 'salon'
+            user_id: userId
+        });
+        console.log(`✅ تم إضافة علامات للمستخدم ${userId}: user_type=${userType}`);
+        
+        // طلب إذن الإشعارات (إذا لم يمنح بعد)
+        const permission = await OneSignal.Notifications.requestPermission({
+            modalOptions: {
+                title: "🔔 حلاقتي تريد إرسال الإشعارات",
+                message: "احصل على تحديثات فورية حول حجوزاتك وتأكيداتها وتذكيراتها",
+                acceptButton: "✅ موافق",
+                cancelButton: "❌ ليس الآن"
+            }
+        });
+        
+        if (permission === 'granted') {
+            console.log('✅ تم منح إذن الإشعارات');
+            showToast('✅ تم تفعيل الإشعارات! ستتلقى تحديثات فورية', 'success');
+        } else {
+            console.warn('⚠️ تم رفض إذن الإشعارات');
+        }
+        
+    } catch (error) {
+        console.error('❌ فشل تسجيل OneSignal:', error);
+        // لا نعرض رسالة خطأ للمستخدم هنا حتى لا يزعجه
     }
 }
           
