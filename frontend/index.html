@@ -6909,6 +6909,9 @@ async function loadDashboard() {
             document.getElementById('setLng').value = salon.lng;
             document.getElementById('setGpsStatus').textContent = `✅ ${salon.lat.toFixed(4)}, ${salon.lng.toFixed(4)}`;
         }
+        if (document.getElementById('dashSettings') && !document.getElementById('dashSettings').classList.contains('hidden')) {
+    setTimeout(loadInventoryServiceMapping, 300);
+}
 
         // ===== معالج نموذج الإعدادات =====
         const settingsForm = document.getElementById('settingsForm');
@@ -8007,12 +8010,14 @@ document.querySelectorAll('.sidebar .menu a').forEach(link => {
         const target = document.getElementById(map[page]);
         if (target) {
             target.classList.remove('hidden');
-            // ✅ عند فتح الإعدادات، قم بتحميل ربط المخزون
+            
+            // ✅ تأكد من وجود هذا الجزء:
             if (page === 'settings') {
                 setTimeout(() => {
                     loadInventoryServiceMapping();
-                }, 300);
+                }, 500); // زيادة التأخير إلى 500 مللي
             }
+            
             if (['overview', 'appointments', 'reviews'].includes(page)) {
                 loadDashboard();
             }
@@ -8831,8 +8836,17 @@ function sendContactMessage(e) {
         showToast('❌ فشل الإرسال، حاول مرة أخرى', 'error');
     });
 }
+
+// بعد تسجيل الدخول، إذا كانت صفحة الإعدادات ظاهرة، حمّل ربط المخزون
+if (localStorage.getItem('token')) {
+    const settingsTab = document.querySelector('.sidebar .menu a[data-dash="settings"]');
+    if (settingsTab && settingsTab.classList.contains('active')) {
+        setTimeout(loadInventoryServiceMapping, 800);
+    }
+}
     
 init();
+
 
 // ✅ تعديل موظف
 async function editStaff(staffId) {
