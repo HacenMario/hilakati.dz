@@ -155,6 +155,202 @@ const Admin = require('./models/Admin');
 const Notification = require('./models/Notification');
 
 // ============================================================
+// ✅ خصم المخزون عند إكمال الحجز
+// ============================================================
+async function deductInventoryForBooking(appointmentId) {
+    try {
+        const Inventory = require('./models/Inventory');
+        const Appointment = require('./models/Appointment');
+        const mongoose = require('mongoose');
+        
+        const appointment = await Appointment.findById(appointmentId);
+        if (!appointment) {
+            console.error('❌ الحجز غير موجود');
+            return [];
+        }
+
+        const salonId = appointment.salonId;
+        const services = appointment.services || [];
+        
+        if (services.length === 0) {
+            console.log('ℹ️ لا توجد خدمات في الحجز');
+            return [];
+        }
+
+        // استخراج معرفات الخدمات
+        const serviceIds = [];
+        for (const service of services) {
+            let id = null;
+            if (service._id) id = service._id;
+            else if (service.id) id = service.id;
+            else if (service.serviceId) id = service.serviceId;
+            if (id) serviceIds.push(id.toString());
+        }
+
+        if (serviceIds.length === 0) {
+            console.log('ℹ️ لا توجد معرفات خدمات صالحة');
+            return [];
+        }
+
+        // البحث عن المنتجات المرتبطة (بـ serviceId)
+        let inventoryItems = await Inventory.find({
+            salonId: salonId,
+            isActive: true,
+            consumptionPerBooking: { $gt: 0 },
+            serviceId: { $in: serviceIds }
+        });
+
+        // البحث الاحتياطي بـ serviceName
+        if (inventoryItems.length === 0) {
+            const serviceNames = services.map(s => s.name).filter(Boolean);
+            if (serviceNames.length > 0) {
+                inventoryItems = await Inventory.find({
+                    salonId: salonId,
+                    isActive: true,
+                    consumptionPerBooking: { $gt: 0 },
+                    serviceName: { $in: serviceNames }
+                });
+            }
+        }
+
+        console.log(`📦 عدد المنتجات المرتبطة: ${inventoryItems.length}`);
+
+        if (inventoryItems.length === 0) {
+            console.log('ℹ️ لا توجد منتجات مرتبطة بهذه الخدمات');
+            return [];
+        }
+
+        const deductions = [];
+        const notifications = [];
+
+        for (const item of inventoryItems) {
+            const quantityNeeded = item.consumptionPerBooking;
+            
+            if (item.quantity < quantityNeeded) {
+                console.warn(`⚠️ المخزون غير كافٍ للمنتج "${item.name}"`);
+                notifications.push({
+                    title: '⚠️ مخزون غير كافٍ',
+                    message: `المنتج "${item.name}" غير كافٍ (المتبقي ${item.quantity})`
+                });
+                continue;
+            }
+
+            // خصم الكمية
+            item.quantity -= quantityNeeded;
+            item.totalConsumed = (item.totalConsumed || 0) + quantityNeeded;
+            await item.save();
+
+            deductions.push({
+                productId: item._id,
+                productName: item.name,
+                quantityDeducted: quantityNeeded,
+                remaining: item.quantity,
+                unit: item.unit
+            });
+
+            if (item.quantity <= item.minQuantity) {
+                notifications.push({
+                    title: '⚠️ مخزون منخفض',
+                    message: `المنتج "${item.name}" أصبح منخفضاً (${item.quantity} ${item.unit})`
+                });
+            }
+        }
+
+        for (const notif of notifications) {
+            await createNotification(salonId, 'salon', notif.title, notif.message);
+        }
+
+        console.log(`✅ تم خصم ${deductions.length} منتج من المخزون`);
+        return deductions;
+
+    } catch (error) {
+        console.error('❌ فشل خصم المخزون:', error);
+        return [];
+    }
+}
+
+// ============================================================
+// ✅ استعادة المخزون عند إلغاء الحجز
+// ============================================================
+async function restoreInventoryForBooking(appointmentId) {
+    try {
+        const Inventory = require('./models/Inventory');
+        const Appointment = require('./models/Appointment');
+        const mongoose = require('mongoose');
+        
+        const appointment = await Appointment.findById(appointmentId);
+        if (!appointment) return;
+
+        const services = appointment.services || [];
+        if (services.length === 0) return;
+
+        const serviceIds = [];
+        for (const service of services) {
+            let id = null;
+            if (service._id) id = service._id;
+            else if (service.id) id = service.id;
+            else if (service.serviceId) id = service.serviceId;
+            if (id) serviceIds.push(id.toString());
+        }
+
+        if (serviceIds.length === 0) return;
+
+        let inventoryItems = await Inventory.find({
+            salonId: appointment.salonId,
+            isActive: true,
+            consumptionPerBooking: { $gt: 0 },
+            serviceId: { $in: serviceIds }
+        });
+
+        if (inventoryItems.length === 0) {
+            const serviceNames = services.map(s => s.name).filter(Boolean);
+            if (serviceNames.length > 0) {
+                inventoryItems = await Inventory.find({
+                    salonId: appointment.salonId,
+                    isActive: true,
+                    consumptionPerBooking: { $gt: 0 },
+                    serviceName: { $in: serviceNames }
+                });
+            }
+        }
+
+        if (inventoryItems.length === 0) return;
+
+        for (const item of inventoryItems) {
+            const quantityToRestore = item.consumptionPerBooking;
+            item.quantity += quantityToRestore;
+            item.totalConsumed = Math.max(0, (item.totalConsumed || 0) - quantityToRestore);
+            await item.save();
+        }
+
+        console.log(`✅ تم استعادة المخزون للحجز ${appointmentId} (${inventoryItems.length} منتج)`);
+
+    } catch (error) {
+        console.error('❌ فشل استعادة المخزون:', error);
+    }
+}
+
+// ============================================================
+// ✅ دالة مساعدة لإنشاء إشعار
+// ============================================================
+async function createNotification(userId, userType, title, message) {
+    try {
+        const Notification = require('./models/Notification');
+        const notification = new Notification({
+            userId,
+            userType,
+            title,
+            message,
+            read: false,
+            createdAt: new Date()
+        });
+        await notification.save();
+    } catch (error) {
+        console.error('❌ فشل إنشاء الإشعار:', error);
+    }
+}
+
+// ============================================================
 // ✅ التحقق من صلاحية الكوبون (مسار عام - لا يحتاج مصادقة)
 // ============================================================
 app.post('/api/coupons/validate', async (req, res) => {
@@ -1728,7 +1924,17 @@ app.put('/api/appointments/:id/cancel', authMiddleware, async (req, res) => {
         appointment.status = 'cancelled';
         await appointment.save();
 
-        // ===== إشعار للعميل بإلغاء الحجز (مع اسم الصالون) =====
+        // ✅ استعادة المخزون
+        let inventoryRestored = false;
+        try {
+            await restoreInventoryForBooking(req.params.id);
+            inventoryRestored = true;
+            console.log(`✅ تم استعادة المخزون للحجز ${req.params.id}`);
+        } catch (inventoryError) {
+            console.error('❌ فشل استعادة المخزون:', inventoryError);
+        }
+
+        // إشعار للعميل
         if (appointment.customerId) {
             try {
                 const salon = await Salon.findById(appointment.salonId).select('name');
@@ -1743,13 +1949,17 @@ app.put('/api/appointments/:id/cancel', authMiddleware, async (req, res) => {
                     createdAt: new Date()
                 });
                 await notification.save();
-                console.log(`✅ تم إرسال إشعار إلغاء للعميل ${appointment.customerId} - صالون ${salonName}`);
+                console.log(`✅ تم إرسال إشعار إلغاء للعميل ${appointment.customerId}`);
             } catch (err) {
                 console.error('❌ فشل إرسال إشعار الإلغاء:', err);
             }
         }
 
-        res.json({ message: '✅ تم إلغاء الموعد' });
+        res.json({
+            message: '✅ تم إلغاء الموعد',
+            inventoryRestored: inventoryRestored
+        });
+
     } catch (error) {
         console.error('❌ خطأ في إلغاء الموعد:', error);
         res.status(500).json({ message: '❌ فشل إلغاء الموعد' });
@@ -1765,10 +1975,20 @@ app.put('/api/appointments/:id/complete', authMiddleware, async (req, res) => {
         if (!appointment) {
             return res.status(404).json({ message: '❌ الحجز غير موجود' });
         }
+
         appointment.status = 'completed';
         await appointment.save();
 
-        // ===== إشعار للعميل بإكمال الحجز (مع اسم الصالون) =====
+        // ✅ خصم المخزون
+        let inventoryDeductions = [];
+        try {
+            inventoryDeductions = await deductInventoryForBooking(req.params.id);
+            console.log(`📦 تم خصم ${inventoryDeductions.length} منتج من المخزون`);
+        } catch (inventoryError) {
+            console.error('❌ فشل خصم المخزون:', inventoryError);
+        }
+
+        // إشعار للعميل
         if (appointment.customerId) {
             try {
                 const salon = await Salon.findById(appointment.salonId).select('name');
@@ -1783,13 +2003,17 @@ app.put('/api/appointments/:id/complete', authMiddleware, async (req, res) => {
                     createdAt: new Date()
                 });
                 await notification.save();
-                console.log(`✅ تم إرسال إشعار إكمال للعميل ${appointment.customerId} - صالون ${salonName}`);
+                console.log(`✅ تم إرسال إشعار إكمال للعميل ${appointment.customerId}`);
             } catch (err) {
                 console.error('❌ فشل إرسال إشعار الإكمال:', err);
             }
         }
 
-        res.json({ message: '✅ تم إكمال الموعد' });
+        res.json({
+            message: '✅ تم إكمال الموعد',
+            inventoryDeductions: inventoryDeductions
+        });
+
     } catch (error) {
         console.error('❌ خطأ في إكمال الموعد:', error);
         res.status(500).json({ message: '❌ فشل إكمال الموعد' });
