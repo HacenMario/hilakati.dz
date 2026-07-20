@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const InventorySchema = new mongoose.Schema({
-    // ✅ الحقول الأساسية (موجودة مسبقاً)
+    // الحقول الأساسية
     salonId: { 
         type: mongoose.Schema.Types.ObjectId, 
         ref: 'Salon', 
@@ -51,29 +51,30 @@ const InventorySchema = new mongoose.Schema({
         default: true 
     },
 
-    // ✅ الحقول الجديدة لربط المخزون بالخدمات والاستهلاك التلقائي
+    // ✅ الحقول الجديدة لربط المخزون بالخدمات
     serviceId: { 
         type: mongoose.Schema.Types.ObjectId, 
         ref: 'Service', 
-        default: null,
-        description: 'الخدمة المرتبطة بهذا المنتج (يستهلك عند حجزها)'
+        default: null
+    },
+    serviceName: { 
+        type: String, 
+        default: '' 
     },
     consumptionPerBooking: { 
         type: Number, 
         default: 0,
-        min: 0,
-        description: 'كمية المنتج التي تستهلك في كل حجز للخدمة المرتبطة'
+        min: 0
     },
     totalConsumed: { 
         type: Number, 
         default: 0,
-        min: 0,
-        description: 'إجمالي الكمية المستهلكة منذ بداية التسجيل'
+        min: 0
     }
 
 }, { timestamps: true });
 
-// ✅ فهرس لتحسين أداء الاستعلامات
+// فهارس لتحسين الأداء
 InventorySchema.index({ salonId: 1, serviceId: 1 });
 InventorySchema.index({ salonId: 1, category: 1 });
 InventorySchema.index({ salonId: 1, isActive: 1 });
