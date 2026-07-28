@@ -5577,21 +5577,18 @@ if ('serviceWorker' in navigator) {
 async function registerPushNotifications() {
     console.log('🔄 محاولة تسجيل الإشعارات...');
     
-    // 1. التحقق من دعم الإشعارات
     if (!('Notification' in window)) {
         console.warn('⚠️ الإشعارات غير مدعومة في هذا المتصفح');
         showToast('❌ الإشعارات غير مدعومة', 'error');
         return false;
     }
 
-    // 2. التحقق من دعم Service Worker
     if (!('serviceWorker' in navigator)) {
         console.warn('⚠️ Service Worker غير مدعوم');
         showToast('❌ Service Worker غير مدعوم', 'error');
         return false;
     }
 
-    // 3. طلب إذن الإشعارات
     if (Notification.permission === 'denied') {
         showToast('❌ تم رفض الإشعارات مسبقاً، يرجى تغيير الإعدادات', 'error');
         return false;
@@ -5607,11 +5604,9 @@ async function registerPushNotifications() {
     }
 
     try {
-        // 4. انتظار Service Worker
         const registration = await navigator.serviceWorker.ready;
         console.log('✅ Service Worker جاهز:', registration);
         
-        // 5. التحقق من وجود اشتراك سابق
         let subscription = await registration.pushManager.getSubscription();
         
         if (subscription) {
@@ -5621,16 +5616,27 @@ async function registerPushNotifications() {
             return subscription;
         }
 
-        // 6. إنشاء اشتراك جديد
-        console.log('🔄 إنشاء اشتراك جديد مع VAPID:', VAPID_PUBLIC_KEY);
+        console.log('🔄 إنشاء اشتراك جديد مع VAPID');
         subscription = await registration.pushManager.subscribe({
             userVisibleOnly: true,
             applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
         });
 
         console.log('✅ تم إنشاء اشتراك جديد:', subscription);
-        await sendSubscriptionToServer(subscription);
         
+        // ✅ تأكد من أن الاشتراك يحتوي على keys
+        if (!subscription.keys || !subscription.keys.p256dh) {
+            console.warn('⚠️ الاشتراك لا يحتوي على keys، محاولة إعادة الإنشاء...');
+            // محاولة إلغاء الاشتراك وإعادة الإنشاء
+            await subscription.unsubscribe();
+            subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+            });
+            console.log('✅ تم إعادة إنشاء الاشتراك:', subscription);
+        }
+        
+        await sendSubscriptionToServer(subscription);
         showToast('✅ تم تفعيل الإشعارات بنجاح!', 'success');
         updatePushButton(true);
         return subscription;
