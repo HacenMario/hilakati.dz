@@ -2611,14 +2611,49 @@ app.put('/api/quotes/:id/quote', authMiddleware, async (req, res) => {
     }
 });
 
+// ============================================================
+// قبول عرض السعر من قبل العميل
+// ============================================================
 app.put('/api/quotes/:id/accept-by-customer', customerAuthMiddleware, async (req, res) => {
     try {
         const { date, time } = req.body;
         const quote = await Quote.findById(req.params.id);
-        if (!quote) return res.status(404).json({ message: '❌ الطلب غير موجود' });
-        
+        if (!quote) {
+            return res.status(404).json({ message: '❌ الطلب غير موجود' });
+        }
+
+        if (quote.customerId.toString() !== req.customerId) {
+            return res.status(403).json({ message: '❌ غير مصرح' });
+        }
+
+        if (quote.status !== 'quoted') {
+            return res.status(400).json({ message: '❌ لا يمكن قبول عرض غير موجود' });
+        }
+
         quote.status = 'accepted';
         await quote.save();
+
+        const salon = await Salon.findById(quote.salonId);
+        if (!salon) {
+            return res.status(404).json({ message: '❌ الصالون غير موجود' });
+        }
+
+        const appointment = new Appointment({
+            salonId: quote.salonId,
+            customerId: req.customerId,
+            clientName: quote.customerName,
+            clientPhone: quote.customerPhone,
+            clientEmail: quote.customerEmail,
+            services: [{ name: quote.serviceType, price: quote.quotePrice }],
+            totalPrice: quote.quotePrice,
+            staff: 'موظف رئيسي',
+            date: date || new Date().toISOString().split('T')[0],
+            time: time || '10:00',
+            payment: 'cash',
+            notes: `عرض سعر مقبول: ${quote.quoteMessage || ''}`,
+            status: 'pending'
+        });
+        await appointment.save();
 
         // إشعار للصالون
         try {
@@ -2632,58 +2667,20 @@ app.put('/api/quotes/:id/accept-by-customer', customerAuthMiddleware, async (req
             });
             await notification.save();
 
-            // ✅ Push Notification للصالون
             await sendPushNotification(
                 quote.salonId,
                 'salon',
                 '✅ تم قبول عرض سعر',
                 `قام العميل ${quote.customerName} بقبول عرض السعر`
             );
-
-
-        } catch (e) { console.error('❌ فشل الإشعار:', e); }
+        } catch (e) {
+            console.error('❌ فشل الإشعار:', e);
+        }
 
         res.json({ message: '✅ تم قبول العرض وإنشاء الحجز', appointment });
     } catch (error) {
         console.error('❌ فشل قبول العرض:', error);
         res.status(500).json({ message: 'فشل قبول العرض' });
-    }
-});
-
-app.put('/api/quotes/:id/reject-by-customer', customerAuthMiddleware, async (req, res) => {
-    try {
-        const quote = await Quote.findById(req.params.id);
-        if (!quote) return res.status(404).json({ message: '❌ الطلب غير موجود' });
-        
-        quote.status = 'rejected';
-        await quote.save();
-
-        // إشعار للصالون
-        try {
-            const notification = new Notification({
-                userId: quote.salonId,
-                userType: 'salon',
-                title: '❌ تم رفض عرض سعر',
-                message: `قام العميل ${quote.customerName} برفض عرض السعر`,
-                read: false,
-                createdAt: new Date()
-            });
-            await notification.save();
-
-            // ✅ Push Notification للصالون
-            await sendPushNotification(
-                quote.salonId,
-                'salon',
-                '❌ تم رفض عرض سعر',
-                `قام العميل ${quote.customerName} برفض عرض السعر`
-            );
-
-        } catch (e) { console.error('❌ فشل الإشعار:', e); }
-
-        res.json({ message: '❌ تم رفض عرض السعر' });
-    } catch (error) {
-        console.error('❌ فشل رفض العرض:', error);
-        res.status(500).json({ message: 'فشل رفض العرض' });
     }
 });
 
