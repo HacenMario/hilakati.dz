@@ -21,6 +21,10 @@
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js" defer></script>
+
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+
     
     <!-- ============================================================
     ✅ بيانات الصفحة الأساسية
@@ -8105,23 +8109,14 @@ document.querySelectorAll('.sidebar .menu a').forEach(link => {
 // ============================================================
 // PWA - تسجيل Service Worker
 // ============================================================
-
-// ✅ تسجيل Service Worker
+<script>
 if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-            .then(registration => {
-                console.log('✅ Service Worker مسجل بنجاح:', registration);
-                // ✅ إعلام المتصفح بأننا نريد استخدام Service Worker
-                if (registration.waiting) {
-                    registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-                }
-            })
-            .catch(error => {
-                console.error('❌ فشل تسجيل Service Worker:', error);
-            });
-    });
+    navigator.serviceWorker.register('/sw.js', { scope: '/' })
+        .then(reg => console.log('✅ SW مسجل'))
+        .catch(err => console.error('❌ SW فشل:', err));
 }
+</script>
+
 
 // ============================================================
 // 1. إدارة الموظفين
