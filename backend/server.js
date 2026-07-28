@@ -2823,25 +2823,36 @@ async function sendSubscriptionToServer(subscription) {
     console.log('📤 إرسال الاشتراك إلى الخادم:', { userId, userType });
 
     try {
+        // ✅ بناء كائن الاشتراك بشكل آمن
+        const subscriptionData = {
+            endpoint: subscription.endpoint,
+            keys: {}
+        };
+
+        // ✅ التحقق من وجود keys
+        if (subscription.keys) {
+            subscriptionData.keys = {
+                p256dh: subscription.keys.p256dh || '',
+                auth: subscription.keys.auth || ''
+            };
+        }
+
+        console.log('📦 بيانات الاشتراك المرسلة:', subscriptionData);
+
         const res = await fetch(`${API_BASE}/push/subscribe`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 userId: userId,
                 userType: userType,
-                subscription: {
-                    endpoint: subscription.endpoint,
-                    keys: {
-                        p256dh: subscription.keys.p256dh,
-                        auth: subscription.keys.auth
-                    }
-                },
+                subscription: subscriptionData,
                 endpoint: subscription.endpoint
             })
         });
 
         const data = await res.json();
         console.log('✅ تم إرسال الاشتراك إلى الخادم:', data);
+        updatePushButton(true);
         return data;
 
     } catch (error) {
