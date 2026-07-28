@@ -749,7 +749,7 @@ app.post('/api/quotes/request', async (req, res) => {
                 });
             }
 
-            // ✅ إرسال Push Notification
+            // ✅ Push Notification للصالون
             await sendPushNotification(
                 salonId,
                 'salon',
@@ -761,11 +761,7 @@ app.post('/api/quotes/request', async (req, res) => {
             console.error('❌ فشل إرسال الإشعار:', notifError);
         }
 
-        res.status(201).json({
-            message: '✅ تم إرسال طلب عرض السعر بنجاح!',
-            quote: newQuote
-        });
-
+        res.status(201).json({ message: '✅ تم إرسال طلب عرض السعر بنجاح!', quote: newQuote });
     } catch (error) {
         console.error('❌ فشل إنشاء طلب عرض سعر:', error);
         res.status(500).json({ message: '❌ فشل إنشاء الطلب: ' + error.message });
@@ -1509,15 +1505,11 @@ app.post('/api/admin/broadcast', adminAuthMiddleware, async (req, res) => {
                     message
                 );
             } catch (pushError) {
-                console.error(`❌ فشل إرسال Push للمستخدم ${user.userId}:`, pushError);
+                console.error(`❌ فشل Push للمستخدم ${user.userId}:`, pushError);
             }
         }
-
-        res.json({
-            message: `✅ تم إرسال الإشعار إلى ${notifications.length} مستخدم (${targetUsers.join(' + ')}) مع Push`,
-            count: notifications.length
-        });
-
+        
+        res.json({ message: `✅ تم إرسال الإشعار إلى ${notifications.length} مستخدم` });
     } catch (error) {
         console.error('❌ خطأ في broadcast:', error);
         res.status(500).json({ message: 'فشل إرسال الإشعارات' });
@@ -1911,7 +1903,7 @@ app.put('/api/appointments/:id/confirm', authMiddleware, async (req, res) => {
                 });
                 await notification.save();
 
-                // ✅ Push Notification
+                // ✅ Push Notification للعميل
                 await sendPushNotification(
                     appointment.customerId,
                     'customer',
@@ -1920,7 +1912,7 @@ app.put('/api/appointments/:id/confirm', authMiddleware, async (req, res) => {
                 );
 
             } catch (err) {
-                console.error('❌ فشل إرسال إشعار التأكيد:', err);
+                console.error('❌ فشل إشعار التأكيد:', err);
             }
         }
 
@@ -2091,19 +2083,15 @@ app.put('/api/appointments/:id/cancel', authMiddleware, async (req, res) => {
                     appointment.customerId,
                     'customer',
                     '❌ تم إلغاء حجزك',
-                    `تم إلغاء حجزك في صالون ${salonName} بتاريخ ${appointment.date} الساعة ${appointment.time}`
+                    `تم إلغاء حجزك في صالون ${salonName}`
                 );
 
             } catch (err) {
-                console.error('❌ فشل إرسال إشعار الإلغاء:', err);
+                console.error('❌ فشل إشعار الإلغاء:', err);
             }
         }
 
-        res.json({
-            message: '✅ تم إلغاء الموعد',
-            inventoryRestored: true
-        });
-
+        res.json({ message: '✅ تم إلغاء الموعد' });
     } catch (error) {
         console.error('❌ خطأ في إلغاء الموعد:', error);
         res.status(500).json({ message: '❌ فشل إلغاء الموعد' });
@@ -2155,15 +2143,11 @@ app.put('/api/appointments/:id/complete', authMiddleware, async (req, res) => {
                 );
 
             } catch (err) {
-                console.error('❌ فشل إرسال إشعار الإكمال:', err);
+                console.error('❌ فشل إشعار الإكمال:', err);
             }
         }
 
-        res.json({
-            message: '✅ تم إكمال الموعد',
-            inventoryDeductions: inventoryDeductions
-        });
-
+        res.json({ message: '✅ تم إكمال الموعد' });
     } catch (error) {
         console.error('❌ خطأ في إكمال الموعد:', error);
         res.status(500).json({ message: '❌ فشل إكمال الموعد' });
@@ -2700,7 +2684,7 @@ app.put('/api/quotes/:id/quote', authMiddleware, async (req, res) => {
                 });
                 await notification.save();
 
-                await sendPushNotification(
+               await sendPushNotification(
                     quote.customerId,
                     'customer',
                     '📩 تم إرسال عرض سعر',
