@@ -2384,7 +2384,11 @@ app.delete('/api/reviews/:id', adminAuthMiddleware, async (req, res) => {
 // مسار الترحيب
 // ============================================================
 app.get('/', (req, res) => {
-    res.send('🚀 مرحباً بك في API منصة حلاقتي!');
+  res.json({
+    status: 'online',
+    message: '🚀 مرحباً بك في API منصة حلاقتي!',
+    timestamp: new Date().toISOString(),
+  });
 });
 
 // ============================================================
