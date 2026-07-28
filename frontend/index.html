@@ -3344,6 +3344,21 @@
     <!-- JavaScript - المتغيرات الأساسية والترجمة -->
     <!-- ========================================================== -->
     <script>
+// ============================================================
+// ✅ تسجيل Service Worker
+// ============================================================
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+            .then(registration => {
+                console.log('✅ Service Worker مسجل بنجاح:', registration);
+            })
+            .catch(error => {
+                console.error('❌ فشل تسجيل Service Worker:', error);
+            });
+    });
+}
+        
     // ============================================================
     // ✅ المتغيرات الأساسية
     // ============================================================
@@ -5559,57 +5574,73 @@
     // ============================================================
 
     // ===== تسجيل الإشعارات =====
-    async function registerPushNotifications() {
-        if (!('Notification' in window)) {
-            console.warn('⚠️ الإشعارات غير مدعومة في هذا المتصفح');
-            return false;
-        }
+async function registerPushNotifications() {
+    console.log('🔄 محاولة تسجيل الإشعارات...');
+    
+    // 1. التحقق من دعم الإشعارات
+    if (!('Notification' in window)) {
+        console.warn('⚠️ الإشعارات غير مدعومة في هذا المتصفح');
+        showToast('❌ الإشعارات غير مدعومة', 'error');
+        return false;
+    }
 
-        if (!('serviceWorker' in navigator)) {
-            console.warn('⚠️ Service Worker غير مدعوم');
-            return false;
-        }
+    // 2. التحقق من دعم Service Worker
+    if (!('serviceWorker' in navigator)) {
+        console.warn('⚠️ Service Worker غير مدعوم');
+        showToast('❌ Service Worker غير مدعوم', 'error');
+        return false;
+    }
 
-        if (Notification.permission === 'denied') {
-            showToast('❌ تم رفض الإشعارات مسبقاً، يرجى تغيير الإعدادات', 'error');
-            return false;
-        }
+    // 3. طلب إذن الإشعارات
+    if (Notification.permission === 'denied') {
+        showToast('❌ تم رفض الإشعارات مسبقاً، يرجى تغيير الإعدادات', 'error');
+        return false;
+    }
 
-        if (Notification.permission === 'default') {
-            const permission = await Notification.requestPermission();
-            if (permission !== 'granted') {
-                showToast('❌ تم رفض الإشعارات', 'error');
-                return false;
-            }
-        }
-
-        try {
-            const registration = await navigator.serviceWorker.ready;
-            let subscription = await registration.pushManager.getSubscription();
-            
-            if (subscription) {
-                console.log('✅ يوجد اشتراك سابق:', subscription.endpoint);
-                await sendSubscriptionToServer(subscription);
-                return subscription;
-            }
-
-            subscription = await registration.pushManager.subscribe({
-                userVisibleOnly: true,
-                applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-            });
-
-            console.log('✅ تم إنشاء اشتراك جديد:', subscription);
-            await sendSubscriptionToServer(subscription);
-
-            showToast('✅ تم تفعيل الإشعارات بنجاح!', 'success');
-            return subscription;
-
-        } catch (error) {
-            console.error('❌ فشل تسجيل الإشعارات:', error);
-            showToast('❌ فشل تفعيل الإشعارات: ' + error.message, 'error');
+    if (Notification.permission === 'default') {
+        const permission = await Notification.requestPermission();
+        console.log('📌 إذن الإشعارات:', permission);
+        if (permission !== 'granted') {
+            showToast('❌ تم رفض الإشعارات', 'error');
             return false;
         }
     }
+
+    try {
+        // 4. انتظار Service Worker
+        const registration = await navigator.serviceWorker.ready;
+        console.log('✅ Service Worker جاهز:', registration);
+        
+        // 5. التحقق من وجود اشتراك سابق
+        let subscription = await registration.pushManager.getSubscription();
+        
+        if (subscription) {
+            console.log('✅ يوجد اشتراك سابق:', subscription.endpoint);
+            await sendSubscriptionToServer(subscription);
+            updatePushButton(true);
+            return subscription;
+        }
+
+        // 6. إنشاء اشتراك جديد
+        console.log('🔄 إنشاء اشتراك جديد مع VAPID:', VAPID_PUBLIC_KEY);
+        subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+        });
+
+        console.log('✅ تم إنشاء اشتراك جديد:', subscription);
+        await sendSubscriptionToServer(subscription);
+        
+        showToast('✅ تم تفعيل الإشعارات بنجاح!', 'success');
+        updatePushButton(true);
+        return subscription;
+
+    } catch (error) {
+        console.error('❌ فشل تسجيل الإشعارات:', error);
+        showToast('❌ فشل تفعيل الإشعارات: ' + error.message, 'error');
+        return false;
+    }
+}
 
     // ===== إرسال الاشتراك إلى الخادم =====
     async function sendSubscriptionToServer(subscription) {
