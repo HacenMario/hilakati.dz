@@ -1844,44 +1844,6 @@ app.put('/api/appointments/:id/confirm', authMiddleware, async (req, res) => {
         res.status(500).json({ message: '❌ فشل تأكيد الموعد' });
     }
 });
-        // ===== إشعار للعميل =====
-        if (appointment.customerId) {
-            try {
-                const salon = await Salon.findById(appointment.salonId).select('name');
-                const salonName = salon ? salon.name : 'الصالون';
-                
-                // إشعار في قاعدة البيانات
-                const notification = new Notification({
-                    userId: appointment.customerId,
-                    userType: 'customer',
-                    title: '✅ تم تأكيد حجزك',
-                    message: `تم تأكيد حجزك في صالون ${salonName} بتاريخ ${appointment.date} الساعة ${appointment.time}`,
-                    read: false,
-                    createdAt: new Date()
-                });
-                await notification.save();
-
-                // ✅ Push Notification للعميل
-                await sendPushNotification(
-                    appointment.customerId,
-                    'customer',
-                    '✅ تم تأكيد حجزك',
-                    `تم تأكيد حجزك في صالون ${salonName} بتاريخ ${appointment.date} الساعة ${appointment.time}`
-                );
-
-                }
-
-            } catch (err) {
-                console.error('❌ فشل إشعار التأكيد:', err);
-            }
-        }
-
-        res.json({ message: '✅ تم تأكيد الموعد' });
-    } catch (error) {
-        console.error('❌ خطأ في تأكيد الموعد:', error);
-        res.status(500).json({ message: '❌ فشل تأكيد الموعد' });
-    }
-});
 
 // ============================================================
 // إلغاء الحجز من قبل العميل
