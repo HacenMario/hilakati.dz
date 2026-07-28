@@ -2678,6 +2678,7 @@ app.put('/api/quotes/:id/accept-by-customer', customerAuthMiddleware, async (req
         }
 
         res.json({ message: '✅ تم قبول العرض وإنشاء الحجز', appointment });
+
     } catch (error) {
         console.error('❌ فشل قبول العرض:', error);
         res.status(500).json({ message: 'فشل قبول العرض' });
