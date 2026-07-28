@@ -179,7 +179,6 @@ let pushSubscriptions = [];
 // ============================================================
 async function sendPushNotification(userId, userType, title, message) {
     try {
-        // ✅ البحث عن اشتراكات المستخدم
         const subscriptions = pushSubscriptions.filter(
             sub => sub.userId === userId && sub.userType === userType
         );
@@ -191,38 +190,31 @@ async function sendPushNotification(userId, userType, title, message) {
 
         console.log(`📤 إرسال Push إلى ${subscriptions.length} جهاز للمستخدم ${userId}`);
 
-        // ✅ إرسال الإشعار لكل اشتراك
+        const payload = JSON.stringify({
+            title: title,
+            body: message,
+            icon: '/icons/icon-192.png',
+            badge: '/icons/icon-72.png',
+            data: {
+                url: '/',
+                notificationId: Date.now()
+            }
+        });
+
         for (const sub of subscriptions) {
             try {
-                const response = await fetch(sub.subscription.endpoint, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'TTL': '86400'
-                    },
-                    body: JSON.stringify({
-                        title: title,
-                        body: message,
-                        icon: '/icons/icon-192.png',
-                        badge: '/icons/icon-72.png',
-                        data: {
-                            url: '/',
-                            notificationId: Date.now()
-                        }
-                    })
-                });
-
-                if (response.status === 410) {
-                    // ✅ الاشتراك منتهي الصلاحية - حذفه
-                    pushSubscriptions = pushSubscriptions.filter(s => s.endpoint !== sub.endpoint);
-                    console.warn(`⚠️ اشتراك منتهي: ${sub.endpoint}`);
-                } else if (!response.ok) {
-                    console.error(`❌ فشل إرسال Push: ${response.status}`);
-                } else {
-                    console.log(`✅ تم إرسال Push للمستخدم ${userId}`);
-                }
+                const result = await webpush.sendNotification(
+                    sub.subscription,
+                    payload
+                );
+                console.log(`✅ تم إرسال Push للمستخدم ${userId}: ${result.statusCode}`);
             } catch (err) {
-                console.error('❌ خطأ في إرسال Push:', err);
+                if (err.statusCode === 410) {
+                    pushSubscriptions = pushSubscriptions.filter(s => s.endpoint !== sub.endpoint);
+                    console.warn(`⚠️ اشتراك منتهي، تم حذفه: ${sub.endpoint}`);
+                } else {
+                    console.error(`❌ فشل إرسال Push للمستخدم ${userId}:`, err.message);
+                }
             }
         }
     } catch (error) {
@@ -2865,10 +2857,31 @@ app.post('/api/push/test', async (req, res) => {
     try {
         const { userId, userType, title, message } = req.body;
         
+        console.log('📤 طلب اختبار Push:', { userId, userType, title, message });
+        
         if (!userId || !userType) {
-            return res.status(400).json({ message: 'userId و userType مطلوبان' });
+            return res.status(400).json({ 
+                success: false,
+                message: 'userId و userType مطلوبان' 
+            });
         }
 
+        // التحقق من وجود اشتراكات
+        const subscriptions = pushSubscriptions.filter(
+            sub => sub.userId === userId && sub.userType === userType
+        );
+
+        console.log(`📊 عدد الاشتراكات للمستخدم ${userId}: ${subscriptions.length}`);
+
+        if (subscriptions.length === 0) {
+            return res.json({ 
+                success: false,
+                message: 'لا يوجد اشتراكات لهذا المستخدم. يرجى تفعيل الإشعارات أولاً.',
+                subscriptionsCount: 0
+            });
+        }
+
+        // إرسال الإشعار
         await sendPushNotification(
             userId,
             userType,
@@ -2877,12 +2890,17 @@ app.post('/api/push/test', async (req, res) => {
         );
 
         res.json({ 
+            success: true,
             message: '✅ تم إرسال الإشعار التجريبي',
-            subscriptionsCount: pushSubscriptions.filter(s => s.userId === userId && s.userType === userType).length
+            subscriptionsCount: subscriptions.length
         });
+        
     } catch (error) {
         console.error('❌ فشل اختبار الإشعار:', error);
-        res.status(500).json({ message: 'فشل الاختبار' });
+        res.status(500).json({ 
+            success: false,
+            message: 'فشل الاختبار: ' + error.message 
+        });
     }
 });
 
