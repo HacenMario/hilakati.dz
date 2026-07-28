@@ -1,25 +1,12 @@
 // ============================================================
-// ✅ إصدار التطبيق (يتغير تلقائياً عند كل تحديث)
-// ============================================================
-const APP_VERSION = new Date().getTime();
-// ============================================================
 // Service Worker للتطبيق - يدعم الإشعارات
 // ============================================================
 
-const CACHE_NAME = 'halakati-v1';
+const CACHE_NAME = 'halakati-v2';
 
 // ✅ تثبيت Service Worker
 self.addEventListener('install', (event) => {
     console.log('📦 Service Worker: تثبيت');
-    event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => {
-            return cache.addAll([
-                '/',
-                '/index.html',
-                '/manifest.json'
-            ]);
-        })
-    );
     self.skipWaiting();
 });
 
@@ -64,7 +51,6 @@ self.addEventListener('push', (event) => {
         }
     }
 
-    // ✅ عرض الإشعار
     const options = {
         body: data.body,
         icon: data.icon || '/icons/icon-192.png',
@@ -96,22 +82,15 @@ self.addEventListener('notificationclick', (event) => {
     event.notification.close();
 
     const url = event.notification.data?.url || '/';
-    const action = event.action;
-
-    if (action === 'close') {
-        return;
-    }
 
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true })
             .then((clientList) => {
-                // ✅ إذا كان هناك نافذة مفتوحة، انتقل إليها
                 for (const client of clientList) {
                     if (client.url.includes(url) && 'focus' in client) {
                         return client.focus();
                     }
                 }
-                // ✅ وإلا افتح نافذة جديدة
                 if (clients.openWindow) {
                     return clients.openWindow(url);
                 }
