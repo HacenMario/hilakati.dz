@@ -179,6 +179,7 @@ let pushSubscriptions = [];
 // ============================================================
 async function sendPushNotification(userId, userType, title, message) {
     try {
+        // ✅ البحث عن اشتراكات المستخدم
         const subscriptions = pushSubscriptions.filter(
             sub => sub.userId === userId && sub.userType === userType
         );
@@ -542,10 +543,6 @@ async function createNotification(userId, userType, title, message) {
         });
         await notification.save();
 
-        // ✅ إرسال عبر Socket.io
-        const io = require('socket.io')();
-        io.to(`${userType}-${userId}`).emit('new-notification', { title, message });
-
         // ✅ إرسال Push Notification
         await sendPushNotification(userId, userType, title, message);
 
@@ -729,7 +726,6 @@ app.post('/api/quotes/request', async (req, res) => {
 
         // إشعار للصالون + Push
         try {
-            const Notification = require('./models/Notification');
             const serviceTypeAr = translateServiceType(serviceType);
             const notification = new Notification({
                 userId: salonId,
@@ -741,14 +737,6 @@ app.post('/api/quotes/request', async (req, res) => {
             });
             await notification.save();
 
-            const io = req.app.get('io');
-            if (io) {
-                io.to(`salon-${salonId}`).emit('new-notification', {
-                    title: '📩 طلب عرض سعر جديد',
-                    message: `طلب جديد من ${customerName} لخدمة "${serviceTypeAr}"`
-                });
-            }
-
             // ✅ Push Notification للصالون
             await sendPushNotification(
                 salonId,
@@ -756,6 +744,8 @@ app.post('/api/quotes/request', async (req, res) => {
                 '📩 طلب عرض سعر جديد',
                 `طلب جديد من ${customerName} لخدمة "${serviceTypeAr}"`
             );
+
+            }
 
         } catch (notifError) {
             console.error('❌ فشل إرسال الإشعار:', notifError);
@@ -854,14 +844,6 @@ app.post('/api/auth/register', async (req, res) => {
                 createdAt: new Date()
             });
             await notification.save();
-
-            const io = req.app.get('io');
-            if (io) {
-                io.to('admin-room').emit('new-notification', {
-                    title: '📌 طلب صالون جديد',
-                    message: `صالون "${name}" ينتظر الموافقة`
-                });
-            }
 
             const mailOptions = {
                 from: process.env.EMAIL_USER,
@@ -1478,24 +1460,13 @@ app.post('/api/admin/broadcast', adminAuthMiddleware, async (req, res) => {
 
         await Notification.insertMany(notifications);
 
-        // ✅ إرسال عبر Socket.io
-        const io = req.app.get('io');
-        if (io) {
-            if (userType === 'all' || userType === 'salon') {
-                const salons = await Salon.find().select('_id');
-                salons.forEach(salon => {
-                    io.to(`salon-${salon._id}`).emit('new-notification', { title, message });
-                });
-            }
-            if (userType === 'all' || userType === 'customer') {
-                const customers = await Customer.find().select('_id');
-                customers.forEach(customer => {
-                    io.to(`customer-${customer._id}`).emit('new-notification', { title, message });
-                });
-            }
-        }
-
         // ✅ إرسال Push Notifications للجميع
+app.post('/api/admin/broadcast', adminAuthMiddleware, async (req, res) => {
+    try {
+        const { title, message, userType } = req.body;
+        // ... الكود الموجود ...
+        
+        // ✅ بعد حفظ الإشعارات، أرسل Push للجميع
         for (const user of users) {
             try {
                 await sendPushNotification(
@@ -1810,14 +1781,6 @@ app.post('/api/appointments/request', async (req, res) => {
             });
             await notification.save();
 
-            const io = req.app.get('io');
-            if (io) {
-                io.to(`salon-${salonId}`).emit('new-notification', {
-                    title: '📅 حجز جديد',
-                    message: `حجز من ${clientName} في ${date} الساعة ${time} - صالون ${salonName}`
-                });
-            }
-
             // ✅ Push Notification للصالون
             await sendPushNotification(
                 salonId,
@@ -1842,14 +1805,6 @@ app.post('/api/appointments/request', async (req, res) => {
                     createdAt: new Date()
                 });
                 await customerNotification.save();
-
-                const io = req.app.get('io');
-                if (io) {
-                    io.to(`customer-${customerId}`).emit('new-notification', {
-                        title: '📅 طلب حجز جديد',
-                        message: `تم إرسال طلب حجزك في صالون ${salon.name || 'الصالون'} بتاريخ ${date} الساعة ${time}`
-                    });
-                }
 
                 // ✅ Push Notification للعميل
                 await sendPushNotification(
@@ -1910,6 +1865,52 @@ app.put('/api/appointments/:id/confirm', authMiddleware, async (req, res) => {
                     '✅ تم تأكيد حجزك',
                     `تم تأكيد حجزك في صالون ${salonName} بتاريخ ${appointment.date} الساعة ${appointment.time}`
                 );
+
+            } catch (err) {
+                console.error('❌ فشل إشعار التأكيد:', err);
+            }
+        }
+
+        res.json({ message: '✅ تم تأكيد الموعد' });
+    } catch (error) {
+        console.error('❌ خطأ في تأكيد الموعد:', error);
+        res.status(500).json({ message: '❌ فشل تأكيد الموعد' });
+    }
+});app.put('/api/appointments/:id/confirm', authMiddleware, async (req, res) => {
+    try {
+        const appointment = await Appointment.findById(req.params.id);
+        if (!appointment) {
+            return res.status(404).json({ message: '❌ الحجز غير موجود' });
+        }
+        appointment.status = 'confirmed';
+        await appointment.save();
+
+        // ===== إشعار للعميل =====
+        if (appointment.customerId) {
+            try {
+                const salon = await Salon.findById(appointment.salonId).select('name');
+                const salonName = salon ? salon.name : 'الصالون';
+                
+                // إشعار في قاعدة البيانات
+                const notification = new Notification({
+                    userId: appointment.customerId,
+                    userType: 'customer',
+                    title: '✅ تم تأكيد حجزك',
+                    message: `تم تأكيد حجزك في صالون ${salonName} بتاريخ ${appointment.date} الساعة ${appointment.time}`,
+                    read: false,
+                    createdAt: new Date()
+                });
+                await notification.save();
+
+                // ✅ Push Notification للعميل
+                await sendPushNotification(
+                    appointment.customerId,
+                    'customer',
+                    '✅ تم تأكيد حجزك',
+                    `تم تأكيد حجزك في صالون ${salonName} بتاريخ ${appointment.date} الساعة ${appointment.time}`
+                );
+
+                }
 
             } catch (err) {
                 console.error('❌ فشل إشعار التأكيد:', err);
@@ -2048,26 +2049,20 @@ app.put('/api/appointments/:id/cancel', authMiddleware, async (req, res) => {
         if (!appointment) {
             return res.status(404).json({ message: '❌ الحجز غير موجود' });
         }
-
+        
         if (appointment.salonId.toString() !== req.userId) {
             return res.status(403).json({ message: '❌ غير مصرح لك بإلغاء هذا الحجز' });
         }
-
+        
         appointment.status = 'cancelled';
         await appointment.save();
 
-        try {
-            await restoreInventoryForBooking(req.params.id);
-            console.log(`✅ تم استعادة المخزون للحجز ${req.params.id}`);
-        } catch (inventoryError) {
-            console.error('❌ فشل استعادة المخزون:', inventoryError);
-        }
-
+        // ===== إشعار للعميل =====
         if (appointment.customerId) {
             try {
                 const salon = await Salon.findById(appointment.salonId).select('name');
                 const salonName = salon ? salon.name : 'الصالون';
-
+                
                 const notification = new Notification({
                     userId: appointment.customerId,
                     userType: 'customer',
@@ -2085,6 +2080,8 @@ app.put('/api/appointments/:id/cancel', authMiddleware, async (req, res) => {
                     '❌ تم إلغاء حجزك',
                     `تم إلغاء حجزك في صالون ${salonName}`
                 );
+
+                }
 
             } catch (err) {
                 console.error('❌ فشل إشعار الإلغاء:', err);
@@ -2111,19 +2108,12 @@ app.put('/api/appointments/:id/complete', authMiddleware, async (req, res) => {
         appointment.status = 'completed';
         await appointment.save();
 
-        let inventoryDeductions = [];
-        try {
-            inventoryDeductions = await deductInventoryForBooking(req.params.id);
-            console.log(`📦 تم خصم ${inventoryDeductions.length} منتج من المخزون`);
-        } catch (inventoryError) {
-            console.error('❌ فشل خصم المخزون:', inventoryError);
-        }
-
+        // ===== إشعار للعميل =====
         if (appointment.customerId) {
             try {
                 const salon = await Salon.findById(appointment.salonId).select('name');
                 const salonName = salon ? salon.name : 'الصالون';
-
+                
                 const notification = new Notification({
                     userId: appointment.customerId,
                     userType: 'customer',
@@ -2659,21 +2649,19 @@ app.put('/api/quotes/:id/quote', authMiddleware, async (req, res) => {
     try {
         const { quotePrice, quoteMessage } = req.body;
         const quote = await Quote.findById(req.params.id);
-        if (!quote) {
-            return res.status(404).json({ message: '❌ الطلب غير موجود' });
-        }
-        if (quote.salonId.toString() !== req.userId) {
-            return res.status(403).json({ message: '❌ غير مصرح' });
-        }
+        if (!quote) return res.status(404).json({ message: '❌ الطلب غير موجود' });
+        
         quote.quotePrice = quotePrice;
         quote.quoteMessage = quoteMessage || '';
         quote.status = 'quoted';
         await quote.save();
 
+        // إشعار للعميل
         if (quote.customerId) {
             try {
                 const salon = await Salon.findById(quote.salonId).select('name');
                 const salonName = salon ? salon.name : 'الصالون';
+                
                 const notification = new Notification({
                     userId: quote.customerId,
                     userType: 'customer',
@@ -2684,7 +2672,8 @@ app.put('/api/quotes/:id/quote', authMiddleware, async (req, res) => {
                 });
                 await notification.save();
 
-               await sendPushNotification(
+                // ✅ Push Notification للعميل
+                await sendPushNotification(
                     quote.customerId,
                     'customer',
                     '📩 تم إرسال عرض سعر',
@@ -2705,41 +2694,12 @@ app.put('/api/quotes/:id/accept-by-customer', customerAuthMiddleware, async (req
     try {
         const { date, time } = req.body;
         const quote = await Quote.findById(req.params.id);
-        if (!quote) {
-            return res.status(404).json({ message: '❌ الطلب غير موجود' });
-        }
-        if (quote.customerId.toString() !== req.customerId) {
-            return res.status(403).json({ message: '❌ غير مصرح' });
-        }
-        if (quote.status !== 'quoted') {
-            return res.status(400).json({ message: '❌ لا يمكن قبول عرض غير موجود' });
-        }
-
+        if (!quote) return res.status(404).json({ message: '❌ الطلب غير موجود' });
+        
         quote.status = 'accepted';
         await quote.save();
 
-        const salon = await Salon.findById(quote.salonId);
-        if (!salon) {
-            return res.status(404).json({ message: '❌ الصالون غير موجود' });
-        }
-
-        const appointment = new Appointment({
-            salonId: quote.salonId,
-            customerId: req.customerId,
-            clientName: quote.customerName,
-            clientPhone: quote.customerPhone,
-            clientEmail: quote.customerEmail,
-            services: [{ name: quote.serviceType, price: quote.quotePrice }],
-            totalPrice: quote.quotePrice,
-            staff: 'موظف رئيسي',
-            date: date || new Date().toISOString().split('T')[0],
-            time: time || '10:00',
-            payment: 'cash',
-            notes: `عرض سعر مقبول: ${quote.quoteMessage || ''}`,
-            status: 'pending'
-        });
-        await appointment.save();
-
+        // إشعار للصالون
         try {
             const notification = new Notification({
                 userId: quote.salonId,
@@ -2751,12 +2711,14 @@ app.put('/api/quotes/:id/accept-by-customer', customerAuthMiddleware, async (req
             });
             await notification.save();
 
+            // ✅ Push Notification للصالون
             await sendPushNotification(
                 quote.salonId,
                 'salon',
                 '✅ تم قبول عرض سعر',
-                `قام العميل ${quote.customerName} بقبول عرض السعر وتم إنشاء حجز تلقائي`
+                `قام العميل ${quote.customerName} بقبول عرض السعر`
             );
+
 
         } catch (e) { console.error('❌ فشل الإشعار:', e); }
 
@@ -2770,18 +2732,32 @@ app.put('/api/quotes/:id/accept-by-customer', customerAuthMiddleware, async (req
 app.put('/api/quotes/:id/reject-by-customer', customerAuthMiddleware, async (req, res) => {
     try {
         const quote = await Quote.findById(req.params.id);
-        if (!quote) {
-            return res.status(404).json({ message: '❌ الطلب غير موجود' });
-        }
-        if (quote.customerId.toString() !== req.customerId) {
-            return res.status(403).json({ message: '❌ غير مصرح' });
-        }
-        if (quote.status !== 'quoted') {
-            return res.status(400).json({ message: '❌ لا يمكن رفض عرض غير موجود' });
-        }
-
+        if (!quote) return res.status(404).json({ message: '❌ الطلب غير موجود' });
+        
         quote.status = 'rejected';
         await quote.save();
+
+        // إشعار للصالون
+        try {
+            const notification = new Notification({
+                userId: quote.salonId,
+                userType: 'salon',
+                title: '❌ تم رفض عرض سعر',
+                message: `قام العميل ${quote.customerName} برفض عرض السعر`,
+                read: false,
+                createdAt: new Date()
+            });
+            await notification.save();
+
+            // ✅ Push Notification للصالون
+            await sendPushNotification(
+                quote.salonId,
+                'salon',
+                '❌ تم رفض عرض سعر',
+                `قام العميل ${quote.customerName} برفض عرض السعر`
+            );
+
+        } catch (e) { console.error('❌ فشل الإشعار:', e); }
 
         res.json({ message: '❌ تم رفض عرض السعر' });
     } catch (error) {
