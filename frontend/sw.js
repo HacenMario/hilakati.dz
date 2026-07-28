@@ -4,20 +4,10 @@
 
 const CACHE_NAME = 'halakati-v1';
 
-// ✅ تثبيت Service Worker
+// ✅ تثبيت Service Worker (بدون تخزين ملفات)
 self.addEventListener('install', (event) => {
     console.log('📦 Service Worker: تثبيت');
-    event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => {
-            return cache.addAll([
-                '/',
-                '/index.html',
-                '/manifest.json',
-                '/icons/icon-72.png',
-                '/icons/icon-192.png'
-            ]);
-        })
-    );
+    // ✅ تخطي مرحلة الانتظار
     self.skipWaiting();
 });
 
@@ -35,6 +25,7 @@ self.addEventListener('activate', (event) => {
             );
         })
     );
+    // ✅ السيطرة على جميع الصفحات فوراً
     self.clients.claim();
 });
 
@@ -64,8 +55,8 @@ self.addEventListener('push', (event) => {
 
     const options = {
         body: data.body,
-        icon: data.icon || '/icons/icon-192.png',
-        badge: data.badge || '/icons/icon-72.png',
+        icon: data.icon || '/favicon.ico',
+        badge: data.badge || '/favicon.ico',
         data: data.data || { url: '/' },
         vibrate: [200, 100, 200],
         actions: [
