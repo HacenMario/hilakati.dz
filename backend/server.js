@@ -15,7 +15,18 @@ const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const session = require('express-session');
 
-const VAPID_PUBLIC_KEY = 'BAu-M60w7YjQLUY-YiE1_QecxnHzbwPK7m8ooNQ-pBdw-AUs1_ZTqiTUKG4sLj9HkUqqSb-5RNNQKlUGZhtxmr0';
+
+const webpush = require('web-push');
+
+// ✅ ضع مفتاحك الخاص هنا (من `npx web-push generate-vapid-keys`)
+const VAPID_PUBLIC_KEY = 'BAu-M60w7YjQLUY-YiE1_QecxnHzbwPK7m8ooNQ-pBdw-AUs1_ZTqiTUKG4sLj9HkUqqSb-5RNNQKlUGZhtxmr0';  // 🔑 مفتاحك العام
+const VAPID_PRIVATE_KEY = '3_FMskqQpmMQ2-QpDZWRm1eY_sAO0NcU9Hi-2OqCY_s';  // 🔑 مفتاحك الخاص
+
+webpush.setVapidDetails(
+    'mailto:stevenhacen@gmail.com',
+    VAPID_PUBLIC_KEY,
+    VAPID_PRIVATE_KEY
+);
 
 const app = express();
 const server = http.createServer(app);
