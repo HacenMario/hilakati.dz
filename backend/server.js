@@ -2814,6 +2814,78 @@ app.put('/api/quotes/:id/reject-by-customer', customerAuthMiddleware, async (req
     }
 });
 
+async function sendSubscriptionToServer(subscription) {
+    const userId = localStorage.getItem('customerId') || 
+                  localStorage.getItem('salonId') || 
+                  localStorage.getItem('adminId');
+    
+    const userType = localStorage.getItem('customerToken') ? 'customer' :
+                    localStorage.getItem('token') ? 'salon' :
+                    localStorage.getItem('adminToken') ? 'admin' : null;
+
+    if (!userId || !userType) {
+        console.warn('⚠️ لا يوجد مستخدم مسجل لحفظ الاشتراك');
+        return;
+    }
+
+    console.log('📤 إرسال الاشتراك إلى الخادم:', { userId, userType });
+
+    try {
+        const res = await fetch(`${API_BASE}/push/subscribe`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                userId: userId,
+                userType: userType,
+                subscription: {
+                    endpoint: subscription.endpoint,
+                    keys: {
+                        p256dh: subscription.keys.p256dh,
+                        auth: subscription.keys.auth
+                    }
+                },
+                endpoint: subscription.endpoint
+            })
+        });
+
+        const data = await res.json();
+        console.log('✅ تم إرسال الاشتراك إلى الخادم:', data);
+        return data;
+
+    } catch (error) {
+        console.error('❌ فشل إرسال الاشتراك إلى الخادم:', error);
+        throw error;
+    }
+}
+
+// ============================================================
+// ✅ مسار اختبار إرسال Push يدوياً
+// ============================================================
+app.post('/api/push/test', async (req, res) => {
+    try {
+        const { userId, userType, title, message } = req.body;
+        
+        if (!userId || !userType) {
+            return res.status(400).json({ message: 'userId و userType مطلوبان' });
+        }
+
+        await sendPushNotification(
+            userId,
+            userType,
+            title || '🧪 إشعار تجريبي',
+            message || 'هذا إشعار تجريبي من منصة حلاقتي'
+        );
+
+        res.json({ 
+            message: '✅ تم إرسال الإشعار التجريبي',
+            subscriptionsCount: pushSubscriptions.filter(s => s.userId === userId && s.userType === userType).length
+        });
+    } catch (error) {
+        console.error('❌ فشل اختبار الإشعار:', error);
+        res.status(500).json({ message: 'فشل الاختبار' });
+    }
+});
+
 // ============================================================
 // تشغيل الخادم
 // ============================================================
