@@ -565,8 +565,6 @@ app.post('/api/coupons/validate', async (req, res) => {
             });
         }
 
-        const Coupon = require('./models/Coupon');
-
         const coupon = await Coupon.findOne({
             code: code.toUpperCase().trim(),
             salonId,
@@ -1764,7 +1762,6 @@ app.post('/api/appointments/request', async (req, res) => {
 
         if (couponId) {
             try {
-                const Coupon = require('./models/Coupon');
                 const coupon = await Coupon.findById(couponId);
 
                 if (coupon) {
@@ -2570,8 +2567,6 @@ app.post('/api/contact', async (req, res) => {
 // ============================================================
 // مسارات الكوبونات
 // ============================================================
-const Coupon = require('./models/Coupon');
-
 app.get('/api/get-coupons/:salonId', authMiddleware, async (req, res) => {
     try {
         console.log(`📡 جلب كوبونات للصالون: ${req.params.salonId}`);
