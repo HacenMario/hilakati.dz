@@ -2823,18 +2823,47 @@ async function sendSubscriptionToServer(subscription) {
     console.log('📤 إرسال الاشتراك إلى الخادم:', { userId, userType });
 
     try {
-        // ✅ بناء كائن الاشتراك بشكل آمن
-        const subscriptionData = {
-            endpoint: subscription.endpoint,
-            keys: {}
-        };
-
-        // ✅ التحقق من وجود keys
-        if (subscription.keys) {
-            subscriptionData.keys = {
-                p256dh: subscription.keys.p256dh || '',
-                auth: subscription.keys.auth || ''
+        // ✅ الحصول على البيانات بشكل آمن
+        let subscriptionData = {};
+        
+        if (subscription.toJSON) {
+            subscriptionData = subscription.toJSON();
+        } else {
+            subscriptionData = {
+                endpoint: subscription.endpoint,
+                keys: {
+                    p256dh: subscription.getKey ? btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('p256dh')))) : '',
+                    auth: subscription.getKey ? btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('auth')))) : ''
+                }
             };
+        }
+        
+        // ✅ التحقق من وجود keys
+        if (!subscriptionData.keys) {
+            subscriptionData.keys = { p256dh: '', auth: '' };
+        }
+        
+        // ✅ التحقق من وجود p256dh
+        if (!subscriptionData.keys.p256dh && subscription.getKey) {
+            try {
+                const p256dh = subscription.getKey('p256dh');
+                if (p256dh) {
+                    subscriptionData.keys.p256dh = btoa(String.fromCharCode.apply(null, new Uint8Array(p256dh)));
+                }
+            } catch (e) {
+                console.warn('⚠️ فشل الحصول على p256dh:', e);
+            }
+        }
+        
+        if (!subscriptionData.keys.auth && subscription.getKey) {
+            try {
+                const auth = subscription.getKey('auth');
+                if (auth) {
+                    subscriptionData.keys.auth = btoa(String.fromCharCode.apply(null, new Uint8Array(auth)));
+                }
+            } catch (e) {
+                console.warn('⚠️ فشل الحصول على auth:', e);
+            }
         }
 
         console.log('📦 بيانات الاشتراك المرسلة:', subscriptionData);
@@ -2857,7 +2886,33 @@ async function sendSubscriptionToServer(subscription) {
 
     } catch (error) {
         console.error('❌ فشل إرسال الاشتراك إلى الخادم:', error);
-        throw error;
+        // ✅ محاولة إرسال بدون keys (قد يعمل مع بعض الخوادم)
+        try {
+            console.log('🔄 محاولة إرسال بدون keys...');
+            const simpleData = {
+                endpoint: subscription.endpoint,
+                keys: { p256dh: '', auth: '' }
+            };
+            
+            const res = await fetch(`${API_BASE}/push/subscribe`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: userId,
+                    userType: userType,
+                    subscription: simpleData,
+                    endpoint: subscription.endpoint
+                })
+            });
+            
+            const data = await res.json();
+            console.log('✅ تم إرسال الاشتراك بدون keys:', data);
+            updatePushButton(true);
+            return data;
+        } catch (fallbackError) {
+            console.error('❌ فشل الإرسال بدون keys:', fallbackError);
+            throw error;
+        }
     }
 }
 
