@@ -179,7 +179,6 @@ let pushSubscriptions = [];
 // ============================================================
 async function sendPushNotification(userId, userType, title, message) {
     try {
-        // ✅ البحث عن اشتراكات المستخدم
         const subscriptions = pushSubscriptions.filter(
             sub => sub.userId === userId && sub.userType === userType
         );
@@ -1460,13 +1459,7 @@ app.post('/api/admin/broadcast', adminAuthMiddleware, async (req, res) => {
 
         await Notification.insertMany(notifications);
 
-        // ✅ إرسال Push Notifications للجميع
-app.post('/api/admin/broadcast', adminAuthMiddleware, async (req, res) => {
-    try {
-        const { title, message, userType } = req.body;
-        // ... الكود الموجود ...
-        
-        // ✅ بعد حفظ الإشعارات، أرسل Push للجميع
+        // ✅ إرسال Push للجميع
         for (const user of users) {
             try {
                 await sendPushNotification(
@@ -1479,8 +1472,12 @@ app.post('/api/admin/broadcast', adminAuthMiddleware, async (req, res) => {
                 console.error(`❌ فشل Push للمستخدم ${user.userId}:`, pushError);
             }
         }
-        
-        res.json({ message: `✅ تم إرسال الإشعار إلى ${notifications.length} مستخدم` });
+
+        res.json({
+            message: `✅ تم إرسال الإشعار إلى ${notifications.length} مستخدم (${targetUsers.join(' + ')}) مع Push`,
+            count: notifications.length
+        });
+
     } catch (error) {
         console.error('❌ خطأ في broadcast:', error);
         res.status(500).json({ message: 'فشل إرسال الإشعارات' });
@@ -1858,7 +1855,6 @@ app.put('/api/appointments/:id/confirm', authMiddleware, async (req, res) => {
                 });
                 await notification.save();
 
-                // ✅ Push Notification للعميل
                 await sendPushNotification(
                     appointment.customerId,
                     'customer',
@@ -1876,15 +1872,7 @@ app.put('/api/appointments/:id/confirm', authMiddleware, async (req, res) => {
         console.error('❌ خطأ في تأكيد الموعد:', error);
         res.status(500).json({ message: '❌ فشل تأكيد الموعد' });
     }
-});app.put('/api/appointments/:id/confirm', authMiddleware, async (req, res) => {
-    try {
-        const appointment = await Appointment.findById(req.params.id);
-        if (!appointment) {
-            return res.status(404).json({ message: '❌ الحجز غير موجود' });
-        }
-        appointment.status = 'confirmed';
-        await appointment.save();
-
+});
         // ===== إشعار للعميل =====
         if (appointment.customerId) {
             try {
@@ -2783,7 +2771,6 @@ async function sendSubscriptionToServer(subscription) {
     console.log('📤 إرسال الاشتراك إلى الخادم:', { userId, userType });
 
     try {
-        // ✅ الحصول على البيانات بشكل آمن
         let subscriptionData = {};
         
         if (subscription.toJSON) {
@@ -2798,12 +2785,10 @@ async function sendSubscriptionToServer(subscription) {
             };
         }
         
-        // ✅ التحقق من وجود keys
         if (!subscriptionData.keys) {
             subscriptionData.keys = { p256dh: '', auth: '' };
         }
         
-        // ✅ التحقق من وجود p256dh
         if (!subscriptionData.keys.p256dh && subscription.getKey) {
             try {
                 const p256dh = subscription.getKey('p256dh');
@@ -2846,7 +2831,6 @@ async function sendSubscriptionToServer(subscription) {
 
     } catch (error) {
         console.error('❌ فشل إرسال الاشتراك إلى الخادم:', error);
-        // ✅ محاولة إرسال بدون keys (قد يعمل مع بعض الخوادم)
         try {
             console.log('🔄 محاولة إرسال بدون keys...');
             const simpleData = {
