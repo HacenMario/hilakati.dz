@@ -2,11 +2,22 @@
 // Service Worker للتطبيق - يدعم الإشعارات
 // ============================================================
 
-const CACHE_NAME = 'halakati-v2';
+const CACHE_NAME = 'halakati-v1';
 
 // ✅ تثبيت Service Worker
 self.addEventListener('install', (event) => {
     console.log('📦 Service Worker: تثبيت');
+    event.waitUntil(
+        caches.open(CACHE_NAME).then((cache) => {
+            return cache.addAll([
+                '/',
+                '/index.html',
+                '/manifest.json',
+                '/icons/icon-72.png',
+                '/icons/icon-192.png'
+            ]);
+        })
+    );
     self.skipWaiting();
 });
 
@@ -82,6 +93,11 @@ self.addEventListener('notificationclick', (event) => {
     event.notification.close();
 
     const url = event.notification.data?.url || '/';
+    const action = event.action;
+
+    if (action === 'close') {
+        return;
+    }
 
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true })
