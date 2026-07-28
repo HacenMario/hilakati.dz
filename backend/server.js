@@ -15,6 +15,8 @@ const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const session = require('express-session');
 
+const VAPID_PUBLIC_KEY = 'BAu-M60w7YjQLUY-YiE1_QecxnHzbwPK7m8ooNQ-pBdw-AUs1_ZTqiTUKG4sLj9HkUqqSb-5RNNQKlUGZhtxmr0';
+
 const app = express();
 const server = http.createServer(app);
 
