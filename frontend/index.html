@@ -8516,6 +8516,258 @@
         lastScrollY = window.scrollY;
     });
 
+// ============================================================
+// ✅ دوال المصادقة (صالون)
+// ============================================================
+
+// ===== تسجيل الدخول (صالون) =====
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    console.log('🟢 محاولة تسجيل دخول صالون...');
+    
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value.trim();
+    
+    if (!email || !password) {
+        showToast('❌ الرجاء إدخال البريد الإلكتروني وكلمة المرور', 'error');
+        return;
+    }
+    
+    try {
+        const res = await fetch(`${API_BASE}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+        
+        const data = await res.json();
+        console.log('📨 رد الخادم:', data);
+        
+        if (res.ok) {
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('salonId', data.salonId);
+            localStorage.setItem('salonName', data.name);
+            
+            showToast(`✅ مرحباً ${data.name}`, 'success');
+            closeModal('loginModal');
+            updateUI();
+            navigateTo('dashboard');
+            loadDashboard();
+            refreshNotifications();
+            
+            if (socket) {
+                socket.emit('join-salon', data.salonId);
+            }
+        } else {
+            showToast(`❌ ${data.message || 'بيانات الدخول غير صحيحة'}`, 'error');
+        }
+    } catch (error) {
+        console.error('❌ فشل تسجيل الدخول:', error);
+        showToast('❌ فشل الاتصال بالخادم', 'error');
+    }
+});
+
+// ===== تسجيل صالون جديد =====
+document.getElementById('registerForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    console.log('🟢 محاولة تسجيل صالون جديد...');
+    
+    const name = document.getElementById('regSalonName').value.trim();
+    const city = document.getElementById('regCity').value;
+    const address = document.getElementById('regAddress').value.trim();
+    const email = document.getElementById('regEmail').value.trim();
+    const phone = document.getElementById('regPhone').value.trim();
+    const password = document.getElementById('regPassword').value;
+    const desc = document.getElementById('regDesc').value.trim();
+    const salonType = document.getElementById('regSalonType').value;
+    const isMobile = document.getElementById('regIsMobile').value === 'true';
+    
+    const lat = parseFloat(document.getElementById('regLatManual').value) || parseFloat(document.getElementById('regLat').value) || null;
+    const lng = parseFloat(document.getElementById('regLngManual').value) || parseFloat(document.getElementById('regLng').value) || null;
+    
+    const logoFile = document.getElementById('regLogo').files[0];
+    let logo = '';
+    if (logoFile) {
+        const reader = new FileReader();
+        logo = await new Promise(resolve => {
+            reader.onload = e => resolve(e.target.result);
+            reader.readAsDataURL(logoFile);
+        });
+    }
+    
+    if (!name || !city || !address || !email || !phone || password.length < 6) {
+        showToast('❌ الرجاء ملء جميع الحقول وكلمة مرور لا تقل عن 6 أحرف', 'error');
+        return;
+    }
+    
+    try {
+        const res = await fetch(`${API_BASE}/auth/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                name, city, address, email, phone, password, desc, logo, 
+                salonType, isMobile, lat, lng 
+            })
+        });
+        
+        const data = await res.json();
+        console.log('📨 رد الخادم:', data);
+        
+        if (res.ok) {
+            showToast(`✅ تم تسجيل ${data.name} بنجاح! سيتم مراجعة طلبك`, 'success');
+            closeModal('registerModal');
+            document.getElementById('registerForm').reset();
+        } else {
+            showToast(`❌ ${data.message || 'فشل التسجيل'}`, 'error');
+        }
+    } catch (error) {
+        console.error('❌ فشل التسجيل:', error);
+        showToast('❌ فشل الاتصال بالخادم', 'error');
+    }
+});
+
+// ============================================================
+// ✅ دوال مصادقة العميل
+// ============================================================
+
+// ===== تسجيل عميل جديد =====
+document.getElementById('customerRegisterForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    console.log('🟢 محاولة تسجيل عميل جديد...');
+    
+    const name = document.getElementById('custName').value.trim();
+    const email = document.getElementById('custEmail').value.trim();
+    const phone = document.getElementById('custPhone').value.trim();
+    const password = document.getElementById('custPassword').value;
+    
+    if (!name || !email || !phone || !password || password.length < 6) {
+        showToast('❌ الرجاء ملء جميع الحقول وكلمة مرور لا تقل عن 6 أحرف', 'error');
+        return;
+    }
+    
+    try {
+        const res = await fetch(`${API_BASE}/customer/auth/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, email, phone, password })
+        });
+        
+        const data = await res.json();
+        console.log('📨 رد الخادم:', data);
+        
+        if (res.ok) {
+            localStorage.setItem('customerToken', data.token);
+            localStorage.setItem('customerId', data.customerId);
+            localStorage.setItem('customerName', data.name);
+            
+            showToast('✅ تم تسجيل حسابك بنجاح!', 'success');
+            closeModal('customerRegisterModal');
+            updateCustomerUI();
+            refreshNotifications();
+            
+            if (socket) {
+                socket.emit('join-customer', data.customerId);
+            }
+        } else {
+            showToast(`❌ ${data.message || 'فشل التسجيل'}`, 'error');
+        }
+    } catch (error) {
+        console.error('❌ فشل التسجيل:', error);
+        showToast('❌ فشل الاتصال بالخادم', 'error');
+    }
+});
+
+// ===== دخول عميل =====
+document.getElementById('customerLoginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    console.log('🟢 محاولة دخول عميل...');
+    
+    const email = document.getElementById('custLoginEmail').value.trim();
+    const password = document.getElementById('custLoginPassword').value.trim();
+    
+    if (!email || !password) {
+        showToast('❌ الرجاء إدخال البريد الإلكتروني وكلمة المرور', 'error');
+        return;
+    }
+    
+    try {
+        const res = await fetch(`${API_BASE}/customer/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+        
+        const data = await res.json();
+        console.log('📨 رد الخادم:', data);
+        
+        if (res.ok) {
+            localStorage.setItem('customerToken', data.token);
+            localStorage.setItem('customerId', data.customerId);
+            localStorage.setItem('customerName', data.name);
+            
+            showToast(`✅ مرحباً ${data.name}`, 'success');
+            closeModal('customerLoginModal');
+            updateCustomerUI();
+            refreshNotifications();
+            
+            if (socket) {
+                socket.emit('join-customer', data.customerId);
+            }
+        } else {
+            showToast(`❌ ${data.message || 'بيانات الدخول غير صحيحة'}`, 'error');
+        }
+    } catch (error) {
+        console.error('❌ فشل تسجيل الدخول:', error);
+        showToast('❌ فشل الاتصال بالخادم', 'error');
+    }
+});
+
+        // ============================================================
+// ✅ دوال مصادقة Admin
+// ============================================================
+
+document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    console.log('🟢 محاولة دخول Admin...');
+    
+    const email = document.getElementById('adminLoginEmail').value.trim();
+    const password = document.getElementById('adminLoginPassword').value.trim();
+    
+    if (!email || !password) {
+        showToast('❌ الرجاء إدخال البريد الإلكتروني وكلمة المرور', 'error');
+        return;
+    }
+    
+    try {
+        const res = await fetch(`${API_BASE}/admin/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+        
+        const data = await res.json();
+        console.log('📨 رد الخادم:', data);
+        
+        if (res.ok) {
+            localStorage.setItem('adminToken', data.token);
+            localStorage.setItem('adminId', data.adminId);
+            
+            showToast('✅ مرحباً Admin النظام', 'success');
+            closeModal('adminLoginModal');
+            updateUI();
+            navigateTo('admin');
+            loadAdminDashboard();
+            refreshNotifications();
+        } else {
+            showToast(`❌ ${data.message || 'بيانات الدخول غير صحيحة'}`, 'error');
+        }
+    } catch (error) {
+        console.error('❌ فشل تسجيل الدخول:', error);
+        showToast('❌ فشل الاتصال بالخادم', 'error');
+    }
+});
+        
+
     // ============================================================
     // ✅ تشغيل التطبيق
     // ============================================================
