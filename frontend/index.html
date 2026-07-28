@@ -3344,6 +3344,229 @@
     <!-- JavaScript - المتغيرات الأساسية والترجمة -->
     <!-- ========================================================== -->
     <script>
+
+// ============================================================
+// ✅ زر تفعيل الإشعارات - نسخة محسّنة للهواتف
+// ============================================================
+
+// 1. إنشاء زر الإشعارات (يظهر دائماً)
+function createPushButton() {
+    const container = document.querySelector('.header-actions');
+    if (!container) return;
+    
+    // التحقق من وجود الزر مسبقاً
+    if (document.getElementById('pushBtn')) return;
+    
+    const btn = document.createElement('button');
+    btn.id = 'pushBtn';
+    btn.className = 'btn-gold btn-sm';
+    btn.innerHTML = '🔔 تفعيل الإشعارات';
+    btn.style.fontSize = '0.65rem';
+    btn.style.padding = '0.3rem 0.8rem';
+    btn.style.margin = '0 0.2rem';
+    btn.style.borderRadius = '50px';
+    btn.style.border = 'none';
+    btn.style.cursor = 'pointer';
+    btn.style.fontWeight = '700';
+    btn.style.transition = 'all 0.3s ease';
+    
+    btn.addEventListener('click', handlePushButtonClick);
+    
+    // إضافة الزر بعد زر اللغة
+    const langBtn = document.getElementById('langToggle');
+    if (langBtn) {
+        langBtn.parentNode.insertBefore(btn, langBtn.nextSibling);
+    } else {
+        container.appendChild(btn);
+    }
+    
+    // تحديث حالة الزر
+    updatePushButtonStatus();
+}
+
+// 2. معالج النقر على الزر
+async function handlePushButtonClick() {
+    const btn = document.getElementById('pushBtn');
+    btn.innerHTML = '⏳ جاري...';
+    btn.disabled = true;
+    
+    try {
+        // التحقق من الإذن
+        if (Notification.permission === 'denied') {
+            alert('❌ تم رفض الإشعارات مسبقاً.\nالرجاء تغيير الإعدادات في المتصفح.');
+            btn.innerHTML = '🔔 تفعيل الإشعارات';
+            btn.disabled = false;
+            return;
+        }
+        
+        // طلب الإذن إذا لم يتم منحه
+        if (Notification.permission === 'default') {
+            const permission = await Notification.requestPermission();
+            if (permission !== 'granted') {
+                alert('❌ تم رفض الإشعارات');
+                btn.innerHTML = '🔔 تفعيل الإشعارات';
+                btn.disabled = false;
+                return;
+            }
+        }
+        
+        // تسجيل Service Worker و Push
+        const result = await registerPushForMobile();
+        
+        if (result) {
+            btn.innerHTML = '✅ مفعل';
+            btn.style.background = 'linear-gradient(135deg, #2ecc71, #27ae60)';
+            btn.style.color = '#fff';
+            showToast('✅ تم تفعيل الإشعارات بنجاح!', 'success');
+        } else {
+            btn.innerHTML = '🔔 تفعيل الإشعارات';
+            btn.disabled = false;
+        }
+    } catch (error) {
+        console.error('❌ خطأ:', error);
+        btn.innerHTML = '🔔 تفعيل الإشعارات';
+        btn.disabled = false;
+        alert('❌ فشل التفعيل: ' + error.message);
+    }
+}
+
+// 3. دالة تسجيل الإشعارات للهواتف (بدون Console)
+async function registerPushForMobile() {
+    try {
+        // التحقق من Service Worker
+        if (!('serviceWorker' in navigator)) {
+            alert('❌ متصفحك لا يدعم الإشعارات');
+            return false;
+        }
+        
+        // الحصول على Service Worker
+        const registration = await navigator.serviceWorker.ready;
+        
+        // حذف الاشتراك القديم
+        let subscription = await registration.pushManager.getSubscription();
+        if (subscription) {
+            await subscription.unsubscribe();
+        }
+        
+        // إنشاء اشتراك جديد
+        subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+        });
+        
+        // استخراج المفاتيح (طريقة متوافقة مع iOS)
+        let p256dh = '', auth = '';
+        
+        if (subscription.getKey) {
+            const p256dhKey = subscription.getKey('p256dh');
+            const authKey = subscription.getKey('auth');
+            
+            if (p256dhKey) {
+                const bytes = new Uint8Array(p256dhKey);
+                let binary = '';
+                for (let i = 0; i < bytes.byteLength; i++) {
+                    binary += String.fromCharCode(bytes[i]);
+                }
+                p256dh = btoa(binary);
+            }
+            if (authKey) {
+                const bytes = new Uint8Array(authKey);
+                let binary = '';
+                for (let i = 0; i < bytes.byteLength; i++) {
+                    binary += String.fromCharCode(bytes[i]);
+                }
+                auth = btoa(binary);
+            }
+        }
+        
+        // إرسال إلى الخادم
+        const userId = localStorage.getItem('customerId') || 
+                      localStorage.getItem('salonId') || 
+                      localStorage.getItem('adminId');
+        
+        const userType = localStorage.getItem('customerToken') ? 'customer' :
+                        localStorage.getItem('token') ? 'salon' :
+                        localStorage.getItem('adminToken') ? 'admin' : null;
+        
+        if (!userId || !userType) {
+            alert('⚠️ يرجى تسجيل الدخول أولاً');
+            return false;
+        }
+        
+        const res = await fetch(`${API_BASE}/push/subscribe`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                userId: userId,
+                userType: userType,
+                subscription: {
+                    endpoint: subscription.endpoint,
+                    keys: { p256dh, auth }
+                },
+                endpoint: subscription.endpoint
+            })
+        });
+        
+        const data = await res.json();
+        console.log('✅ تم الإرسال:', data);
+        
+        // تحديث واجهة المستخدم
+        updatePushButton(true);
+        
+        return true;
+        
+    } catch (error) {
+        console.error('❌ فشل التسجيل:', error);
+        alert('❌ خطأ: ' + error.message);
+        return false;
+    }
+}
+
+// 4. تحديث حالة الزر
+async function updatePushButtonStatus() {
+    const btn = document.getElementById('pushBtn');
+    if (!btn) return;
+    
+    try {
+        if (!('serviceWorker' in navigator)) return;
+        
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+        
+        if (subscription) {
+            btn.innerHTML = '✅ مفعل';
+            btn.style.background = 'linear-gradient(135deg, #2ecc71, #27ae60)';
+            btn.style.color = '#fff';
+        } else {
+            btn.innerHTML = '🔔 تفعيل الإشعارات';
+            btn.style.background = '';
+            btn.style.color = '';
+        }
+    } catch (e) {
+        console.warn('⚠️ فشل التحقق:', e);
+    }
+}
+
+function updatePushButton(isSubscribed) {
+    const btn = document.getElementById('pushBtn');
+    if (!btn) return;
+    
+    if (isSubscribed) {
+        btn.innerHTML = '✅ مفعل';
+        btn.style.background = 'linear-gradient(135deg, #2ecc71, #27ae60)';
+        btn.style.color = '#fff';
+    } else {
+        btn.innerHTML = '🔔 تفعيل الإشعارات';
+        btn.style.background = '';
+        btn.style.color = '';
+    }
+}
+
+// 5. تشغيل الزر عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(createPushButton, 1000);
+});
+        
 // ============================================================
 // ✅ تسجيل Service Worker
 // ============================================================
@@ -3730,7 +3953,8 @@ if ('serviceWorker' in navigator) {
     // ============================================================
     // ✅ دالة مساعدة لتحويل VAPID Key
     // ============================================================
-    function urlBase64ToUint8Array(base64String) {
+function urlBase64ToUint8Array(base64String) {
+    try {
         const padding = '='.repeat((4 - base64String.length % 4) % 4);
         const base64 = (base64String + padding)
             .replace(/\-/g, '+')
@@ -3741,7 +3965,10 @@ if ('serviceWorker' in navigator) {
             outputArray[i] = rawData.charCodeAt(i);
         }
         return outputArray;
+    } catch (e) {
+        return new Uint8Array(0);
     }
+}
 
     // ============================================================
     // ✅ دالة مساعدة لتحويل الوقت إلى دقائق
