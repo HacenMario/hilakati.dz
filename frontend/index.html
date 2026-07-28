@@ -9376,6 +9376,244 @@ async function updateInventoryConsumption(itemId, value) {
         showToast('❌ فشل الاتصال بالخادم', 'error');
     }
 }
+
+// ============================================================
+// ✅ Web Push Notifications (VAPID)
+// ============================================================
+
+// 🔑 استخدم مفاتيح VAPID الخاصة بك من هنا
+const VAPID_PUBLIC_KEY = 'YOUR_VAPID_PUBLIC_KEY_HERE';
+
+// دالة تسجيل الإشعارات
+async function registerPushNotifications() {
+    // التحقق من دعم الإشعارات
+    if (!('Notification' in window)) {
+        console.warn('⚠️ الإشعارات غير مدعومة في هذا المتصفح');
+        return false;
+    }
+
+    // التحقق من دعم Service Worker
+    if (!('serviceWorker' in navigator)) {
+        console.warn('⚠️ Service Worker غير مدعوم');
+        return false;
+    }
+
+    // ✅ طلب إذن الإشعارات
+    if (Notification.permission === 'denied') {
+        showToast('❌ تم رفض الإشعارات مسبقاً، يرجى تغيير الإعدادات', 'error');
+        return false;
+    }
+
+    if (Notification.permission === 'default') {
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+            showToast('❌ تم رفض الإشعارات', 'error');
+            return false;
+        }
+    }
+
+    try {
+        // ✅ تسجيل Service Worker
+        const registration = await navigator.serviceWorker.ready;
+        
+        // ✅ التحقق من وجود اشتراك سابق
+        let subscription = await registration.pushManager.getSubscription();
+        
+        if (subscription) {
+            console.log('✅ يوجد اشتراك سابق:', subscription.endpoint);
+            return subscription;
+        }
+
+        // ✅ إنشاء اشتراك جديد
+        subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+        });
+
+        console.log('✅ تم إنشاء اشتراك جديد:', subscription);
+
+        // ✅ إرسال الاشتراك إلى الخادم
+        const userType = localStorage.getItem('token') ? 'salon' : 
+                        localStorage.getItem('customerToken') ? 'customer' : 
+                        localStorage.getItem('adminToken') ? 'admin' : null;
+        
+        if (userType) {
+            const userId = localStorage.getItem('salonId') || 
+                          localStorage.getItem('customerId') || 
+                          localStorage.getItem('adminId');
+            
+            if (userId) {
+                await fetch(`${API_BASE}/push/subscribe`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId,
+                        userType,
+                        subscription,
+                        endpoint: subscription.endpoint
+                    })
+                });
+                console.log('✅ تم إرسال الاشتراك إلى الخادم');
+            }
+        }
+
+        return subscription;
+
+    } catch (error) {
+        console.error('❌ فشل تسجيل الإشعارات:', error);
+        showToast('❌ فشل تفعيل الإشعارات', 'error');
+        return false;
+    }
+}
+
+// ✅ دالة مساعدة لتحويل VAPID Key من Base64 إلى Uint8Array
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding)
+        .replace(/\-/g, '+')
+        .replace(/_/g, '/');
+
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
+
+// ✅ دالة إلغاء الاشتراك
+async function unsubscribePushNotifications() {
+    if (!('serviceWorker' in navigator)) {
+        return;
+    }
+
+    try {
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+        
+        if (subscription) {
+            await subscription.unsubscribe();
+            
+            // ✅ إعلام الخادم بإلغاء الاشتراك
+            const userType = localStorage.getItem('token') ? 'salon' : 
+                            localStorage.getItem('customerToken') ? 'customer' : 
+                            localStorage.getItem('adminToken') ? 'admin' : null;
+            
+            if (userType) {
+                const userId = localStorage.getItem('salonId') || 
+                              localStorage.getItem('customerId') || 
+                              localStorage.getItem('adminId');
+                
+                if (userId) {
+                    await fetch(`${API_BASE}/push/unsubscribe`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userId, userType })
+                    });
+                }
+            }
+            
+            console.log('✅ تم إلغاء الاشتراك بنجاح');
+            showToast('✅ تم إلغاء تفعيل الإشعارات', 'info');
+        }
+    } catch (error) {
+        console.error('❌ فشل إلغاء الاشتراك:', error);
+    }
+}
+
+// ✅ زر تفعيل/إلغاء الإشعارات
+function createNotificationToggleButton() {
+    const container = document.querySelector('.header-actions');
+    if (!container) return;
+
+    const btn = document.createElement('button');
+    btn.className = 'btn-outline btn-sm';
+    btn.id = 'pushNotificationBtn';
+    btn.innerHTML = '<i class="fas fa-bell"></i> الإشعارات';
+    btn.style.fontSize = '0.65rem';
+    btn.style.padding = '0.2rem 0.6rem';
+    
+    btn.addEventListener('click', async () => {
+        if (Notification.permission === 'granted') {
+            // ✅ إذا كان مصرحاً، نتحقق من الاشتراك
+            const registration = await navigator.serviceWorker.ready;
+            const subscription = await registration.pushManager.getSubscription();
+            
+            if (subscription) {
+                // ✅ يوجد اشتراك → إلغاء
+                await unsubscribePushNotifications();
+                updatePushButton(false);
+            } else {
+                // ✅ لا يوجد اشتراك → تسجيل جديد
+                await registerPushNotifications();
+                const newSubscription = await registration.pushManager.getSubscription();
+                updatePushButton(!!newSubscription);
+            }
+        } else {
+            // ✅ طلب إذن جديد
+            const result = await registerPushNotifications();
+            updatePushButton(result);
+        }
+    });
+
+    // ✅ إضافة الزر بعد زر اللغة
+    const langBtn = document.getElementById('langToggle');
+    if (langBtn) {
+        langBtn.parentNode.insertBefore(btn, langBtn.nextSibling);
+    } else {
+        container.appendChild(btn);
+    }
+
+    // ✅ تحديث حالة الزر
+    updatePushButtonStatus();
+}
+
+// ✅ تحديث حالة الزر
+async function updatePushButtonStatus() {
+    if (!('serviceWorker' in navigator)) return;
+    
+    try {
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+        updatePushButton(!!subscription);
+    } catch (e) {
+        console.warn('⚠️ فشل التحقق من حالة الاشتراك:', e);
+    }
+}
+
+function updatePushButton(isSubscribed) {
+    const btn = document.getElementById('pushNotificationBtn');
+    if (!btn) return;
+
+    if (isSubscribed) {
+        btn.innerHTML = '<i class="fas fa-bell-slash"></i> إلغاء الإشعارات';
+        btn.style.borderColor = '#e74c3c';
+        btn.style.color = '#e74c3c';
+    } else {
+        btn.innerHTML = '<i class="fas fa-bell"></i> تفعيل الإشعارات';
+        btn.style.borderColor = 'var(--gold)';
+        btn.style.color = 'var(--gold)';
+    }
+}
+
+// ✅ استدعاء عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', () => {
+    createNotificationToggleButton();
+    
+    // ✅ محاولة التسجيل التلقائي إذا كان المستخدم مسجلاً
+    if (localStorage.getItem('token') || localStorage.getItem('customerToken') || localStorage.getItem('adminToken')) {
+        setTimeout(() => {
+            // ✅ فقط إذا كان مصرحاً
+            if (Notification.permission === 'granted') {
+                registerPushNotifications().then(result => {
+                    updatePushButton(result);
+                });
+            }
+        }, 3000);
+    }
+});
+
 </script>
 </body>
 </html>
