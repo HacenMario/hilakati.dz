@@ -663,25 +663,12 @@ function translateServiceType(type) {
 app.post('/api/quotes/request', async (req, res) => {
     try {
         const {
-            salonId,
-            customerId,
-            customerName,
-            customerEmail,
-            customerPhone,
-            eventDate,
-            budget,
-            guests,
-            serviceType,
-            description,
-            details
+            salonId, customerId, customerName, customerEmail, customerPhone,
+            eventDate, budget, guests, serviceType, description, details
         } = req.body;
 
         console.log('📊 البيانات المستلمة:', {
-            salonId,
-            customerName,
-            budget,
-            guests,
-            serviceType,
+            salonId, customerName, budget, guests, serviceType,
             description: description || details
         });
 
@@ -694,19 +681,6 @@ app.post('/api/quotes/request', async (req, res) => {
             return res.status(404).json({ message: 'الصالون غير موجود' });
         }
 
-        function translateServiceType(type) {
-            const translations = {
-                'bridal': '💄 مكياج عروس',
-                'hair': '💇‍♀️ تسريحة عروس',
-                'full': '👰 حزمة كاملة (مكياج + تسريحة)',
-                'bridal_party': '👩‍👧‍👧 مكياج للعروس والضيوف',
-                'groom': '💈 حلاقة عريس',
-                'other': '📌 خدمات أخرى'
-            };
-            return translations[type] || type;
-        }
-
-        const Quote = require('./models/Quote');
         const newQuote = new Quote({
             salonId,
             customerId: customerId || null,
@@ -736,15 +710,12 @@ app.post('/api/quotes/request', async (req, res) => {
             });
             await notification.save();
 
-            // ✅ Push Notification للصالون
             await sendPushNotification(
                 salonId,
                 'salon',
                 '📩 طلب عرض سعر جديد',
                 `طلب جديد من ${customerName} لخدمة "${serviceTypeAr}"`
             );
-
-            }
 
         } catch (notifError) {
             console.error('❌ فشل إرسال الإشعار:', notifError);
