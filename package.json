@@ -18,6 +18,6 @@
     "passport-google-oauth20": "^2.0.0",
     "express-session": "^1.17.3",
     "dotenv": "^16.0.3",
-    "web-push": "^3.6.7"  // <-- أضف هذا السطر
+    "web-push": "^3.6.7"
   }
 }
