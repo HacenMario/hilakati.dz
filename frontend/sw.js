@@ -2,7 +2,7 @@
 // Service Worker للتطبيق - يدعم الإشعارات
 // ============================================================
 
-const CACHE_NAME = 'halakati-v1';
+const CACHE_NAME = 'halakati-v2';
 
 // ✅ تثبيت Service Worker (بدون تخزين ملفات)
 self.addEventListener('install', (event) => {
